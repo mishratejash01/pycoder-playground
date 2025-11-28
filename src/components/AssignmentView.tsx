@@ -19,13 +19,13 @@ interface AssignmentViewProps {
   currentStatus?: QuestionStatus;
 }
 
-// Robust regex to find function name even with weird spacing
+// Regex to find function definition
 const getFunctionName = (code: string) => {
   const match = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   return match ? match[1] : null;
 };
 
-// Normalize output to handle " vs ' and spaces
+// Normalize output for flexible comparison (ignores extra spaces)
 const normalizeOutput = (str: string) => {
   if (!str) return '';
   return str.replace(/'/g, '"').replace(/\s+/g, '').trim();
@@ -90,14 +90,14 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     sessionStorage.setItem(`exam_draft_${assignmentId}`, newCode);
   };
 
-  // --- CRITICAL: Submission & Verification Logic ---
+  // --- SUBMISSION HANDLER ---
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please log in');
       
       const functionName = getFunctionName(code);
-      if (!functionName) throw new Error("Could not find function name (e.g., 'def solution(...)').");
+      if (!functionName) throw new Error("Could not find a function definition (def name...).");
 
       const publicTests = testCases.filter(tc => tc.is_public);
       const privateTests = testCases.filter(tc => !tc.is_public);
@@ -105,37 +105,34 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
       let privatePassed = 0;
       const newTestResults: Record<string, any> = {};
 
+      // Execute tests sequentially
       const executeTests = async (tests: any[]) => {
         let passedCount = 0;
         for (const test of tests) {
           try {
-            // Run Code against specific input
+            // Run specific test case
             const result = await runTestFunction(code, functionName, test.input);
             
             if (!result.success) {
-              newTestResults[test.id] = { passed: false, output: "Error", error: result.error };
+              newTestResults[test.id] = { 
+                passed: false, 
+                output: "Error", 
+                error: result.error 
+              };
               continue;
             }
 
-            // Normalization comparison
-            const actualRaw = String(result.result);
-            const actualNormalized = normalizeOutput(actualRaw);
-            const expectedNormalized = normalizeOutput(test.expected_output);
-            
-            // Log for debugging
-            console.log(`Test ID: ${test.id}`);
-            console.log(`Input: ${test.input}`);
-            console.log(`Actual: ${actualNormalized}`);
-            console.log(`Expected: ${expectedNormalized}`);
+            // Compare Results
+            const actual = normalizeOutput(result.result);
+            const expected = normalizeOutput(test.expected_output);
+            const isMatch = actual === expected;
 
-            const isMatch = actualNormalized === expectedNormalized;
             if (isMatch) passedCount++;
 
             newTestResults[test.id] = {
               passed: isMatch,
-              output: actualRaw, // Show raw output to user
-              expected: test.expected_output, // Pass expected so we can show diff
-              error: isMatch ? null : `Expected: ${test.expected_output}, Got: ${actualRaw}`
+              output: result.result, // Raw python repr()
+              error: isMatch ? null : `Expected: ${test.expected_output}`
             };
           } catch (e: any) {
             newTestResults[test.id] = { passed: false, output: "", error: e.message };
@@ -185,6 +182,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     if (pyodideLoading) return;
     setConsoleOutput('Running...');
     setBottomTab('console');
+    // Just run the script for output checking (manual debug)
     const result = await runCode(code);
     setConsoleOutput(result.error ? `Error:\n${result.error}` : (result.output || 'Code executed successfully.'));
   };
