@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2, XCircle } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface TestCase {
   id: string;
@@ -11,130 +11,91 @@ interface TestCase {
 }
 
 interface TestResult {
-  output: string;
   passed: boolean;
+  output: string;
   error?: string | null;
 }
 
 interface TestCaseViewProps {
   testCases: TestCase[];
-  testResults?: Record<string, TestResult>;
+  testResults: Record<string, TestResult>;
 }
 
-export const TestCaseView = ({ testCases, testResults = {} }: TestCaseViewProps) => {
-  const publicTests = testCases.filter(tc => tc.is_public);
-  const privateTests = testCases.filter(tc => !tc.is_public);
-  const [selectedPublic, setSelectedPublic] = useState(0);
-  const [selectedPrivate, setSelectedPrivate] = useState(0);
+export const TestCaseView = ({ testCases, testResults }: TestCaseViewProps) => {
+  if (testCases.length === 0) {
+    return <div className="text-muted-foreground text-center p-4">No test cases available.</div>;
+  }
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue="public">
-        <TabsList>
-          <TabsTrigger value="public">
-            Public Tests ({publicTests.length})
-          </TabsTrigger>
-          <TabsTrigger value="private">
-            Private Tests ({privateTests.length})
-          </TabsTrigger>
-        </TabsList>
+    <ScrollArea className="h-full pr-4">
+      <div className="space-y-3">
+        {testCases.map((test, index) => {
+          const result = testResults[test.id];
+          const hasRun = !!result;
+          
+          return (
+            <Card key={test.id} className={cn("border border-white/10 bg-white/5", hasRun && !result.passed ? "border-red-500/20 bg-red-500/5" : "")}>
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {hasRun ? (
+                      result.passed ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border-2 border-muted" />
+                    )}
+                    <span className="font-mono text-sm font-medium text-white">
+                      Test Case {index + 1}
+                      {test.is_public ? "" : " (Hidden)"}
+                    </span>
+                  </div>
+                  {hasRun && (
+                    <span className={cn("text-xs font-bold uppercase", result.passed ? "text-green-500" : "text-red-500")}>
+                      {result.passed ? "Passed" : "Failed"}
+                    </span>
+                  )}
+                </div>
 
-        <TabsContent value="public" className="space-y-4">
-          {publicTests.length > 0 ? (
-            <>
-              <div className="flex gap-2 flex-wrap">
-                {publicTests.map((test, index) => {
-                  const result = testResults[test.id];
-                  return (
-                    <Badge
-                      key={index}
-                      variant={selectedPublic === index ? 'default' : 'outline'}
-                      className={`cursor-pointer ${
-                        result 
-                          ? result.passed 
-                            ? 'border-green-500 text-green-600' 
-                            : 'border-red-500 text-red-600'
-                          : ''
-                      }`}
-                      onClick={() => setSelectedPublic(index)}
-                    >
-                      Case {index + 1}
-                    </Badge>
-                  );
-                })}
-              </div>
-              <TestCaseCard 
-                testCase={publicTests[selectedPublic]} 
-                result={testResults[publicTests[selectedPublic].id]} 
-              />
-            </>
-          ) : (
-            <p className="text-muted-foreground">No public test cases available</p>
-          )}
-        </TabsContent>
+                {/* Always show input for public tests */}
+                {test.is_public && (
+                   <div className="grid grid-cols-[60px_1fr] gap-2 text-xs font-mono mb-1">
+                     <span className="text-muted-foreground">Input:</span>
+                     <span className="text-white/80 bg-black/30 px-1.5 py-0.5 rounded">{test.input}</span>
+                   </div>
+                )}
 
-        <TabsContent value="private" className="space-y-4">
-          {privateTests.length > 0 ? (
-            <>
-              <div className="flex gap-2 flex-wrap">
-                {privateTests.map((_, index) => (
-                  <Badge
-                    key={index}
-                    variant={selectedPrivate === index ? 'default' : 'outline'}
-                    className="cursor-pointer"
-                    onClick={() => setSelectedPrivate(index)}
-                  >
-                    Case {index + 1}
-                  </Badge>
-                ))}
-              </div>
-              <TestCaseCard testCase={privateTests[selectedPrivate]} />
-            </>
-          ) : (
-            <p className="text-muted-foreground">No private test cases available</p>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+                {/* Only show details if the test has run */}
+                {hasRun && (
+                  <div className="space-y-1 mt-2 border-t border-white/5 pt-2">
+                    {test.is_public && (
+                      <div className="grid grid-cols-[60px_1fr] gap-2 text-xs font-mono">
+                        <span className="text-muted-foreground">Expected:</span>
+                        <span className="text-green-400/80">{test.expected_output}</span>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-[60px_1fr] gap-2 text-xs font-mono">
+                      <span className="text-muted-foreground">Actual:</span>
+                      <span className={cn(result.passed ? "text-white/80" : "text-red-400")}>
+                         {result.output || "No output"}
+                      </span>
+                    </div>
+
+                    {result.error && (
+                      <div className="mt-2 text-xs text-red-400 bg-red-950/20 p-2 rounded">
+                        Error: {result.error}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </ScrollArea>
   );
 };
-
-const TestCaseCard = ({ testCase, result }: { testCase: TestCase; result?: TestResult }) => (
-  <div className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
-      <Card>
-        <CardContent className="pt-6">
-          <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Input</h4>
-          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto whitespace-pre-wrap">
-            {testCase.input}
-          </pre>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Expected Output</h4>
-          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto whitespace-pre-wrap">
-            {testCase.expected_output}
-          </pre>
-        </CardContent>
-      </Card>
-    </div>
-
-    {result && (
-      <Card className={result.passed ? "border-green-500 bg-green-50/10" : "border-red-500 bg-red-50/10"}>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold text-sm text-muted-foreground">Actual Output</h4>
-            <Badge variant={result.passed ? "default" : "destructive"}>
-              {result.passed ? "Passed" : "Failed"}
-            </Badge>
-          </div>
-          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto whitespace-pre-wrap font-mono">
-            {result.output || (result.error ? `Error: ${result.error}` : "<No Output>")}
-          </pre>
-        </CardContent>
-      </Card>
-    )}
-  </div>
-);
