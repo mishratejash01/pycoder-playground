@@ -22,7 +22,8 @@ interface AssignmentViewProps {
 }
 
 export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: AssignmentViewProps) => {
-  const [code, setCode] = useState<string>('# Write your Python code here\n');
+  // Initialize state
+  const [code, setCode] = useState<string>(''); // Start empty, will fill in useEffect
   const [consoleOutput, setConsoleOutput] = useState<string>('');
   const [testResults, setTestResults] = useState<Record<string, { output: string; passed: boolean; error?: string | null }>>({});
   const [bottomTab, setBottomTab] = useState<'console' | 'testcases'>('testcases');
@@ -80,16 +81,34 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     enabled: !!assignmentId
   });
 
-  // --- Effects ---
+  // --- Persistence Logic (The Fix) ---
   useEffect(() => {
-    if (latestSubmission?.code) {
+    // 1. Try to get draft from Session Storage (survives reload)
+    const sessionKey = `exam_draft_${assignmentId}`;
+    const savedDraft = sessionStorage.getItem(sessionKey);
+
+    if (savedDraft !== null) {
+      setCode(savedDraft);
+    } 
+    // 2. If no draft, fall back to last database submission
+    else if (latestSubmission?.code) {
       setCode(latestSubmission.code);
-    } else {
+    } 
+    // 3. If neither, use default template
+    else {
       setCode('# Write your Python code here\n');
     }
+
+    // Reset UI states when question changes
     setTestResults({});
     setConsoleOutput('');
   }, [assignmentId, latestSubmission]);
+
+  // Save to Session Storage on every keystroke
+  const handleCodeChange = (newCode: string) => {
+    setCode(newCode);
+    sessionStorage.setItem(`exam_draft_${assignmentId}`, newCode);
+  };
 
   // --- Logic ---
   const submitMutation = useMutation({
@@ -142,7 +161,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const handleRun = async () => {
     if (pyodideLoading) return;
     setConsoleOutput('Running...');
-    setBottomTab('console'); // Switch to console view
+    setBottomTab('console');
     try {
       const result = await runCode(code, '');
       const output = result.error ? `Error:\n${result.error}` : (result.output || 'Code executed successfully.');
@@ -298,7 +317,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
               
               {/* Editor Area */}
               <div className="flex-1 relative">
-                <CodeEditor value={code} onChange={setCode} />
+                <CodeEditor value={code} onChange={handleCodeChange} />
               </div>
             </ResizablePanel>
 
