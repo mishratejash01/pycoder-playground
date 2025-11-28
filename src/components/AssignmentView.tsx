@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,7 +20,8 @@ interface AssignmentViewProps {
 }
 
 export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: AssignmentViewProps) => {
-  const [code, setCode] = useState('# Write your Python code here\n');
+  // Initialize with safe default code
+  const [code, setCode] = useState<string>('# Write your Python code here\n');
   const [activeTab, setActiveTab] = useState('overview');
   const [consoleOutput, setConsoleOutput] = useState<string>('');
   const [testResults, setTestResults] = useState<Record<string, { output: string; passed: boolean; error?: string | null }>>({});
@@ -33,15 +34,12 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const { data: assignment, isLoading, error, refetch } = useQuery({
     queryKey: ['assignment', assignmentId],
     queryFn: async () => {
-      // Safety check for ID
-      if (!assignmentId) throw new Error("No assignment ID provided");
-      
+      if (!assignmentId) throw new Error("No ID");
       const { data, error } = await supabase
         .from('assignments')
         .select('*')
         .eq('id', assignmentId)
         .single();
-        
       if (error) throw error;
       return data;
     },
@@ -52,6 +50,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const { data: testCases = [] } = useQuery({
     queryKey: ['testCases', assignmentId],
     queryFn: async () => {
+      if (!assignmentId) return [];
       const { data } = await supabase
         .from('test_cases')
         .select('*')
@@ -62,7 +61,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     enabled: !!assignmentId
   });
 
-  // Load previous code if available
+  // Fetch previous submission
   const { data: latestSubmission } = useQuery({
     queryKey: ['submission', assignmentId],
     queryFn: async () => {
@@ -81,49 +80,24 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     enabled: !!assignmentId
   });
 
+  // Safe State Update Effect
   useEffect(() => {
     if (latestSubmission?.code) {
       setCode(latestSubmission.code);
     } else {
       setCode('# Write your Python code here\n');
     }
+    // Reset transient UI states when assignment changes
     setTestResults({});
     setConsoleOutput('');
+    setActiveTab('overview');
   }, [assignmentId, latestSubmission]);
 
-  // --- LOADING STATE (Prevents Black Screen) ---
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-[#09090b] text-white gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-muted-foreground animate-pulse">Loading problem context...</p>
-      </div>
-    );
-  }
-
-  // --- ERROR STATE ---
-  if (error || !assignment) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-[#09090b] gap-4 p-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center border border-destructive/20">
-          <AlertTriangle className="h-8 w-8 text-destructive" />
-        </div>
-        <h3 className="text-xl font-semibold text-white">Problem Load Failed</h3>
-        <p className="text-muted-foreground max-w-sm">
-          We couldn't fetch the assignment details. This might happen if the ID is invalid or your connection dropped.
-        </p>
-        <Button onClick={() => refetch()} variant="outline" className="gap-2 border-white/10 hover:bg-white/5 text-white">
-          <RefreshCw className="h-4 w-4" /> Try Again
-        </Button>
-      </div>
-    );
-  }
-
-  // --- Logic for Running/Submitting ---
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Please log in to submit');
+      if (!user) throw new Error('Please log in');
+      if (!assignment) throw new Error('Assignment data missing');
 
       const publicTests = testCases.filter(tc => tc.is_public);
       const privateTests = testCases.filter(tc => !tc.is_public);
@@ -170,12 +144,40 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     if (pyodideLoading) return;
     setConsoleOutput('Running...');
     setActiveTab('console');
-    const result = await runCode(code, '');
-    setConsoleOutput(result.error ? `Error:\n${result.error}` : (result.output || 'Code executed successfully.'));
+    try {
+      const result = await runCode(code, '');
+      const output = result.error ? `Error:\n${result.error}` : (result.output || 'Code executed successfully.');
+      setConsoleOutput(String(output)); // Ensure string
+    } catch (e) {
+      setConsoleOutput('An unexpected error occurred during execution.');
+    }
   };
 
   const publicTests = testCases.filter(tc => tc.is_public);
   const privateTests = testCases.filter(tc => !tc.is_public);
+
+  // --- SAFE LOADING STATE ---
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full bg-[#09090b] text-white gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse">Loading problem...</p>
+      </div>
+    );
+  }
+
+  // --- SAFE ERROR STATE ---
+  if (error || !assignment) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full bg-[#09090b] gap-4 p-6 text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive opacity-80" />
+        <h3 className="text-xl font-semibold text-white">Problem Load Failed</h3>
+        <Button onClick={() => refetch()} variant="outline" className="gap-2 border-white/10 hover:bg-white/5 text-white">
+          <RefreshCw className="h-4 w-4" /> Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-[#09090b] text-white">
