@@ -10,11 +10,18 @@ interface TestCase {
   is_public: boolean;
 }
 
-interface TestCaseViewProps {
-  testCases: TestCase[];
+interface TestResult {
+  output: string;
+  passed: boolean;
+  error?: string | null;
 }
 
-export const TestCaseView = ({ testCases }: TestCaseViewProps) => {
+interface TestCaseViewProps {
+  testCases: TestCase[];
+  testResults?: Record<string, TestResult>;
+}
+
+export const TestCaseView = ({ testCases, testResults = {} }: TestCaseViewProps) => {
   const publicTests = testCases.filter(tc => tc.is_public);
   const privateTests = testCases.filter(tc => !tc.is_public);
   const [selectedPublic, setSelectedPublic] = useState(0);
@@ -36,18 +43,30 @@ export const TestCaseView = ({ testCases }: TestCaseViewProps) => {
           {publicTests.length > 0 ? (
             <>
               <div className="flex gap-2 flex-wrap">
-                {publicTests.map((_, index) => (
-                  <Badge
-                    key={index}
-                    variant={selectedPublic === index ? 'default' : 'outline'}
-                    className="cursor-pointer"
-                    onClick={() => setSelectedPublic(index)}
-                  >
-                    Case {index + 1}
-                  </Badge>
-                ))}
+                {publicTests.map((test, index) => {
+                  const result = testResults[test.id];
+                  return (
+                    <Badge
+                      key={index}
+                      variant={selectedPublic === index ? 'default' : 'outline'}
+                      className={`cursor-pointer ${
+                        result 
+                          ? result.passed 
+                            ? 'border-green-500 text-green-600' 
+                            : 'border-red-500 text-red-600'
+                          : ''
+                      }`}
+                      onClick={() => setSelectedPublic(index)}
+                    >
+                      Case {index + 1}
+                    </Badge>
+                  );
+                })}
               </div>
-              <TestCaseCard testCase={publicTests[selectedPublic]} />
+              <TestCaseCard 
+                testCase={publicTests[selectedPublic]} 
+                result={testResults[publicTests[selectedPublic].id]} 
+              />
             </>
           ) : (
             <p className="text-muted-foreground">No public test cases available</p>
@@ -80,7 +99,7 @@ export const TestCaseView = ({ testCases }: TestCaseViewProps) => {
   );
 };
 
-const TestCaseCard = ({ testCase }: { testCase: TestCase }) => (
+const TestCaseCard = ({ testCase, result }: { testCase: TestCase; result?: TestResult }) => (
   <div className="space-y-4">
     <Card>
       <CardContent className="pt-6">
@@ -99,5 +118,21 @@ const TestCaseCard = ({ testCase }: { testCase: TestCase }) => (
         </pre>
       </CardContent>
     </Card>
+
+    {result && (
+      <Card className={result.passed ? "border-green-500" : "border-red-500 border-2"}>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-sm text-muted-foreground">Actual Output</h4>
+            <Badge variant={result.passed ? "default" : "destructive"}>
+              {result.passed ? "Passed" : "Failed"}
+            </Badge>
+          </div>
+          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto">
+            {result.output || (result.error ? `Error: ${result.error}` : "<No Output>")}
+          </pre>
+        </CardContent>
+      </Card>
+    )}
   </div>
 );
