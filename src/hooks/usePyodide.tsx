@@ -34,13 +34,9 @@ from io import StringIO
 sys.stdout = StringIO()
       `);
       
-      // Load packages if needed (naive approach)
       await pyodideRef.current.loadPackagesFromImports(code);
-      
-      // Run the code
       await pyodideRef.current.runPythonAsync(code);
       
-      // Get stdout
       const stdout = pyodideRef.current.runPython("sys.stdout.getvalue()");
       return { success: true, output: stdout };
     } catch (err: any) {
@@ -48,56 +44,76 @@ sys.stdout = StringIO()
     }
   };
 
+  // --- THE FIXED TEST RUNNER ---
   const runTestFunction = async (userCode: string, functionName: string, inputArgs: string) => {
     if (!pyodideRef.current) throw new Error('Pyodide not loaded');
 
     try {
-      // 1. Load the user's code into the global scope so the function exists
-      await pyodideRef.current.runPythonAsync(userCode);
+      // 1. Reset Output Buffer
+      pyodideRef.current.runPython("import sys; from io import StringIO; sys.stdout = StringIO()");
 
-      // 2. Create a script to run the specific test case
-      // We use ast.literal_eval to safely parse inputs like "[1,2]" into lists
-      const testRunnerScript = `
+      // 2. Inject Variables Safely (Avoids string interpolation bugs)
+      pyodideRef.current.globals.set("_user_code_str", userCode);
+      pyodideRef.current.globals.set("_test_input_str", inputArgs);
+      pyodideRef.current.globals.set("_target_func_name", functionName);
+
+      // 3. The Python Test Harness
+      const testScript = `
 import ast
 import sys
-from io import StringIO
+import traceback
 
-# Capture any prints inside the function
-sys.stdout = StringIO()
+def _run_safe_test():
+    try:
+        # A. Execute User Code to define functions
+        exec(_user_code_str, globals())
+        
+        # B. Check if function exists
+        if _target_func_name not in globals():
+            return {"status": "error", "message": f"Function '{_target_func_name}' not found. Did you name it correctly?"}
+        
+        target_func = globals()[_target_func_name]
+        
+        # C. Parse Input (e.g., "[1, 2]" -> [1, 2])
+        try:
+            args = ast.literal_eval(_test_input_str)
+        except Exception as e:
+             return {"status": "error", "message": f"Test Input Parse Error: {e}"}
 
-try:
-    # Input is injected as a string, e.g., "[1, 2, 3]"
-    input_str = """${inputArgs}"""
-    
-    # Parse input string to Python object
-    args = ast.literal_eval(input_str)
-    
-    # Call the function
-    # Handle tuple inputs for multiple arguments
-    if isinstance(args, tuple):
-        result = ${functionName}(*args)
-    else:
-        result = ${functionName}(args)
-    
-    # Return the string representation of the result for comparison
-    # strict comparison relies on repr()
-    repr(result)
+        # D. Call Function
+        try:
+            # Handle tuple inputs for multiple args (e.g. (1, 2) -> func(1, 2))
+            if isinstance(args, tuple):
+                result = target_func(*args)
+            else:
+                result = target_func(args)
+        except Exception as e:
+            return {"status": "error", "message": f"Runtime Error: {e}", "traceback": traceback.format_exc()}
 
-except Exception as e:
-    # If function crashes, return the error
-    f"ERROR: {str(e)}"
+        # E. Return Result as String for Comparison
+        return {"status": "success", "result": repr(result)}
+
+    except Exception as e:
+        return {"status": "error", "message": f"System Error: {e}"}
+
+_test_outcome = _run_safe_test()
 `;
+      
+      await pyodideRef.current.runPythonAsync(testScript);
+      
+      // 4. Retrieve Result from Python
+      const outcomeProxy = pyodideRef.current.globals.get("_test_outcome");
+      const outcome = outcomeProxy.toJs(); // Convert to JS Map
+      outcomeProxy.destroy();
 
-      // 3. Run the test script
-      const result = await pyodideRef.current.runPythonAsync(testRunnerScript);
       const logs = pyodideRef.current.runPython("sys.stdout.getvalue()");
 
-      // Check if the python script caught an internal error
-      if (typeof result === 'string' && result.startsWith('ERROR:')) {
-         return { success: false, error: result, logs };
+      if (outcome.get("status") === "error") {
+          return { success: false, error: outcome.get("message"), logs };
       }
+      
+      return { success: true, result: outcome.get("result"), logs };
 
-      return { success: true, result: result, logs: logs };
     } catch (err: any) {
       return { success: false, error: err.message };
     }
