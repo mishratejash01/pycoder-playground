@@ -26,18 +26,21 @@ export const usePyodide = () => {
 
   const runCode = async (code: string) => {
     if (!pyodideRef.current) throw new Error('Pyodide not loaded');
-
     try {
-      // Capture stdout
+      // Reset stdout to capture print statements
       pyodideRef.current.runPython(`
 import sys
 from io import StringIO
 sys.stdout = StringIO()
       `);
-
+      
+      // Load packages if needed (naive approach)
       await pyodideRef.current.loadPackagesFromImports(code);
+      
+      // Run the code
       await pyodideRef.current.runPythonAsync(code);
-
+      
+      // Get stdout
       const stdout = pyodideRef.current.runPython("sys.stdout.getvalue()");
       return { success: true, output: stdout };
     } catch (err: any) {
@@ -45,44 +48,55 @@ sys.stdout = StringIO()
     }
   };
 
-  // NEW: Function to run a specific test case against user code
   const runTestFunction = async (userCode: string, functionName: string, inputArgs: string) => {
     if (!pyodideRef.current) throw new Error('Pyodide not loaded');
 
     try {
-      // 1. Load user code into the global scope
+      // 1. Load the user's code into the global scope so the function exists
       await pyodideRef.current.runPythonAsync(userCode);
 
-      // 2. Prepare the test execution script
-      // We parse the input string (e.g., "[1, 2, 3]") into a Python object using ast.literal_eval
-      // Then we call the function and compare the result
-      const testScript = `
+      // 2. Create a script to run the specific test case
+      // We use ast.literal_eval to safely parse inputs like "[1,2]" into lists
+      const testRunnerScript = `
 import ast
 import sys
 from io import StringIO
 
-# Capture any print statements inside the function
+# Capture any prints inside the function
 sys.stdout = StringIO()
 
 try:
-    # Parse the input string into actual Python objects
-    args = ast.literal_eval('${inputArgs}')
+    # Input is injected as a string, e.g., "[1, 2, 3]"
+    input_str = """${inputArgs}"""
     
-    # Check if input is a tuple (multiple args) or single arg
+    # Parse input string to Python object
+    args = ast.literal_eval(input_str)
+    
+    # Call the function
+    # Handle tuple inputs for multiple arguments
     if isinstance(args, tuple):
         result = ${functionName}(*args)
     else:
         result = ${functionName}(args)
-        
+    
     # Return the string representation of the result for comparison
-    str(result)
+    # strict comparison relies on repr()
+    repr(result)
+
 except Exception as e:
-    raise e
+    # If function crashes, return the error
+    f"ERROR: {str(e)}"
 `;
-      
-      const result = await pyodideRef.current.runPythonAsync(testScript);
+
+      // 3. Run the test script
+      const result = await pyodideRef.current.runPythonAsync(testRunnerScript);
       const logs = pyodideRef.current.runPython("sys.stdout.getvalue()");
-      
+
+      // Check if the python script caught an internal error
+      if (typeof result === 'string' && result.startsWith('ERROR:')) {
+         return { success: false, error: result, logs };
+      }
+
       return { success: true, result: result, logs: logs };
     } catch (err: any) {
       return { success: false, error: err.message };
