@@ -10,7 +10,6 @@ interface TestCase {
   is_public: boolean;
 }
 
-// Define structure for test results
 interface TestResult {
   output: string;
   passed: boolean;
@@ -45,7 +44,6 @@ export const TestCaseView = ({ testCases, testResults = {} }: TestCaseViewProps)
             <>
               <div className="flex gap-2 flex-wrap">
                 {publicTests.map((test, index) => {
-                  // Check if we have a result for this specific test case
                   const result = testResults[test.id];
                   return (
                     <Badge
@@ -101,30 +99,30 @@ export const TestCaseView = ({ testCases, testResults = {} }: TestCaseViewProps)
   );
 };
 
-// Updated Card to display Actual Output
 const TestCaseCard = ({ testCase, result }: { testCase: TestCase; result?: TestResult }) => (
   <div className="space-y-4">
-    <Card>
-      <CardContent className="pt-6">
-        <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Input</h4>
-        <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto">
-          {testCase.input}
-        </pre>
-      </CardContent>
-    </Card>
+    <div className="grid grid-cols-2 gap-4">
+      <Card>
+        <CardContent className="pt-6">
+          <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Input</h4>
+          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto whitespace-pre-wrap">
+            {testCase.input}
+          </pre>
+        </CardContent>
+      </Card>
 
-    <Card>
-      <CardContent className="pt-6">
-        <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Expected Output</h4>
-        <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto">
-          {testCase.expected_output}
-        </pre>
-      </CardContent>
-    </Card>
+      <Card>
+        <CardContent className="pt-6">
+          <h4 className="font-semibold mb-2 text-sm text-muted-foreground">Expected Output</h4>
+          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto whitespace-pre-wrap">
+            {testCase.expected_output}
+          </pre>
+        </CardContent>
+      </Card>
+    </div>
 
-    {/* Only show this section if we have run a test */}
     {result && (
-      <Card className={result.passed ? "border-green-500" : "border-red-500 border-2"}>
+      <Card className={result.passed ? "border-green-500 bg-green-50/10" : "border-red-500 bg-red-50/10"}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-semibold text-sm text-muted-foreground">Actual Output</h4>
@@ -132,7 +130,7 @@ const TestCaseCard = ({ testCase, result }: { testCase: TestCase; result?: TestR
               {result.passed ? "Passed" : "Failed"}
             </Badge>
           </div>
-          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto">
+          <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto whitespace-pre-wrap font-mono">
             {result.output || (result.error ? `Error: ${result.error}` : "<No Output>")}
           </pre>
         </CardContent>
