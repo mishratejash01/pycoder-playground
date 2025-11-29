@@ -6,7 +6,7 @@ const Landing = () => {
   const navigate = useNavigate();
 
   return (
-    // UPDATED: Added 'flex flex-col' to ensure vertical layout
+    // FIX 1: Added 'flex flex-col' to make the layout vertical
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/20 flex flex-col">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-sm sticky top-0 z-50">
@@ -18,8 +18,9 @@ const Landing = () => {
         </div>
       </header>
 
-      {/* UPDATED: Wrapped content in <main> with 'flex-1' to push footer down */}
-      <main className="flex-1">
+      {/* FIX 2: Wrapped the main sections in a 'main' tag with 'flex-1'.
+          This forces the content to grow and push the footer to the bottom. */}
+      <main className="flex-1 w-full"> 
         {/* Hero Section */}
         <section className="container mx-auto px-6 pt-24 pb-32 text-center">
           <div className="max-w-6xl mx-auto space-y-12">
@@ -98,6 +99,7 @@ const Landing = () => {
                     size="lg"
                     variant="outline"
                     className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]"
+                    // FIX 3: Ensure this button navigates to the exam
                     onClick={() => navigate('/exam')}
                   >
                     Enter Exam Hall
@@ -117,7 +119,7 @@ const Landing = () => {
               <p className="text-muted-foreground">Everything you need to master your coding skills</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <div className="bg-[#0c0c0e] border border-white/10 rounded-2xl p-8 hover:bg-white/5 transition-colors">
+             <div className="bg-[#0c0c0e] border border-white/10 rounded-2xl p-8 hover:bg-white/5 transition-colors">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
                 <Zap className="w-6 h-6 text-primary" />
               </div>
