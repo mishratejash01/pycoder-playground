@@ -10,28 +10,33 @@ const Landing = () => {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
-  // Monitor Auth State
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    // Listen for changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    // 1. Handle Initial Session Check & URL Cleanup
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
 
-      // FIX: Clean up the URL if we just signed in and the hash exists
-      if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
-        // Replace the current history entry with one without the hash
+      // Force cleanup if we have a session and the hash exists
+      if (session && window.location.hash && window.location.hash.includes('access_token')) {
         window.history.replaceState(null, '', window.location.pathname);
-        
         toast({
-          title: "Successfully Logged In",
-          description: "Welcome back!",
+          title: "Welcome back!",
+          description: "Successfully logged in via Google.",
         });
+      }
+    };
+
+    checkSession();
+
+    // 2. Listen for Auth Changes (Login/Logout events)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+
+      // Also try to clean up on the SIGNED_IN event
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       }
     });
 
