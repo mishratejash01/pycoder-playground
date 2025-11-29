@@ -144,7 +144,7 @@ const Auth = () => {
               </span>
               
               <span className="text-[10px] uppercase tracking-[0.3em] font-medium animate-light-ray whitespace-nowrap">
-                A Product of Unknown IITians
+                The Product of Unknown IITians
               </span>
             </div>
           </div>
