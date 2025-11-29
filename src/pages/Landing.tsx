@@ -1,42 +1,41 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Terminal, Lock, LogIn, LogOut, User } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Header } from '@/components/Header'; // Import the new Header component
 
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
+  // Monitor Auth State & URL Cleanup
   useEffect(() => {
-    // 1. Handle Initial Session Check & URL Cleanup
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // 1. Initial Check
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-
-      // Force cleanup if we have a session and the hash exists
+      
+      // Cleanup URL hash if returning from Google OAuth
       if (session && window.location.hash && window.location.hash.includes('access_token')) {
         window.history.replaceState(null, '', window.location.pathname);
         toast({
           title: "Welcome back!",
-          description: "Successfully logged in via Google.",
+          description: "Successfully logged in.",
         });
       }
-    };
+    });
 
-    checkSession();
-
-    // 2. Listen for Auth Changes (Login/Logout events)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // 2. Auth State Listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
 
-      // Also try to clean up on the SIGNED_IN event
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
+      // Cleanup hash on sign-in event
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && window.location.hash.includes('access_token')) {
+        window.history.replaceState(null, '', window.location.pathname);
       }
     });
 
@@ -61,45 +60,8 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/20 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-            <Terminal className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-bold tracking-tight">OPPE Practice</h1>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {session ? (
-              <>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-white">{session.user.email}</span>
-                </div>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-muted-foreground hover:text-white hover:bg-white/10 gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">Logout</span>
-                </Button>
-              </>
-            ) : (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate('/auth')}
-                className="border-primary/20 hover:bg-primary/10 hover:text-primary text-primary gap-2"
-              >
-                <LogIn className="w-4 h-4" />
-                Login
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      {/* Use the new Header Component with Auth props */}
+      <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full">
         {/* Hero Section */}
