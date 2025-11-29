@@ -6,10 +6,46 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// --- Custom Typewriter Hook ---
+const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
+  const [displayText, setDisplayText] = useState('');
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const delayTimer = setTimeout(() => {
+      setStarted(true);
+    }, startDelay);
+
+    return () => clearTimeout(delayTimer);
+  }, [startDelay]);
+
+  useEffect(() => {
+    if (!started) return;
+
+    let i = 0;
+    const typingInterval = setInterval(() => {
+      if (i < text.length) {
+        setDisplayText((prev) => prev + text.charAt(i));
+        i++;
+      } else {
+        clearInterval(typingInterval);
+      }
+    }, speed);
+
+    return () => clearInterval(typingInterval);
+  }, [text, speed, started]);
+
+  return displayText;
+};
+// ---------------------------
+
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  
+  // Use the custom hook for the typewriter text
+  const typewriterText = useTypewriter("Built and Maintained by Neural AI", 70, 1500);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -116,9 +152,10 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* RIGHT SIDE: Video Background */}
+      {/* RIGHT SIDE: Video Background & Typewriter */}
       <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative">
-        <div className="absolute inset-0 m-6 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
+        {/* Frame container containing video and overlay text */}
+        <div className="absolute inset-0 m-6 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl relative z-0">
            <video 
              src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
              autoPlay 
@@ -129,7 +166,20 @@ const Auth = () => {
            />
            
            {/* Overlay Gradient for better depth */}
-           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40 pointer-events-none z-10" />
+
+           {/* TYPEWRITER TEXT OVERLAY */}
+           <div className="absolute bottom-10 inset-x-0 flex justify-center z-20 pointer-events-none">
+             <p className={cn(
+               "text-white/90 text-xs md:text-sm font-mono tracking-wider lowercase",
+               "flex items-center gap-1",
+               "drop-shadow-md"
+             )}>
+               {typewriterText}
+               {/* Blinking cursor */}
+               <span className="animate-pulse w-[2px] h-[1.2em] bg-white/80 inline-block"></span>
+             </p>
+           </div>
         </div>
       </div>
     </div>
