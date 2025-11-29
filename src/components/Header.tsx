@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, User } from 'lucide-react';
+import { Session } from '@supabase/supabase-js';
 
-export function Header() {
+interface HeaderProps {
+  session: Session | null;
+  onLogout: () => void;
+}
+
+export function Header({ session, onLogout }: HeaderProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
-  // Suggestions for your text link buttons
   const links = [
     { label: 'Services', href: '/services' },
     { label: 'Projects', href: '/projects' },
@@ -70,16 +75,34 @@ export function Header() {
             ))}
           </div>
 
-          {/* RIGHT: Login Button & Mobile Toggle */}
+          {/* RIGHT: Login/User Button & Mobile Toggle */}
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex">
-              <Button 
-                variant="outline" 
-                className="border-primary/20 hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all rounded-full px-6"
-                onClick={() => navigate('/auth')}
-              >
-                Login
-              </Button>
+            <div className="hidden md:flex items-center gap-4">
+              {session ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                    <User className="w-3.5 h-3.5" />
+                    <span className="truncate max-w-[150px]">{session.user.email}</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={onLogout}
+                    className="text-muted-foreground hover:text-white hover:bg-white/10 gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="border-primary/20 hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all rounded-full px-6"
+                  onClick={() => navigate('/auth')}
+                >
+                  Login
+                </Button>
+              )}
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -110,15 +133,29 @@ export function Header() {
               </Link>
             ))}
             <div className="mt-4">
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90 rounded-full" 
-                onClick={() => {
-                  setOpen(false);
-                  navigate('/auth');
-                }}
-              >
-                Login
-              </Button>
+              {session ? (
+                <Button 
+                  className="w-full bg-destructive/80 hover:bg-destructive text-white rounded-full" 
+                  onClick={() => {
+                    onLogout();
+                    setOpen(false);
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 rounded-full" 
+                  onClick={() => {
+                    setOpen(false);
+                    navigate('/auth');
+                  }}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+              )}
             </div>
           </div>
         </div>
