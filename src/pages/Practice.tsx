@@ -48,18 +48,17 @@ const Practice = () => {
   const { data: assignments = [] } = useQuery({
     queryKey: ['assignments_list'],
     queryFn: async () => {
-      // Note: We are mocking expected_time here as 15 minutes since the column might not exist in your DB yet.
-      // In production, add .select('..., expected_time')
+      // UPDATED: Added 'expected_time' to the select string
       const { data, error } = await supabase
         .from('assignments')
-        .select('id, title, category')
+        .select('id, title, category, expected_time')
         .order('category', { ascending: true })
         .order('title', { ascending: true });
       
       if (error) throw error;
       
-      // Injecting a default expected time of 15 minutes for logic demonstration
-      return data.map(d => ({ ...d, expected_time: 15 })) as AssignmentSummary[];
+      // UPDATED: Removed the .map() that was hardcoding the time
+      return data as AssignmentSummary[];
     },
   });
 
