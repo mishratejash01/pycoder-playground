@@ -34,8 +34,17 @@ export function Header({ session, onLogout }: HeaderProps) {
           
           {/* LEFT: Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white group-hover:text-primary transition-colors duration-300">
-              CODéVO
+            {/* Custom Logo Styling */}
+            <span className={cn(
+              "font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white",
+              "transition-all duration-300",
+              // Hover Effect: Light Glowing Whitish
+              "group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+            )}>
+              COD
+              {/* Scaled up lowercase 'é' to match capital height */}
+              <span className="text-[1.2em] lowercase relative -top-[2px] mx-[1px] inline-block">é</span>
+              VO
             </span>
           </Link>
 
