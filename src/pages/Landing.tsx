@@ -95,7 +95,8 @@ const Landing = () => {
                   size="lg"
                   variant="outline"
                   className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]"
-                  onClick={() => {}} // Placeholder for now
+                  // UPDATED: Now navigates to the exam page
+                  onClick={() => navigate('/exam')}
                 >
                   Enter Exam Hall
                   <ArrowRight className="w-4 h-4 ml-2" />
