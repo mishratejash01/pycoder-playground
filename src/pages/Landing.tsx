@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Terminal, CheckCircle } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Terminal, Lock } from 'lucide-react';
 
 const Landing = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white">
+    <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/20">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -14,156 +14,147 @@ const Landing = () => {
             <Terminal className="w-6 h-6 text-primary" />
             <h1 className="text-xl font-bold tracking-tight">OPPE Practice</h1>
           </div>
-          <Button 
-            onClick={() => navigate('/practice')}
-            variant="ghost"
-            className="text-sm"
-          >
-            Launch Console
-          </Button>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 pt-24 pb-32 text-center">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary mb-4">
-            <Zap className="w-4 h-4" />
-            <span>Official IIT Madras Practice Environment</span>
-          </div>
-          
-          <h1 className="text-6xl md:text-7xl font-bold tracking-tight leading-tight">
-            Master Python with{' '}
-            <span className="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">
-              Real-time Feedback
-            </span>
-          </h1>
-          
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            The official practice environment for IIT Madras students. Write, test, and submit Python solutions with instant validation.
-          </p>
-
-          <div className="flex gap-4 justify-center pt-6">
-            <Button 
-              size="lg"
-              onClick={() => navigate('/practice')}
-              className="text-lg h-14 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-[0_0_30px_rgba(147,51,234,0.3)] border-none"
-            >
-              Start Practicing
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
-
-          {/* Code Preview Mock */}
-          <div className="mt-16 bg-[#0c0c0e] border border-white/10 rounded-lg p-6 text-left shadow-2xl">
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="ml-4 text-xs text-muted-foreground font-mono">main.py</span>
+        <div className="max-w-6xl mx-auto space-y-12">
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary animate-in fade-in slide-in-from-bottom-4 duration-1000">
+              <Zap className="w-4 h-4" />
+              <span>Official IIT Madras Portal</span>
             </div>
-            <pre className="font-mono text-sm text-green-400/90">
-              <code>{`def find_max(numbers):\n    """Find maximum in a list"""\n    return max(numbers)\n\n# Test cases passed: 5/5 ✓`}</code>
-            </pre>
+            
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
+              Choose Your <br />
+              <span className="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">
+                Environment
+              </span>
+            </h1>
+            
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
+              Select the appropriate mode for your session. Use the Learning Environment for practice and the Exam Portal for scheduled assessments.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+            
+            {/* Learning Environment Card */}
+            <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col h-full overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative z-10 flex-1">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20">
+                  <Code2 className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
+                <div className="text-muted-foreground leading-relaxed mb-6">
+                  Standard practice console offering:
+                  <ul className="mt-4 space-y-3 text-sm">
+                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_currentColor]"/> Instant Feedback & Scoring</li>
+                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_currentColor]"/> Unlimited Attempts</li>
+                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_currentColor]"/> Access to Public Test Cases</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                <Button 
+                  size="lg"
+                  onClick={() => navigate('/practice')}
+                  className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-12 text-base font-medium transition-all hover:scale-[1.02]"
+                >
+                  Enter Learning Mode
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Proctored Environment Card */}
+            <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col h-full overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative z-10 flex-1">
+                <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20">
+                  <Lock className="w-8 h-8 text-red-500" />
+                </div>
+                <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
+                <div className="text-muted-foreground leading-relaxed mb-6">
+                  Secure proctored environment featuring:
+                  <ul className="mt-4 space-y-3 text-sm">
+                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_10px_currentColor]"/> Strict Time Limits</li>
+                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_10px_currentColor]"/> Full-screen Enforcement</li>
+                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_10px_currentColor]"/> Activity Monitoring</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]"
+                  onClick={() => {}} // Placeholder for now
+                >
+                  Enter Exam Hall
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="container mx-auto px-6 py-24">
+      <section className="container mx-auto px-6 py-24 border-t border-white/10">
+        <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">Platform Features</h2>
+            <p className="text-muted-foreground">Everything you need to master your coding skills</p>
+        </div>
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="bg-[#0c0c0e] border border-white/10 rounded-lg p-8 hover:border-primary/50 transition-colors">
+           <div className="bg-[#0c0c0e] border border-white/10 rounded-2xl p-8 hover:bg-white/5 transition-colors">
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
               <Zap className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="text-xl font-bold mb-3">Instant Feedback</h3>
+            <h3 className="text-xl font-bold mb-3">Instant Evaluation</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Run your code against real test cases and get immediate results. See exactly which test cases pass or fail.
+              Code is evaluated client-side using Pyodide WebAssembly for immediate feedback without server latency.
             </p>
           </div>
 
-          <div className="bg-[#0c0c0e] border border-white/10 rounded-lg p-8 hover:border-accent/50 transition-colors">
+          <div className="bg-[#0c0c0e] border border-white/10 rounded-2xl p-8 hover:bg-white/5 transition-colors">
             <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-6">
               <Shield className="w-6 h-6 text-accent" />
             </div>
-            <h3 className="text-xl font-bold mb-3">Secure Environment</h3>
+            <h3 className="text-xl font-bold mb-3">Secure & Scalable</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Client-side execution via Pyodide ensures your code runs safely in your browser without backend latency.
+              Built on a robust infrastructure ensuring a secure, reliable, and consistent coding experience for all users.
             </p>
           </div>
 
-          <div className="bg-[#0c0c0e] border border-white/10 rounded-lg p-8 hover:border-success/50 transition-colors">
+          <div className="bg-[#0c0c0e] border border-white/10 rounded-2xl p-8 hover:bg-white/5 transition-colors">
             <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-6">
               <TrendingUp className="w-6 h-6 text-success" />
             </div>
-            <h3 className="text-xl font-bold mb-3">Progress Tracking</h3>
+            <h3 className="text-xl font-bold mb-3">Performance Analytics</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Save your submissions and track scores across all assignments. Monitor your improvement over time.
+              Detailed breakdown of passed test cases, error logs, and execution outputs to help you debug faster.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="container mx-auto px-6 py-24 border-t border-white/10">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-16">How It Works</h2>
-          
-          <div className="space-y-12">
-            <div className="flex gap-6 items-start">
-              <div className="flex-shrink-0 w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">1</div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Select a Problem</h3>
-                <p className="text-muted-foreground">Choose from categorized assignments covering various Python concepts and difficulty levels.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-6 items-start">
-              <div className="flex-shrink-0 w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center text-accent font-bold">2</div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Write Your Solution</h3>
-                <p className="text-muted-foreground">Use the Monaco editor with syntax highlighting and autocomplete to write clean Python code.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-6 items-start">
-              <div className="flex-shrink-0 w-12 h-12 bg-success/20 rounded-full flex items-center justify-center text-success font-bold">3</div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Test & Submit</h3>
-                <p className="text-muted-foreground">Run against public test cases to validate your logic, then submit to be evaluated against all test cases.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="container mx-auto px-6 py-24">
-        <div className="max-w-4xl mx-auto bg-gradient-to-r from-primary/10 via-accent/10 to-success/10 border border-white/10 rounded-2xl p-12 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Start Coding?</h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Join thousands of IIT Madras students practicing Python
-          </p>
-          <Button 
-            size="lg"
-            onClick={() => navigate('/practice')}
-            className="text-lg h-14 px-8 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-          >
-            Launch Practice Console
-            <Code2 className="w-5 h-5 ml-2" />
-          </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 mt-24">
+      <footer className="border-t border-white/10 mt-12 bg-[#0c0c0e]">
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <p>© 2024 IIT Madras OPPE Practice. All rights reserved.</p>
+            <p>© 2024 IIT Madras. All rights reserved.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">Support</a>
+              <span className="hover:text-white transition-colors cursor-pointer">Privacy</span>
+              <span className="hover:text-white transition-colors cursor-pointer">Terms</span>
+              <span className="hover:text-white transition-colors cursor-pointer">Support</span>
             </div>
           </div>
         </div>
