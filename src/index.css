@@ -58,15 +58,17 @@
   @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
 }
 
-/* CUSTOM FONT: Neuropol X */
+/* CUSTOM FONT DEFINITION */
 @font-face {
   font-family: 'Neuropol X';
+  /* Ensure this file exists in your public/fonts folder! */
   src: url('/fonts/neuropol-x-free.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
+/* This utility class applies the font */
 .font-neuropol {
   font-family: 'Neuropol X', sans-serif;
 }
