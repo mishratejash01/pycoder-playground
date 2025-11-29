@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 
-// We define a robust Python test runner script that we load ONCE.
+// INTELLIGENT PYTHON RUNNER SCRIPT
+// 1. Captures stdout (prints)
+// 2. Executes user code safely
+// 3. Smart-handles Input:
+//    a. Tries to parse as pure data arguments (e.g., "[1,2]") -> calls function(args)
+//    b. If data parse fails, treats input as an expression (e.g., "Time(35)") -> evaluates expression
 const PYTHON_TEST_RUNNER_SCRIPT = `
 import sys
 import ast
@@ -8,7 +13,7 @@ import traceback
 import io
 
 def _run_test_case_internal(user_code, func_name, input_str):
-    # Capture stdout (print statements)
+    # Capture stdout
     old_stdout = sys.stdout
     redirected_output = io.StringIO()
     sys.stdout = redirected_output
@@ -21,7 +26,7 @@ def _run_test_case_internal(user_code, func_name, input_str):
     }
 
     try:
-        # 1. Create a clean namespace for the user code
+        # 1. Create a clean namespace
         user_globals = {}
         
         # 2. Execute User Code
@@ -32,39 +37,49 @@ def _run_test_case_internal(user_code, func_name, input_str):
         except Exception as e:
             return {"status": "error", "error": f"Error executing code: {str(e)}", "logs": ""}
 
-        # 3. Check if function exists
-        if func_name not in user_globals:
-            return {"status": "error", "error": f"Function '{func_name}' not found. Please check your function name.", "logs": ""}
+        # 3. Locate Target (Function or Class)
+        # We don't fail immediately if func_name is missing, because input might be a standalone script
+        target_callable = user_globals.get(func_name)
         
-        target_func = user_globals[func_name]
+        # 4. Process Input Strategy
+        execution_result = None
         
-        # 4. Parse Input (e.g. "[1, 2]" -> [1, 2])
+        # STRATEGY A: Input is pure data (List, Tuple, Int, String) intended for the target function
         try:
-            # literal_eval is safer than eval
-            args = ast.literal_eval(input_str)
-        except Exception as e:
-            return {"status": "error", "error": f"Invalid Test Input format: {input_str}", "logs": ""}
-        
-        # 5. Call Function
-        try:
-            # Handle tuple unpacking for multiple args: input "(1, 2)" -> func(1, 2)
-            if isinstance(args, tuple):
-                ret_val = target_func(*args)
-            else:
-                ret_val = target_func(args)
-                
-            # Success! Return the string representation of the result
-            result_package["status"] = "success"
-            result_package["result"] = repr(ret_val)
+            # Try to parse input as data structure
+            input_args = ast.literal_eval(input_str)
             
-        except Exception as e:
-            result_package["error"] = f"Runtime Error: {str(e)}"
+            if target_callable is None:
+                raise ValueError(f"Function/Class '{func_name}' not defined in code.")
+
+            # If input is a tuple, unpack it as arguments, otherwise pass as single arg
+            if isinstance(input_args, tuple):
+                execution_result = target_callable(*input_args)
+            else:
+                execution_result = target_callable(input_args)
+
+        except (ValueError, SyntaxError):
+            # STRATEGY B: Input is an executable expression (e.g., "Time(50)")
+            # This handles Class instantiation or complex calls that aren't literals
+            try:
+                # Evaluate input_str within the user_globals context
+                execution_result = eval(input_str, user_globals)
+            except Exception as e:
+                # If both strategies fail, return the error
+                raise Exception(f"Input processing failed. Input is neither valid data nor valid expression. Error: {str(e)}")
+
+        # 5. Success
+        result_package["status"] = "success"
+        
+        # If the function returned something, use repr(). 
+        # If it returned None (but printed something), we'll rely on logs check in JS.
+        result_package["result"] = str(execution_result) if execution_result is not None else ""
 
     except Exception as e:
-        result_package["error"] = f"System Error: {str(e)}"
+        result_package["error"] = f"{str(e)}"
     
     finally:
-        # Restore stdout and capture logs
+        # Restore stdout
         sys.stdout = old_stdout
         result_package["logs"] = redirected_output.getvalue()
         
@@ -84,7 +99,6 @@ export const usePyodide = () => {
           indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/',
         });
         
-        // Load the test runner script immediately
         await pyodideModule.runPythonAsync(PYTHON_TEST_RUNNER_SCRIPT);
         
         pyodideRef.current = pyodideModule;
@@ -116,10 +130,8 @@ export const usePyodide = () => {
     if (!pyodideRef.current) throw new Error('Pyodide not loaded');
 
     try {
-      // We assume _run_test_case_internal is already defined in global scope from useEffect
       const runner = pyodideRef.current.globals.get("_run_test_case_internal");
       
-      // Call the Python function directly from JS
       const resultProxy = runner(userCode, functionName, inputArgs);
       const result = resultProxy.toJs();
       resultProxy.destroy();
@@ -128,14 +140,24 @@ export const usePyodide = () => {
         return { 
           success: false, 
           error: result.get("error"), 
-          logs: result.get("logs") 
+          output: result.get("logs") 
         };
       }
 
+      // We combine Return Value and Print Logs for flexibility
+      // If there are logs, we often prioritize them or append them
+      const retVal = result.get("result");
+      const logs = result.get("logs");
+      
+      let finalOutput = "";
+      if (logs && retVal) finalOutput = `${logs}\n${retVal}`;
+      else if (logs) finalOutput = logs;
+      else finalOutput = retVal;
+
       return { 
         success: true, 
-        result: result.get("result"), 
-        logs: result.get("logs") 
+        result: finalOutput.trim(), 
+        logs: logs 
       };
 
     } catch (err: any) {
