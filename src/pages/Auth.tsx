@@ -4,8 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
-// Ensure you have created src/components/ascii-scene.tsx first!
-import { AsciiScene } from "@/components/ascii-scene";
 import { cn } from "@/lib/utils";
 
 const Auth = () => {
@@ -118,10 +116,17 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* RIGHT SIDE: ASCII Scene */}
+      {/* RIGHT SIDE: Video Background */}
       <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative">
         <div className="absolute inset-0 m-6 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
-           <AsciiScene />
+           <video 
+             src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
+             autoPlay 
+             loop 
+             muted 
+             playsInline 
+             className="w-full h-full object-cover"
+           />
            
            {/* Overlay Gradient for better depth */}
            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
