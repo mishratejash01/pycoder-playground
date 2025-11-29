@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CodeEditor } from './CodeEditor';
-import { ScoreDisplay } from './ScoreDisplay';
 import { TestCaseView } from './TestCaseView';
 import { usePyodide } from '@/hooks/usePyodide';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Play, Terminal, Code2, BookOpen, CheckCircle, Flag, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2 } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { cn } from '@/lib/utils';
 
@@ -21,42 +19,41 @@ interface AssignmentViewProps {
   currentStatus?: QuestionStatus;
 }
 
-// Regex to find function definition
-const getFunctionName = (code: string) => {
-  const match = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
-  return match ? match[1] : null;
+// IMPROVED REGEX: Finds both 'def function_name' and 'class ClassName'
+const getTargetName = (code: string) => {
+  const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
+  if (funcMatch) return funcMatch[1];
+  
+  const classMatch = code.match(/class\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[:\(]/);
+  if (classMatch) return classMatch[1];
+  
+  return null;
 };
 
-// Normalize output for flexible comparison (handles whitespace and quotes intelligently)
+// Flexible output normalization
 const normalizeOutput = (str: string) => {
   if (!str) return '';
   return str
-    .trim() // Remove leading/trailing whitespace
-    .replace(/'/g, '"') // Normalize quotes
-    .replace(/\s+/g, ' ') // Collapse multiple spaces to single space
-    .replace(/\s*,\s*/g, ',') // Remove spaces around commas
-    .replace(/\s*:\s*/g, ':') // Remove spaces around colons
-    .replace(/\[\s+/g, '[') // Remove spaces after opening brackets
-    .replace(/\s+\]/g, ']') // Remove spaces before closing brackets
-    .replace(/\(\s+/g, '(') // Remove spaces after opening parentheses
-    .replace(/\s+\)/g, ')') // Remove spaces before closing parentheses
-    .replace(/\{\s+/g, '{') // Remove spaces after opening braces
-    .replace(/\s+\}/g, '}'); // Remove spaces before closing braces
+    .trim()
+    .replace(/'/g, '"')
+    .replace(/\s+/g, ' ') // Collapse whitespace
+    .replace(/\(\s+/g, '(').replace(/\s+\)/g, ')')
+    .replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
-// Helper function to execute tests against a list of test cases
 const executeTests = async (
   tests: any[],
   code: string,
-  functionName: string,
-  runTestFunction: (code: string, functionName: string, input: string) => Promise<any>
+  targetName: string,
+  runTestFunction: (code: string, funcName: string, input: string) => Promise<any>
 ) => {
   let passedCount = 0;
   const newTestResults: Record<string, any> = {};
 
   for (const test of tests) {
     try {
-      const result = await runTestFunction(code, functionName, test.input);
+      // Pass the raw input string. The new engine handles parsing.
+      const result = await runTestFunction(code, targetName, test.input);
       
       if (!result.success) {
         newTestResults[test.id] = { 
@@ -69,13 +66,15 @@ const executeTests = async (
 
       const actual = normalizeOutput(result.result);
       const expected = normalizeOutput(test.expected_output);
-      const isMatch = actual === expected;
+      
+      // Check for exact match or inclusion (useful if prints have extra info)
+      const isMatch = actual === expected || actual.includes(expected);
 
       if (isMatch) passedCount++;
 
       newTestResults[test.id] = {
         passed: isMatch,
-        output: result.result,
+        output: result.result, // Show raw output to user
         error: isMatch ? null : `Expected: ${test.expected_output}`
       };
     } catch (e: any) {
@@ -96,7 +95,6 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // --- Data Fetching ---
   const { data: assignment, isLoading, error, refetch } = useQuery({
     queryKey: ['assignment', assignmentId],
     queryFn: async () => {
@@ -129,7 +127,6 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     enabled: !!assignmentId
   });
 
-  // --- Persistence ---
   useEffect(() => {
     const sessionKey = `exam_draft_${assignmentId}`;
     const savedDraft = sessionStorage.getItem(sessionKey);
@@ -151,20 +148,19 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     sessionStorage.setItem(`exam_draft_${assignmentId}`, newCode);
   };
 
-  // --- SUBMISSION HANDLER ---
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please log in');
       
-      const functionName = getFunctionName(code);
-      if (!functionName) throw new Error("Could not find a function definition (def name...).");
+      const targetName = getTargetName(code);
+      if (!targetName) throw new Error("Could not find a function or class definition.");
 
       const publicTests = testCases.filter(tc => tc.is_public);
       const privateTests = testCases.filter(tc => !tc.is_public);
 
-      const publicResults = await executeTests(publicTests, code, functionName, runTestFunction);
-      const privateResults = await executeTests(privateTests, code, functionName, runTestFunction);
+      const publicResults = await executeTests(publicTests, code, targetName, runTestFunction);
+      const privateResults = await executeTests(privateTests, code, targetName, runTestFunction);
 
       const allTestResults = { ...publicResults.newTestResults, ...privateResults.newTestResults };
       setTestResults(allTestResults);
@@ -190,8 +186,8 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['submission', assignmentId] });
       toast({ 
-        title: data.score === (assignment?.max_score || 100) ? 'Perfect Score! 🎉' : 'Submission Complete', 
-        description: `Passed ${data.publicPassed + data.privatePassed}/${data.totalTests} tests.` 
+        title: 'Submission Complete', 
+        description: `Score: ${data.score.toFixed(0)}%` 
       });
       onStatusUpdate('attempted');
       setBottomTab('testcases');
@@ -206,13 +202,13 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const handleRun = async () => {
     if (pyodideLoading) return;
     
-    setConsoleOutput('🔄 Running against public test cases...\n');
+    setConsoleOutput('🔄 Running tests...\n');
     setBottomTab('testcases');
     
     try {
-      const functionName = getFunctionName(code);
-      if (!functionName) {
-        setConsoleOutput("❌ Error: Could not find a function definition (def name...).\n\nMake sure your code contains a function definition like:\ndef function_name(args):\n    # your code here");
+      const targetName = getTargetName(code);
+      if (!targetName) {
+        setConsoleOutput("❌ Error: No function or class found.\nPlease define a function or class to run tests.");
         setBottomTab('console');
         return;
       }
@@ -220,14 +216,17 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
       const publicTests = testCases.filter(tc => tc.is_public);
       
       if (publicTests.length === 0) {
-        setConsoleOutput("⚠️ No public test cases available.");
+        // Fallback: Just run the code if no test cases
+        const res = await runCode(code);
+        setConsoleOutput(res.success ? `Run Output:\n${res.output}` : `Error:\n${res.error}`);
+        setBottomTab('console');
         return;
       }
 
       const { passedCount, newTestResults } = await executeTests(
         publicTests,
         code,
-        functionName,
+        targetName,
         runTestFunction
       );
 
@@ -236,12 +235,12 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
       const allPassed = passedCount === publicTests.length;
       setConsoleOutput(
         allPassed 
-          ? `✅ Run Complete: ${passedCount}/${publicTests.length} Public Tests Passed\n\n🎉 All public tests passed! Ready to submit.`
-          : `⚠️ Run Complete: ${passedCount}/${publicTests.length} Public Tests Passed\n\n${publicTests.length - passedCount} test(s) failed. Check the Test Cases tab for details.`
+          ? `✅ All ${passedCount} Public Tests Passed!`
+          : `⚠️ ${passedCount}/${publicTests.length} Tests Passed.`
       );
       
     } catch (err: any) {
-      setConsoleOutput(`❌ Runtime Error:\n\n${err.message}\n\nFix the error and try again.`);
+      setConsoleOutput(`❌ System Error:\n\n${err.message}`);
       setBottomTab('console');
     }
   };
@@ -299,9 +298,6 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
 
               {assignment.instructions && (
                 <div className="bg-blue-950/20 border border-blue-500/20 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
-                    <CheckCircle className="w-3 h-3" /> Instructions
-                  </h4>
                   <div className="text-xs text-blue-200/70 whitespace-pre-wrap">{assignment.instructions}</div>
                 </div>
               )}
