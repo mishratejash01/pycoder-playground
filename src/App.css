@@ -1,7 +1,7 @@
-/* We are deleting the default #root styles (max-width, padding, etc.) 
-   because they conflict with your full-width Tailwind layout. 
-*/
+/* Resetting the root to allow full-screen width */
 #root {
   width: 100%;
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
