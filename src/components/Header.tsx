@@ -42,7 +42,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               "group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"
             )}>
               COD
-              {/* ALIGNMENT FIX: Changed top value to bring 'é' down to the baseline */}
+              {/* Scaled up lowercase 'é' aligned to baseline */}
               <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
               VO
             </span>
@@ -56,7 +56,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                 to={link.href}
                 className={cn(
                   buttonVariants({ variant: 'ghost', size: 'sm' }),
-                  "text-muted-foreground hover:text-white hover:bg-white/10 rounded-full px-4 transition-all"
+                  "text-muted-foreground hover:text-white hover:bg-white/10 rounded-xl px-4 transition-all"
                 )}
               >
                 {link.label}
@@ -95,7 +95,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               /* Guest State: Login Button */
               <Button 
                 size="sm" 
-                className="hidden md:flex bg-primary hover:bg-primary/90 text-white rounded-full px-6 shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_20px_rgba(124,58,237,0.5)] transition-all duration-300"
+                className="hidden md:flex bg-primary hover:bg-primary/90 text-white rounded-xl px-6 shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_20px_rgba(124,58,237,0.5)] transition-all duration-300"
                 onClick={() => navigate('/auth')}
               >
                 <LogIn className="h-3.5 w-3.5 mr-2" />
@@ -106,7 +106,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             {/* Mobile Menu Trigger */}
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden rounded-full hover:bg-white/10 text-muted-foreground hover:text-white">
+                <Button variant="ghost" size="icon" className="md:hidden rounded-xl hover:bg-white/10 text-muted-foreground hover:text-white">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
