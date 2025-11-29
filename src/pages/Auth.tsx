@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
+// Make sure src/components/ascii-scene.tsx exists!
 import { AsciiScene } from "@/components/ascii-scene";
 
 const Auth = () => {
@@ -63,7 +64,9 @@ const Auth = () => {
           </div>
 
           <div className="grid gap-4">
+            {/* Google Login Button with fixed hover visibility */}
             <Button 
+              variant="outline" 
               className="w-full h-11 bg-white text-black hover:bg-gray-200 border-none font-medium flex items-center justify-center gap-3 transition-colors"
               onClick={handleGoogleLogin}
               disabled={loading}
@@ -88,7 +91,7 @@ const Auth = () => {
           {/* Branding Section */}
           <div className="pt-8 border-t border-white/10 mt-8">
             <div className="flex flex-col items-center justify-center space-y-3 opacity-80 hover:opacity-100 transition-opacity">
-              {/* Corrected CODéVO Logo styling matching Header */}
+              {/* Logo matching Header.tsx style exactly */}
               <span className="font-neuropol text-xl tracking-wider text-white">
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
@@ -110,6 +113,7 @@ const Auth = () => {
       {/* RIGHT SIDE: ASCII Scene */}
       <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative">
         <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/5 bg-black">
+           {/* If AsciiScene causes errors, temporarily comment it out to fix deployment */}
            <AsciiScene />
         </div>
       </div>
