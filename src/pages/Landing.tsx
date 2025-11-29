@@ -10,12 +10,14 @@ const Landing = () => {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
-  // Check initial session and subscribe to auth changes
+  // Monitor Auth State
   useEffect(() => {
+    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
+    // Listen for changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -29,17 +31,15 @@ const Landing = () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
-        title: "Error signing out",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Signed out",
-        description: "You have been successfully logged out.",
+        description: "Logged out successfully",
       });
-      // Optionally redirect to home or refresh state
-      setSession(null); 
+      setSession(null);
     }
   };
 
@@ -52,18 +52,17 @@ const Landing = () => {
             <Terminal className="w-6 h-6 text-primary" />
             <h1 className="text-xl font-bold tracking-tight">OPPE Practice</h1>
           </div>
-
-          {/* Navigation Items */}
+          
           <div className="flex items-center gap-4">
             {session ? (
               <>
-                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                  <User className="w-3.5 h-3.5" />
-                  <span className="truncate max-w-[150px]">{session.user.email}</span>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-white">{session.user.email}</span>
                 </div>
                 <Button 
-                  variant="ghost" 
-                  size="sm" 
+                  variant="ghost"
+                  size="sm"
                   onClick={handleLogout}
                   className="text-muted-foreground hover:text-white hover:bg-white/10 gap-2"
                 >
@@ -74,9 +73,9 @@ const Landing = () => {
             ) : (
               <Button 
                 variant="outline" 
-                size="sm" 
+                size="sm"
                 onClick={() => navigate('/auth')}
-                className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 transition-all"
+                className="border-primary/20 hover:bg-primary/10 hover:text-primary text-primary gap-2"
               >
                 <LogIn className="w-4 h-4" />
                 Login
@@ -86,9 +85,7 @@ const Landing = () => {
         </div>
       </header>
 
-      {/* Rest of the Landing page content... (unchanged) */}
       <main className="flex-1 w-full">
-        {/* ... (keep existing Hero, Features, and Footer sections) ... */}
         {/* Hero Section */}
         <section className="container mx-auto px-6 pt-24 pb-32 text-center">
           <div className="max-w-6xl mx-auto space-y-12">
@@ -134,7 +131,7 @@ const Landing = () => {
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
                   <Button 
                     size="lg"
-                    // Redirect to login if no session, otherwise practice
+                    // Route check for login
                     onClick={() => session ? navigate('/practice') : navigate('/auth')}
                     className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-12 text-base font-medium transition-all hover:scale-[1.02]"
                   >
@@ -168,7 +165,7 @@ const Landing = () => {
                     size="lg"
                     variant="outline"
                     className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]"
-                    // Redirect to login if no session, otherwise exam
+                    // Route check for login
                     onClick={() => session ? navigate('/exam') : navigate('/auth')}
                   >
                     {session ? "Enter Exam Hall" : "Login to Exam"}
