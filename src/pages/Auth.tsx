@@ -44,8 +44,8 @@ const Auth = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   
-  // Use the custom hook for the typewriter text
-  const typewriterText = useTypewriter("Built and Maintained by Neural AI", 70, 1500);
+  // Typewriter text for the video overlay
+  const typewriterText = useTypewriter("Built and Maintained by Neural AI", 60, 1200);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -104,8 +104,8 @@ const Auth = () => {
               className={cn(
                 "w-full h-12 bg-white text-black border-none font-medium text-base",
                 "flex items-center justify-center gap-3 transition-all duration-200",
-                "hover:bg-gray-200 hover:scale-[1.02]", // Subtle hover effect
-                "rounded-xl" // Rectangular round corner style
+                "hover:bg-gray-200 hover:scale-[1.02]", 
+                "rounded-xl"
               )}
               onClick={handleGoogleLogin}
               disabled={loading}
@@ -129,17 +129,18 @@ const Auth = () => {
 
           {/* Branding Section */}
           <div className="pt-8 border-t border-white/10 mt-8">
-            <div className="flex flex-col items-center justify-center space-y-3 opacity-80 hover:opacity-100 transition-opacity cursor-default">
-              {/* Logo matching Header.tsx style exactly */}
+            <div className="flex flex-col items-center justify-center space-y-3 opacity-90 transition-opacity cursor-default">
               <span className={cn(
                 "font-neuropol text-2xl font-bold tracking-wider text-white",
-                "drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]" // Subtle constant glow
+                "drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]"
               )}>
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
-              <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-medium">
+              
+              {/* Light Ray Animation applied here */}
+              <span className="text-[10px] uppercase tracking-[0.3em] font-medium animate-light-ray whitespace-nowrap">
                 A Product of Unknown IITians
               </span>
             </div>
@@ -152,33 +153,34 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* RIGHT SIDE: Video Background & Typewriter */}
-      <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative">
-        {/* Frame container containing video and overlay text */}
-        <div className="absolute inset-0 m-6 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl relative z-0">
+      {/* RIGHT SIDE: Video Background */}
+      <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative h-full">
+        {/* INCREASED HEIGHT: Changed m-6 to m-2 for maximum frame size */}
+        <div className="absolute inset-0 m-2 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl relative z-0">
            <video 
              src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
              autoPlay 
              loop 
              muted 
              playsInline 
-             className="w-full h-full object-cover"
+             className="w-full h-full object-cover opacity-80"
            />
            
-           {/* Overlay Gradient for better depth */}
-           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40 pointer-events-none z-10" />
+           {/* Overlay Gradient for text readability */}
+           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none z-10" />
 
-           {/* TYPEWRITER TEXT OVERLAY */}
-           <div className="absolute bottom-10 inset-x-0 flex justify-center z-20 pointer-events-none">
-             <p className={cn(
-               "text-white/90 text-xs md:text-sm font-mono tracking-wider lowercase",
-               "flex items-center gap-1",
-               "drop-shadow-md"
-             )}>
-               {typewriterText}
-               {/* Blinking cursor */}
-               <span className="animate-pulse w-[2px] h-[1.2em] bg-white/80 inline-block"></span>
-             </p>
+           {/* TYPEWRITER TEXT OVERLAY (Overlapping the video frame) */}
+           <div className="absolute bottom-8 inset-x-0 flex justify-center z-20 pointer-events-none">
+             <div className="bg-black/40 backdrop-blur-sm px-4 py-2 rounded-full border border-white/5">
+               <p className={cn(
+                 "text-white/90 text-xs md:text-sm font-mono tracking-wider",
+                 "flex items-center gap-1",
+                 "drop-shadow-lg"
+               )}>
+                 {typewriterText}
+                 <span className="animate-pulse w-[2px] h-[1.2em] bg-green-400 inline-block shadow-[0_0_8px_rgba(74,222,128,0.8)]"></span>
+               </p>
+             </div>
            </div>
         </div>
       </div>
