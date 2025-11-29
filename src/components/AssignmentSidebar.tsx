@@ -15,12 +15,16 @@ interface AssignmentSidebarProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   questionStatuses: Record<string, QuestionStatus>;
+  preLoadedAssignments?: Assignment[]; // New optional prop
 }
 
-export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses }: AssignmentSidebarProps) => {
-  const { data: assignments = [] } = useQuery({
+export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preLoadedAssignments }: AssignmentSidebarProps) => {
+  const { data: fetchedAssignments = [] } = useQuery({
     queryKey: ['assignments'],
     queryFn: async () => {
+      // If parent provided data, don't fetch
+      if (preLoadedAssignments) return preLoadedAssignments;
+
       const { data, error } = await supabase
         .from('assignments')
         .select('*')
@@ -30,7 +34,10 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses }: As
       if (error) throw error;
       return data as Assignment[];
     },
+    enabled: !preLoadedAssignments, // Disable query if data is passed via props
   });
+
+  const assignments = preLoadedAssignments || fetchedAssignments;
 
   // Helper to get status color
   const getStatusColor = (id: string) => {
@@ -83,7 +90,7 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses }: As
                 {getStatusIcon(assignment.id)}
                 
                 {/* Tooltip for Title */}
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max max-w-[200px] bg-popover border border-white/10 text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max max-w-[200px] bg-popover border border-white/10 text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
                   {assignment.title}
                 </div>
               </button>
