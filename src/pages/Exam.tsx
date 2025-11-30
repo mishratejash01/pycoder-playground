@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, AlertTriangle, Lock, LogOut, FileWarning, CheckCircle2, Timer, Trophy, Target, Clock, Mic, Video } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Lock, LogOut, FileWarning, CheckCircle2, Timer, Trophy, Target, Clock, Mic, Video, Maximize } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
@@ -182,17 +182,24 @@ const Exam = () => {
 
   // --- Proctoring Logic ---
 
+  // Enhanced Strict Full Screen with Cross-Browser Support
   const enterFullScreen = async () => {
-    try {
-      await document.documentElement.requestFullscreen();
-    } catch (e) {
-      console.error("Full screen denied", e);
-      toast({
-        title: "System Requirement",
-        description: "Full screen mode is required to take this exam.",
-        variant: "destructive",
-      });
+    const elem = document.documentElement as any;
+    const requestFs = elem.requestFullscreen || 
+                      elem.webkitRequestFullscreen || 
+                      elem.mozRequestFullScreen || 
+                      elem.msRequestFullscreen;
+    
+    if (requestFs) {
+      try {
+        await requestFs.call(elem);
+        return true;
+      } catch (e) {
+        console.error("Full screen denied or failed:", e);
+        return false;
+      }
     }
+    return false;
   };
 
   const handleViolation = async (type: string, message: string) => {
@@ -300,12 +307,15 @@ const Exam = () => {
 
   // Actions
   const handleStartExamRequest = async () => {
+    // 1. Request Media Permissions First
     const permissionsGranted = await startMediaStream();
     if (!permissionsGranted) return;
-    await startExam();
+
+    // 2. If granted, proceed to setup/start logic
+    await setupExamSession();
   };
 
-  const startExam = async () => {
+  const setupExamSession = async () => {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -343,17 +353,10 @@ const Exam = () => {
       if (error) throw error;
 
       setSessionId(session.id);
-      enterFullScreen();
-      setIsExamStarted(true);
       
-      toast({
-        title: "Exam Started",
-        description: "Monitoring Active. Good Luck.",
-      });
-      
-      if (assignments.length > 0 && !selectedAssignmentId) {
-        setSearchParams({ q: assignments[0].id });
-      }
+      // Try entering full screen immediately
+      attemptFullScreenStart();
+
     } catch (error: any) {
       console.error('Error starting exam:', error);
       toast({
@@ -361,6 +364,29 @@ const Exam = () => {
         description: `Failed to start exam: ${error.message}`,
         variant: "destructive",
       });
+    }
+  };
+
+  // Separated function to handle the strict fullscreen requirement
+  const attemptFullScreenStart = async () => {
+    const success = await enterFullScreen();
+    if (success) {
+      setIsExamStarted(true);
+      toast({
+        title: "Exam Started",
+        description: "Monitoring Active. Good Luck.",
+      });
+      if (assignments.length > 0 && !selectedAssignmentId) {
+        setSearchParams({ q: assignments[0].id });
+      }
+    } else {
+      toast({
+        title: "Full Screen Required",
+        description: "Browser blocked full screen. Please click 'Enter Exam' to retry.",
+        variant: "destructive",
+      });
+      // We don't set isExamStarted to true here. 
+      // The user remains in the dialog but the button changes to "Enter Exam" (handled by sessionId check)
     }
   };
 
@@ -707,12 +733,24 @@ const Exam = () => {
             <Button variant="ghost" onClick={() => navigate('/')} className="hover:bg-white/5">
               Back to Home
             </Button>
-            <Button 
-              className="bg-primary hover:bg-primary/90 text-white px-8 min-w-[200px]"
-              onClick={handleStartExamRequest}
-            >
-              I Understand & Start Exam
-            </Button>
+            
+            {/* Logic to toggle button based on session state */}
+            {!sessionId ? (
+                <Button 
+                  className="bg-primary hover:bg-primary/90 text-white px-8 min-w-[200px]"
+                  onClick={handleStartExamRequest}
+                >
+                  I Understand & Start Exam
+                </Button>
+            ) : (
+                <Button 
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 min-w-[200px] animate-pulse"
+                  onClick={attemptFullScreenStart}
+                >
+                  <Maximize className="w-4 h-4 mr-2" />
+                  Enter Exam (Full Screen)
+                </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
