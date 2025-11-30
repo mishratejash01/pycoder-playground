@@ -44,8 +44,9 @@ const Landing = () => {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
-  // Typewriter text state
-  const codeTagline = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
+  // Typewriter states
+  const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
+  const helloWorldText = useTypewriter("Hello World", 150, 2500); // Starts after tagline
 
   // Monitor Auth State & Clean URL Hash
   useEffect(() => {
@@ -112,9 +113,9 @@ const Landing = () => {
 
           {/* Content at Z-10 */}
           <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center h-full pb-20">
-            <div className="max-w-5xl mx-auto space-y-12 text-center">
+            <div className="max-w-6xl mx-auto space-y-12 text-center">
               
-              <div className="space-y-10 max-w-4xl mx-auto">
+              <div className="space-y-10 max-w-5xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary animate-in fade-in slide-in-from-bottom-4 duration-1000">
                   <Zap className="w-4 h-4" />
                   <span>Official IIT Madras Portal</span>
@@ -135,7 +136,7 @@ const Landing = () => {
                       <div className="h-4 w-px bg-white/10 mx-1" />
                       <p className="font-mono text-base md:text-lg text-green-400 font-medium tracking-wide flex items-center text-left">
                         <span className="text-gray-500 mr-3 select-none">$</span>
-                        {codeTagline}
+                        {taglineText}
                         <span className="w-2.5 h-5 bg-green-400 ml-1 animate-pulse inline-block align-middle shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
                       </p>
                     </div>
@@ -143,27 +144,40 @@ const Landing = () => {
                 </div>
                 {/* ------------------------------- */}
 
-                <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
-                  Choose Your <br />
-                  <span className="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">
-                    Environment
+                {/* --- MAIN HEADLINE --- */}
+                <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
+                  Évolve from <br className="hidden md:block" />
+                  
+                  {/* Coded 'Hello World' */}
+                  <span className="font-mono text-primary mx-2 md:mx-4 inline-block">
+                    {helloWorldText}
+                    <span className="animate-pulse inline-block w-[3px] h-[0.8em] bg-primary align-middle ml-1 shadow-[0_0_10px_currentColor]" />
                   </span>
+                  
+                  <span className="text-muted-foreground/60 mx-2">to</span>
+                  
+                  {/* Faded 'Hired' - Barely Visible */}
+                  <span 
+                    className="text-[#1a1a1a] transition-colors duration-1000 hover:text-white cursor-default selection:bg-white selection:text-black" 
+                    title="Keep coding to reveal"
+                  >
+                    Hired
+                  </span>.
                 </h1>
                 
-                {/* Description removed as requested */}
               </div>
             </div>
           </div>
 
-          {/* Scroll Down Indicator */}
+          {/* Scroll Down Indicator - Pill Shape */}
           <div 
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000"
+            className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000"
             onClick={scrollToContent}
           >
             <div className="flex flex-col items-center gap-2 group">
-              <div className="w-[30px] h-[50px] border-2 border-white/20 rounded-full flex justify-center p-1 bg-black/30 backdrop-blur-sm group-hover:border-white/40 transition-colors">
-                <div className="animate-bounce">
-                  <ChevronsDown className="w-5 h-5 text-white/70" />
+              <div className="w-[36px] h-[64px] border border-white/30 rounded-full flex justify-center p-2 bg-black/20 backdrop-blur-sm group-hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                <div className="animate-bounce mt-1">
+                  <ChevronsDown className="w-5 h-5 text-white/80" />
                 </div>
               </div>
             </div>
