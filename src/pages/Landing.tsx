@@ -145,10 +145,10 @@ const Landing = () => {
 
               {/* Content Inside Frame */}
               <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center h-full pb-20">
-                <div className="max-w-7xl mx-auto space-y-12 text-center">
+                <div className="max-w-7xl mx-auto space-y-10 text-center">
                   
                   {/* Tagline Box */}
-                  <div className="flex justify-center mb-8">
+                  <div className="flex justify-center mb-6">
                     <div className="relative group cursor-default">
                       <div className="absolute -inset-1 bg-green-500/20 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000" />
                       <div className="relative bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-6 py-3 shadow-2xl flex items-center gap-3">
@@ -166,27 +166,19 @@ const Landing = () => {
                     </div>
                   </div>
 
-                  {/* Main Headline - TWO LINES ONLY */}
+                  {/* Main Headline */}
                   <div className="flex flex-col items-center gap-2">
-                    {/* Line 1 */}
                     <span className="text-3xl md:text-5xl text-white font-bold tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">
                       Évolve from
                     </span>
 
-                    {/* Line 2: Hello World to Hired */}
                     <div className="flex flex-wrap items-baseline justify-center gap-3 md:gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-                      
-                      {/* Hello World (Coded Font) */}
                       <span className="font-mono text-primary text-5xl md:text-8xl font-bold drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">
                         {helloWorldText}
                       </span>
-
-                      {/* to */}
                       <span className="text-2xl md:text-4xl text-muted-foreground/60 font-light">
                         to
                       </span>
-
-                      {/* Hired (Big, Faded) */}
                       <span 
                         className="text-5xl md:text-8xl font-extrabold text-[#1a1a1a] transition-colors duration-700 hover:text-white cursor-default" 
                         title="Keep coding to reveal"
@@ -195,6 +187,37 @@ const Landing = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* --- NEW: COMPACT TESTIMONIAL STRIP --- */}
+                  <div className="flex flex-col items-center gap-5 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+                    
+                    {/* Avatar Group */}
+                    <div className="flex items-center justify-center -space-x-5">
+                      {[
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
+                        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
+                        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+                      ].map((src, i) => (
+                        <div 
+                          key={i} 
+                          className="relative w-12 h-14 md:w-14 md:h-16 rounded-2xl border-[3px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:z-10 hover:border-white/40 hover:shadow-2xl bg-gray-800"
+                        >
+                          <img 
+                            src={src} 
+                            alt="User" 
+                            className="w-full h-full object-cover opacity-90 hover:opacity-100"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Trust Text */}
+                    <p className="text-sm md:text-base font-medium text-muted-foreground/80 tracking-wide">
+                      Trusted by <span className="text-white font-semibold">100K+</span> community users
+                    </p>
+                  </div>
+                  {/* -------------------------------------- */}
 
                 </div>
               </div>
@@ -205,7 +228,6 @@ const Landing = () => {
                 onClick={scrollToContent}
               >
                 <div className="w-[36px] h-[64px] border border-white/30 rounded-full flex justify-center items-center bg-black/20 backdrop-blur-sm hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                  {/* Custom Up/Down Animation from Center */}
                   <div className="animate-scroll-arrow">
                     <ChevronsDown className="w-5 h-5 text-white/90" />
                   </div>
