@@ -6,7 +6,9 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Lock, Timer, Video, Maximize } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ShieldAlert, Lock, Timer, Video, Maximize, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -36,6 +38,7 @@ const Exam = () => {
 
   // --- State ---
   const [isExamStarted, setIsExamStarted] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(false); // New Checkbox State
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   
@@ -83,8 +86,7 @@ const Exam = () => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // --- Media & Audio Logic (FIXED) ---
-
+  // --- Media & Audio Logic ---
   const startMediaStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -96,7 +98,6 @@ const Exam = () => {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioContext = new AudioContextClass();
       
-      // Resume if suspended (Fixes "dead meter" issue)
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
@@ -104,7 +105,7 @@ const Exam = () => {
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
       analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.5; // Smoother transitions
+      analyser.smoothingTimeConstant = 0.5;
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       microphone.connect(analyser);
@@ -124,19 +125,13 @@ const Exam = () => {
 
   const analyzeAudio = () => {
     if (!analyserRef.current || !dataArrayRef.current) return;
-    
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
     
     let sum = 0;
-    // Calculate average volume (0-255)
     for (let i = 0; i < dataArrayRef.current.length; i++) {
       sum += dataArrayRef.current[i];
     }
     const average = sum / dataArrayRef.current.length;
-    
-    // SMART SCALING:
-    // 1. Subtract "Noise Floor" (approx 10-20) so silence shows as 0 bars
-    // 2. Multiply to scale remaining range to 0-100
     const adjustedAverage = Math.max(0, average - 20); 
     const volume = Math.min(100, Math.round(adjustedAverage * 3)); 
     
@@ -202,7 +197,6 @@ const Exam = () => {
     };
   }, [isExamStarted, isSubmitting, violationCount]);
 
-  // Video Ref
   useEffect(() => {
     if (videoNode && mediaStream) {
       videoNode.srcObject = mediaStream;
@@ -210,7 +204,6 @@ const Exam = () => {
     }
   }, [videoNode, mediaStream]);
 
-  // Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isExamStarted && !isSubmitting) {
@@ -237,12 +230,16 @@ const Exam = () => {
   // --- Handlers ---
 
   const handleStartExamRequest = async () => {
+    if (!rulesAccepted) {
+      toast({ title: "Agreement Required", description: "Please accept the exam rules to proceed.", variant: "destructive" });
+      return;
+    }
+
     const perms = await startMediaStream();
     if (!perms) return;
     const fs = await enterFullScreen();
     if (!fs) { toast({ title: "Full Screen Required", variant: "destructive" }); return; }
     
-    // Explicitly resume audio context
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       await audioContextRef.current.resume();
     }
@@ -285,19 +282,16 @@ const Exam = () => {
     setIsSubmitting(true);
     setFinishDialogOpen(false);
     
-    // Stop Media
     if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
     if (audioContextRef.current) audioContextRef.current.close();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
-    // Metrics
     const qIds = Object.keys(questionMetrics);
     const correctCount = Object.values(questionMetrics).filter(m => m.isCorrect).length;
     const totalScore = Object.values(questionMetrics).reduce((acc, curr) => acc + curr.score, 0);
     const totalMaxScore = assignments.reduce((acc: number, curr: any) => acc + (curr.max_score || 0), 0);
     const accuracy = qIds.length > 0 ? Math.round((correctCount / qIds.length) * 100) : 0;
 
-    // Report
     const questionDetails = assignments.map((a: any) => {
       const m = questionMetrics[a.id] || { attempts: 0, isCorrect: false, score: 0, timeSpent: 0 };
       return {
@@ -324,7 +318,6 @@ const Exam = () => {
       totalTime: elapsedTime
     };
 
-    // DB Update
     if (sessionId) {
       supabase.from('exam_sessions').update({
         status: reason ? 'terminated' : 'completed',
@@ -336,7 +329,6 @@ const Exam = () => {
       }).eq('id', sessionId).then();
     }
     
-    // Redirect to Result Page (Fixes 404 issue if route exists)
     navigate('/exam/result', { state: resultsPayload });
   };
 
@@ -359,18 +351,8 @@ const Exam = () => {
               </div>
               <div className="absolute -bottom-4 left-0 w-full text-center"><span className="text-[9px] text-red-500/70 font-mono uppercase">REC</span></div>
             </div>
-            
-            {/* Improved Audio Meter */}
             <div className="h-16 w-3 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
-              {[...Array(12)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "w-full flex-1 rounded-[1px] transition-all duration-75", 
-                    audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5"
-                  )} 
-                />
-              ))}
+              {[...Array(12)].map((_, i) => <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all duration-75", audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />)}
             </div>
           </div>
         )}
@@ -388,7 +370,7 @@ const Exam = () => {
              <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 hidden md:block">
                <AssignmentSidebar 
                   selectedId={selectedAssignmentId} 
-                  onSelect={(id) => { setSearchParams(p => { p.set('q', id); return p; }); setQuestionStatuses(prev => ({...prev, [id]: 'visited'})); }} 
+                  onSelect={handleQuestionSelect} 
                   questionStatuses={questionStatuses} 
                   preLoadedAssignments={assignments as any} 
                 />
@@ -414,13 +396,102 @@ const Exam = () => {
           </ResizablePanelGroup>
         ) : (
           <div className="h-full flex flex-col items-center justify-center p-6 space-y-8 bg-[#09090b]">
-            <div className="text-center space-y-2"><h1 className="text-3xl font-bold font-neuropol text-white">System Check</h1><p className="text-muted-foreground">Verification required.</p></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
-               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400"><Video /></div><div><h3 className="font-medium">Camera & Mic</h3><p className="text-xs text-muted-foreground">Active</p></div></div>
-               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto text-purple-400"><Maximize /></div><div><h3 className="font-medium">Full Screen</h3><p className="text-xs text-muted-foreground">Mandatory</p></div></div>
-               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-400"><ShieldAlert /></div><div><h3 className="font-medium">No Switching</h3><p className="text-xs text-muted-foreground">Instant Fail</p></div></div>
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 border border-white/10 mb-2">
+                <FileText className="w-8 h-8 text-primary" />
+              </div>
+              <h1 className="text-3xl font-bold font-neuropol text-white">Instructions & Rules</h1>
+              <p className="text-muted-foreground">Please read carefully before proceeding.</p>
             </div>
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg" onClick={handleStartExamRequest}>I Agree & Start Exam</Button>
+            
+            <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Instructions Panel */}
+              <div className="bg-[#0c0c0e] border border-white/10 rounded-2xl overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-white/10 bg-white/5 font-medium text-white flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-red-400" /> Exam Policy
+                </div>
+                <ScrollArea className="flex-1 h-[300px] p-6 text-sm text-gray-300 space-y-4 leading-relaxed">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-bold text-white mb-1">1. Environment</h4>
+                      <p>You must be in a quiet, private room. No other people are permitted. Lighting must be sufficient for your face to be visible.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-1">2. System Requirements</h4>
+                      <ul className="list-disc pl-4 space-y-1 text-gray-400">
+                        <li>Webcam and Microphone must remain active.</li>
+                        <li>Full-screen mode is mandatory.</li>
+                        <li>No secondary monitors allowed.</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-1">3. Prohibited Actions</h4>
+                      <ul className="list-disc pl-4 space-y-1 text-red-300/80">
+                        <li>Switching tabs or windows (Alt+Tab, Win, etc.).</li>
+                        <li>Copying, pasting, or using right-click.</li>
+                        <li>Exiting full-screen mode.</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white mb-1">4. Termination</h4>
+                      <p>Accumulating <strong>3 violations</strong> (strikes) will result in immediate termination of the exam session.</p>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </div>
+
+              {/* System Check Panel */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-center">
+                     <Video className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                     <h3 className="font-medium text-sm">Webcam</h3>
+                     <p className="text-xs text-green-400 mt-1 flex items-center justify-center gap-1"><CheckCircle2 className="w-3 h-3" /> Ready</p>
+                   </div>
+                   <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-center">
+                     <Maximize className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                     <h3 className="font-medium text-sm">Fullscreen</h3>
+                     <p className="text-xs text-muted-foreground mt-1">Required</p>
+                   </div>
+                </div>
+
+                <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                  <div className="text-xs text-yellow-200/80">
+                    <strong className="block text-yellow-500 mb-1">Warning</strong>
+                    Do not attempt to resize the browser or switch applications. The system logs all interruptions.
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-white/10">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox 
+                      id="terms" 
+                      checked={rulesAccepted} 
+                      onCheckedChange={(c) => setRulesAccepted(c as boolean)} 
+                      className="mt-1 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:text-black"
+                    />
+                    <div className="grid gap-1.5 leading-none">
+                      <label htmlFor="terms" className="text-sm font-medium text-white cursor-pointer">
+                        I agree to the exam rules and regulations.
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        I understand that violations will be recorded and may lead to disqualification.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-lg font-semibold rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleStartExamRequest}
+                    disabled={!rulesAccepted}
+                  >
+                    Start Exam
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
