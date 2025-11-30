@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,7 +63,10 @@ const Exam = () => {
   // Media State
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // FIX: Use state for video node to ensure we catch when it mounts
+  const [videoNode, setVideoNode] = useState<HTMLVideoElement | null>(null);
+  
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
@@ -154,11 +157,15 @@ const Exam = () => {
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   };
 
+  // FIX: This effect now depends on the videoNode state variable
+  // This guarantees the video element exists before we try to attach the stream
   useEffect(() => {
-    if (videoRef.current && mediaStream) {
-      videoRef.current.srcObject = mediaStream;
+    if (videoNode && mediaStream) {
+      console.log("Attaching media stream to video element");
+      videoNode.srcObject = mediaStream;
+      videoNode.play().catch(e => console.error("Auto-play prevented:", e));
     }
-  }, [mediaStream]);
+  }, [videoNode, mediaStream]);
 
   // Cleanup media on unmount
   useEffect(() => {
@@ -495,7 +502,8 @@ const Exam = () => {
               <div className="w-24 h-14 bg-black rounded-md overflow-hidden border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.1)] relative">
                 {/* Live Video Feed */}
                 <video 
-                  ref={videoRef} 
+                  // FIX: Use ref callback pattern via state to ensure attachment
+                  ref={setVideoNode}
                   autoPlay 
                   muted 
                   playsInline 
