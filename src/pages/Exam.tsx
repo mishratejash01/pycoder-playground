@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, AlertTriangle, Lock, CheckCircle2, Timer, Trophy, Target, Clock, Video, Maximize } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Lock, CheckCircle2, Timer, Trophy, Target, Clock, Video, Maximize, Mic } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -26,6 +26,12 @@ const STANDARD_TABLES = {
   submissions: 'submissions' 
 };
 
+interface ViolationLog {
+  timestamp: string;
+  type: string;
+  message: string;
+}
+
 const Exam = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,7 +40,7 @@ const Exam = () => {
   const selectedAssignmentId = searchParams.get('q');
   const iitmSubjectId = searchParams.get('iitm_subject');
   const examType = searchParams.get('type');
-  const setName = searchParams.get('set_name'); // e.g. "Set 1"
+  const setName = searchParams.get('set_name');
 
   const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
 
@@ -44,10 +50,18 @@ const Exam = () => {
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   const [elapsedTime, setElapsedTime] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [violationLogs, setViolationLogs] = useState<ViolationLog[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Media State
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
   const [videoNode, setVideoNode] = useState<HTMLVideoElement | null>(null);
+  
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const MAX_VIOLATIONS = 3;
@@ -65,14 +79,8 @@ const Exam = () => {
       if (iitmSubjectId) {
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
-        if (examType) {
-          // @ts-ignore
-          query = query.eq('exam_type', decodeURIComponent(examType));
-        }
-        if (setName) {
-          // @ts-ignore
-          query = query.eq('set_name', setName);
-        }
+        if (examType) query = query.eq('exam_type', decodeURIComponent(examType));
+        if (setName) query = query.eq('set_name', setName);
       }
 
       const { data, error } = await query;
@@ -81,18 +89,179 @@ const Exam = () => {
     },
   });
 
-  // --- Auto-Start on Selection Logic ---
-  const handleStartExamRequest = async () => {
+  // --- Strict Proctoring Logic ---
+
+  const startMediaStream = async () => {
     try {
-      // 1. Media Permission
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 320, height: 240, frameRate: 15 }, 
+        audio: true 
+      });
       setMediaStream(stream);
       
-      // 2. Full Screen
-      const elem = document.documentElement as any;
-      if (elem.requestFullscreen) await elem.requestFullscreen();
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      microphone.connect(analyser);
       
-      // 3. Create Session
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      dataArrayRef.current = dataArray;
+      
+      analyzeAudio();
+      return true;
+    } catch (err) {
+      toast({
+        title: "Permission Denied",
+        description: "Camera and Microphone access are required for proctoring.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const analyzeAudio = () => {
+    if (!analyserRef.current || !dataArrayRef.current) return;
+    analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+    let sum = 0;
+    for (let i = 0; i < dataArrayRef.current.length; i++) sum += dataArrayRef.current[i];
+    const volume = Math.min(100, Math.round((sum / dataArrayRef.current.length) * 2.5));
+    setAudioLevel(volume);
+    animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+  };
+
+  const enterFullScreen = async () => {
+    const elem = document.documentElement as any;
+    const requestFs = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+    if (requestFs) {
+      try {
+        await requestFs.call(elem);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  };
+
+  const handleViolation = async (type: string, message: string) => {
+    if (!isExamStarted || isSubmitting) return;
+    
+    const violation: ViolationLog = { timestamp: new Date().toISOString(), type, message };
+    setViolationLogs(prev => [...prev, violation]);
+    
+    setViolationCount(prev => {
+      const newCount = prev + 1;
+      
+      // Update session in DB
+      if (sessionId) {
+        supabase.from('exam_sessions').update({
+          violation_count: newCount,
+          violation_logs: violation // In real app, append to array
+        }).eq('id', sessionId).then();
+      }
+
+      if (newCount >= MAX_VIOLATIONS) {
+        finishExam("Terminated: Too many violations");
+        return MAX_VIOLATIONS;
+      }
+      
+      toast({ 
+        title: "⚠️ Proctoring Warning", 
+        description: `Violation ${newCount}/${MAX_VIOLATIONS}: ${message}`, 
+        variant: "destructive",
+        duration: 5000 
+      });
+      
+      return newCount;
+    });
+  };
+
+  // Setup Event Listeners
+  useEffect(() => {
+    if (!isExamStarted) return;
+
+    const handleVisibilityChange = () => { 
+      if (document.hidden) handleViolation("Tab Switch", "User switched tabs or minimized window."); 
+    };
+    
+    const handleFullScreenChange = () => { 
+      if (!document.fullscreenElement && !isSubmitting) handleViolation("Fullscreen Exit", "User exited full-screen mode."); 
+    };
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isWindows = navigator.platform.includes('Win') || navigator.userAgent.includes('Windows');
+      if (isWindows && (e.key === 'Meta' || e.key === 'OS')) { 
+        e.preventDefault(); 
+        handleViolation("Prohibited Key", "Windows key Usage."); 
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleViolation("Prohibited Key", "Escape key Usage.");
+      }
+    };
+    
+    const preventEvents = (e: Event) => e.preventDefault();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("copy", preventEvents);
+    window.addEventListener("paste", preventEvents);
+    window.addEventListener("cut", preventEvents);
+    window.addEventListener("contextmenu", preventEvents);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("copy", preventEvents);
+      window.removeEventListener("paste", preventEvents);
+      window.removeEventListener("cut", preventEvents);
+      window.removeEventListener("contextmenu", preventEvents);
+    };
+  }, [isExamStarted, isSubmitting, sessionId]);
+
+  // Video Ref
+  useEffect(() => {
+    if (videoNode && mediaStream) {
+      videoNode.srcObject = mediaStream;
+      videoNode.play().catch(e => console.error("Auto-play prevented:", e));
+    }
+  }, [videoNode, mediaStream]);
+
+  // Timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isExamStarted && !isSubmitting) {
+      interval = setInterval(() => setElapsedTime(prev => prev + 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isExamStarted, isSubmitting]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+      if (audioContextRef.current) audioContextRef.current.close();
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [mediaStream]);
+
+  const handleStartExamRequest = async () => {
+    const permissionsGranted = await startMediaStream();
+    if (!permissionsGranted) return;
+    
+    const fullScreenGranted = await enterFullScreen();
+    if (!fullScreenGranted) {
+      toast({ title: "Full Screen Required", description: "Please enable full screen permissions.", variant: "destructive" });
+      return;
+    }
+
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
       
@@ -106,7 +275,6 @@ const Exam = () => {
       if (session) setSessionId(session.id);
       setIsExamStarted(true);
       
-      // Select first question
       if (assignments.length > 0) {
         setSearchParams(prev => {
           const p = new URLSearchParams(prev);
@@ -115,25 +283,10 @@ const Exam = () => {
           return p;
         });
       }
-
     } catch (err) {
-      toast({ title: "Setup Failed", description: "Camera/Mic permissions or Fullscreen required.", variant: "destructive" });
+      toast({ title: "Start Failed", description: "Could not create exam session.", variant: "destructive" });
     }
   };
-
-  useEffect(() => {
-    if (videoNode && mediaStream) {
-      videoNode.srcObject = mediaStream;
-      videoNode.play().catch(console.error);
-    }
-  }, [videoNode, mediaStream]);
-
-  // Timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isExamStarted) interval = setInterval(() => setElapsedTime(p => p + 1), 1000);
-    return () => clearInterval(interval);
-  }, [isExamStarted]);
 
   const handleQuestionSelect = (id: string) => {
     setSearchParams(prev => {
@@ -144,16 +297,34 @@ const Exam = () => {
     setQuestionStatuses(prev => ({ ...prev, [id]: 'visited' }));
   };
 
-  const finishExam = async () => {
+  const finishExam = async (reason?: string) => {
+    setIsSubmitting(true);
+    if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+
     if (sessionId) {
       await supabase.from('exam_sessions').update({
-        status: 'completed',
+        status: reason ? 'terminated' : 'completed',
         end_time: new Date().toISOString(),
         duration_seconds: elapsedTime
       }).eq('id', sessionId);
     }
+    
     sessionStorage.clear();
+    toast({ 
+      title: reason ? "Exam Terminated" : "Exam Submitted", 
+      description: reason || "Your answers have been recorded.",
+      variant: reason ? "destructive" : "default"
+    });
+    
     navigate('/');
+  };
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -170,21 +341,45 @@ const Exam = () => {
         </div>
 
         {isExamStarted && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-             <div className="flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full animate-pulse">
-               <div className="w-2 h-2 bg-red-500 rounded-full" />
-               <span className="text-xs font-medium text-red-400">Monitoring Active</span>
-             </div>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+            {/* Live Video Feed */}
+            <div className="relative group">
+              <div className="w-24 h-16 bg-black rounded-md overflow-hidden border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.1)] relative">
+                <video ref={setVideoNode} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" />
+                <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_red]" />
+              </div>
+              <div className="absolute -bottom-4 left-0 w-full text-center">
+                 <span className="text-[9px] text-red-500/70 font-mono tracking-widest uppercase">REC</span>
+              </div>
+            </div>
+            
+            {/* Audio Visualizer */}
+            <div className="h-16 w-2 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all", audioLevel >= (i + 1) * 10 ? (i > 8 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />
+              ))}
+            </div>
           </div>
         )}
 
         <div className="flex items-center gap-4">
            {isExamStarted && (
-             <div className="hidden sm:flex items-center gap-2 font-mono text-sm">
+             <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 font-mono text-sm">
                <Timer className="w-4 h-4 text-muted-foreground" />
-               {new Date(elapsedTime * 1000).toISOString().substr(11, 8)}
+               {formatTime(elapsedTime)}
              </div>
            )}
+           
+           {/* Violation Counter */}
+           <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground mr-1 uppercase tracking-wide">Strikes</span>
+              <div className="flex gap-1">
+                {[...Array(MAX_VIOLATIONS)].map((_, i) => (
+                  <div key={i} className={cn("w-2 h-6 rounded-sm transition-colors", i < violationCount ? "bg-red-600 shadow-[0_0_8px_red]" : "bg-white/10")} />
+                ))}
+              </div>
+           </div>
+
            <Button variant="destructive" size="sm" onClick={() => setFinishDialogOpen(true)}>Finish Exam</Button>
         </div>
       </header>
@@ -221,6 +416,7 @@ const Exam = () => {
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
+          /* SYSTEM CHECK LOBBY */
           <div className="h-full flex flex-col items-center justify-center p-6 space-y-8 bg-[#09090b]">
             <div className="text-center space-y-2">
               <h1 className="text-3xl font-bold font-neuropol text-white">System Check</h1>
@@ -252,11 +448,9 @@ const Exam = () => {
       <AlertDialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
         <AlertDialogContent className="bg-[#0c0c0e] border-white/10 text-white">
           <AlertDialogHeader><AlertDialogTitle>Submit Assessment?</AlertDialogTitle><AlertDialogDescription>This will end your session and submit all answers.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={finishExam} className="bg-red-600 hover:bg-red-700">Submit</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => finishExam()} className="bg-red-600 hover:bg-red-700">Submit</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <video ref={setVideoNode} className="hidden" muted playsInline />
     </div>
   );
 };
