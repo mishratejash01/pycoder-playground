@@ -43,6 +43,9 @@ const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
+  
+  // Scroll State for Animation
+  const [scrollY, setScrollY] = useState(0);
 
   // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
@@ -70,7 +73,14 @@ const Landing = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Scroll Listener
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, [toast]);
 
   const handleLogout = async () => {
@@ -96,14 +106,23 @@ const Landing = () => {
     }
   };
 
+  // --- Scroll Animation Calculations ---
+  // Scale down from 1 to 0.85 as user scrolls 500px
+  const scaleValue = Math.max(0.85, 1 - scrollY / 1000);
+  // Fade out slightly
+  const opacityValue = Math.max(0, 1 - scrollY / 600);
+  // Slight vertical movement to enhance the "moving back" feel
+  const translateYValue = scrollY * 0.3;
+
   return (
     <div className="min-h-screen bg-black text-white selection:bg-primary/20 flex flex-col">
       {/* Header */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full">
-        {/* Hero Section with Fixed Background */}
-        <section className="relative w-full h-screen overflow-hidden flex flex-col justify-center items-center">
+        {/* Hero Section with Fixed Background & Scroll Animation */}
+        <section className="relative w-full h-screen overflow-hidden flex flex-col justify-center items-center perspective-1000">
+          
           {/* Absolute Fixed Background at Z-0 */}
           <div className="fixed inset-0 z-0 w-full h-full pointer-events-none">
              <DarkVeil />
@@ -111,11 +130,19 @@ const Landing = () => {
              <div className="absolute inset-0 bg-black/60" />
           </div>
 
-          {/* Content at Z-10 */}
-          <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center h-full pb-20">
-            <div className="max-w-6xl mx-auto space-y-12 text-center">
+          {/* Animated Content Wrapper at Z-10 */}
+          <div 
+            className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center h-full pb-32"
+            style={{
+              transform: `translateY(${translateYValue}px) scale(${scaleValue})`,
+              opacity: opacityValue,
+              transition: 'transform 0.1s ease-out, opacity 0.1s ease-out',
+              willChange: 'transform, opacity'
+            }}
+          >
+            <div className="max-w-7xl mx-auto space-y-12 text-center">
               
-              <div className="space-y-10 max-w-5xl mx-auto">
+              <div className="space-y-12 max-w-6xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary animate-in fade-in slide-in-from-bottom-4 duration-1000">
                   <Zap className="w-4 h-4" />
                   <span>Official IIT Madras Portal</span>
@@ -137,7 +164,7 @@ const Landing = () => {
                       <p className="font-mono text-base md:text-lg text-green-400 font-medium tracking-wide flex items-center text-left">
                         <span className="text-gray-500 mr-3 select-none">$</span>
                         {taglineText}
-                        <span className="w-2.5 h-5 bg-green-400 ml-1 animate-pulse inline-block align-middle shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+                        {/* Cursor Removed as requested */}
                       </p>
                     </div>
                   </div>
@@ -145,38 +172,44 @@ const Landing = () => {
                 {/* ------------------------------- */}
 
                 {/* --- MAIN HEADLINE --- */}
-                <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
-                  Évolve from <br className="hidden md:block" />
-                  
-                  {/* Coded 'Hello World' */}
-                  <span className="font-mono text-primary mx-2 md:mx-4 inline-block">
+                <h1 className="font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
+                  {/* Row 1: "Évolve from" (Smaller) */}
+                  <span className="block text-3xl md:text-5xl text-white mb-2 md:mb-4">
+                    Évolve from
+                  </span>
+
+                  {/* Row 2: "Hello World" (Big, Coded) */}
+                  <span className="block font-mono text-primary text-5xl md:text-8xl my-2 md:my-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.3)]">
                     {helloWorldText}
-                    <span className="animate-pulse inline-block w-[3px] h-[0.8em] bg-primary align-middle ml-1 shadow-[0_0_10px_currentColor]" />
                   </span>
                   
-                  <span className="text-muted-foreground/60 mx-2">to</span>
+                  {/* Row 3: "to" (Smaller) */}
+                  <span className="block text-3xl md:text-5xl text-muted-foreground/60 my-2 md:my-4">
+                    to
+                  </span>
                   
-                  {/* Faded 'Hired' - Barely Visible */}
+                  {/* Row 4: "Hired" (Big, Faded) */}
                   <span 
-                    className="text-[#1a1a1a] transition-colors duration-1000 hover:text-white cursor-default selection:bg-white selection:text-black" 
+                    className="block text-5xl md:text-8xl text-[#1a1a1a] transition-colors duration-700 hover:text-white cursor-default selection:bg-white selection:text-black font-extrabold" 
                     title="Keep coding to reveal"
                   >
                     Hired
-                  </span>.
+                  </span>
                 </h1>
                 
               </div>
             </div>
           </div>
 
-          {/* Scroll Down Indicator - Pill Shape */}
+          {/* Scroll Down Indicator - Fixed positioning within the section to avoid "moving out of block" */}
           <div 
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000"
             onClick={scrollToContent}
           >
             <div className="flex flex-col items-center gap-2 group">
               <div className="w-[36px] h-[64px] border border-white/30 rounded-full flex justify-center p-2 bg-black/20 backdrop-blur-sm group-hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                <div className="animate-bounce mt-1">
+                {/* Animating Arrow inside pill */}
+                <div className="animate-[bounce_2s_infinite] mt-1">
                   <ChevronsDown className="w-5 h-5 text-white/80" />
                 </div>
               </div>
