@@ -319,6 +319,7 @@ export type Database = {
           max_score: number | null
           expected_time: number | null
           starter_code: string | null
+          exam_type: string | null
           created_at: string | null
         }
         Insert: {
@@ -331,6 +332,7 @@ export type Database = {
           max_score?: number | null
           expected_time?: number | null
           starter_code?: string | null
+          exam_type?: string | null
           created_at?: string | null
         }
         Update: {
@@ -343,6 +345,7 @@ export type Database = {
           max_score?: number | null
           expected_time?: number | null
           starter_code?: string | null
+          exam_type?: string | null
           created_at?: string | null
         }
         Relationships: [
