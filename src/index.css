@@ -6,38 +6,26 @@
 
 @layer base {
   :root {
-    /* CHANGED: Default background to pure Black (0 0% 0%) to prevent grey flash */
-    --background: 0 0% 0%; 
+    --background: 0 0% 0%;
     --foreground: 0 0% 98%;
-
-    /* Card color slightly lighter than pure black for contrast */
-    --card: 240 10% 3.9%; 
+    --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-
     --primary: 263.4 70% 50.4%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 263.4 70% 50.4%;
-
     --radius: 0.75rem;
-
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -78,7 +66,6 @@
   @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
 }
 
-/* --- CUSTOM FONT: Neuropol X --- */
 @font-face {
   font-family: 'Neuropol X';
   src: url('/fonts/neuropol-x-free.ttf') format('truetype');
@@ -91,7 +78,28 @@
   font-family: 'Neuropol X', sans-serif;
 }
 
-/* --- LIGHT RAY REVEAL ANIMATION --- */
+/* --- 1. FASTER CURTAIN REVEAL --- */
+@keyframes curtain-reveal {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-curtain-reveal {
+  /* Duration reduced to 1.8s to fit within 3s window */
+  animation: curtain-reveal 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+/* --- 2. FASTER LIGHT RAY PASS --- */
 @keyframes light-ray-pass {
   0% {
     background-position: 200% center;
@@ -109,33 +117,17 @@
 .animate-light-ray {
   background: linear-gradient(
     120deg, 
-    #52525b 0%, 
+    #27272a 0%, 
     #ffffff 50%, 
-    #52525b 100%
+    #27272a 100%
   );
   background-size: 200% auto;
   color: transparent;
   background-clip: text;
   -webkit-background-clip: text;
+  
+  /* Speed up: 2s duration, starts earlier at 1.2s */
   animation: light-ray-pass 2s ease-out forwards;
-}
-
-/* --- CURTAIN REVEAL --- */
-@keyframes curtain-reveal {
-  0% {
-    clip-path: inset(0 100% 0 0);
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  100% {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-curtain-reveal {
-  animation: curtain-reveal 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: 0.3s;
+  animation-delay: 1.2s; 
   opacity: 0;
 }
