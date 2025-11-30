@@ -136,9 +136,9 @@ const Landing = () => {
                 {/* ------------------------------- */}
 
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
-                  Choose Your <br />
+                  Évolve from <br />
                   <span className="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">
-                    Environment
+                    Hello World to Hired.
                   </span>
                 </h1>
                 
