@@ -147,7 +147,7 @@ const Exam = () => {
     });
   };
 
-  // 3. Event Listeners (Tab change, Copy/Paste, Fullscreen exit)
+  // 3. Event Listeners
   useEffect(() => {
     if (!isExamStarted) return;
 
@@ -165,6 +165,15 @@ const Exam = () => {
       }
     };
 
+    // Secret Windows Key Ban
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isWindows = navigator.platform.includes('Win') || navigator.userAgent.includes('Windows');
+      if (isWindows && (e.key === 'Meta' || e.key === 'OS')) {
+        e.preventDefault(); // Attempt to block start menu
+        submitExam("Terminated: Windows Key Usage Prohibited"); // Immediate Termination
+      }
+    };
+
     const preventCopyPaste = (e: Event) => {
       e.preventDefault();
       handleViolation("copy_paste", "Copy/Paste functionality is disabled.");
@@ -176,6 +185,7 @@ const Exam = () => {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("fullscreenchange", handleFullScreenChange);
+    document.addEventListener("keydown", handleKeyDown);
     window.addEventListener("copy", preventCopyPaste);
     window.addEventListener("paste", preventCopyPaste);
     window.addEventListener("cut", preventCopyPaste);
@@ -184,6 +194,7 @@ const Exam = () => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      document.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("copy", preventCopyPaste);
       window.removeEventListener("paste", preventCopyPaste);
       window.removeEventListener("cut", preventCopyPaste);
