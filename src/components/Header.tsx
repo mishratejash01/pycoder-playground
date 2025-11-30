@@ -28,21 +28,14 @@ export function Header({ session, onLogout }: HeaderProps) {
       <div className={cn(
         "rounded-2xl border border-white/10 shadow-2xl",
         "bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/40",
-        "transition-all duration-300 hover:border-primary/20 hover:shadow-primary/5"
+        "transition-all duration-300 hover:border-primary/20"
       )}>
         <nav className="flex items-center justify-between p-2 px-6">
           
           {/* LEFT: Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            {/* Custom Logo Styling */}
-            <span className={cn(
-              "font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white",
-              "transition-all duration-300",
-              // Hover Effect: Light Glowing Whitish
-              "group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-            )}>
+            <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-opacity duration-300 hover:opacity-80">
               COD
-              {/* Scaled up lowercase 'é' aligned to baseline */}
               <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
               VO
             </span>
@@ -67,35 +60,30 @@ export function Header({ session, onLogout }: HeaderProps) {
           {/* RIGHT: Auth & Mobile Menu */}
           <div className="flex items-center gap-2">
             {session ? (
-              /* Authenticated State: Glowing User Block */
               <div className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner group transition-all hover:bg-white/10 hover:border-white/20">
-                {/* Glowing Green Dot */}
                 <div className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </div>
                 
-                {/* User Name (Google Account Name) */}
                 <span className="text-xs font-medium text-gray-200 max-w-[150px] truncate select-none">
                   {userName}
                 </span>
                 
                 <div className="h-4 w-px bg-white/10 mx-1" />
 
-                {/* Logout Button */}
                 <button 
                   onClick={onLogout}
-                  className="text-muted-foreground hover:text-red-400 transition-colors"
+                  className="text-muted-foreground hover:text-white transition-colors"
                   title="Logout"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
-              /* Guest State: Login Button */
               <Button 
                 size="sm" 
-                className="hidden md:flex bg-primary hover:bg-primary/90 text-white rounded-xl px-6 shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_20px_rgba(124,58,237,0.5)] transition-all duration-300"
+                className="hidden md:flex bg-primary hover:bg-primary/90 text-white rounded-xl px-6 transition-all duration-300"
                 onClick={() => navigate('/auth')}
               >
                 <LogIn className="h-3.5 w-3.5 mr-2" />
