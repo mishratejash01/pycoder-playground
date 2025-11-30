@@ -6,46 +6,26 @@
 
 @layer base {
   :root {
-    /* Dark Mode Aesthetics */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-
     --card: 240 10% 5%;
     --card-foreground: 0 0% 98%;
-
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-
     --primary: 263.4 70% 50.4%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 263.4 70% 50.4%;
-
     --radius: 0.75rem;
-    
-    /* Sidebar specific variables */
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -55,11 +35,9 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    /* Premium subtle noise texture */
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
   }
   
-  /* Scrollbar styling */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -76,7 +54,6 @@
   }
 }
 
-/* Glassmorphism utility */
 .glass-panel {
   @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
 }
@@ -84,7 +61,6 @@
 /* --- CUSTOM FONT: Neuropol X --- */
 @font-face {
   font-family: 'Neuropol X';
-  /* IMPORTANT: File must be in public/fonts/ */
   src: url('/fonts/neuropol-x-free.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
@@ -95,7 +71,7 @@
   font-family: 'Neuropol X', sans-serif;
 }
 
-/* --- LIGHT RAY REVEAL ANIMATION --- */
+/* --- LIGHT RAY REVEAL ANIMATION (For Subtitle) --- */
 @keyframes light-ray-pass {
   0% {
     background-position: 200% center;
@@ -111,7 +87,6 @@
 }
 
 .animate-light-ray {
-  /* Gradient: Dark Gray -> Bright White -> Dark Gray */
   background: linear-gradient(
     120deg, 
     #52525b 0%, 
@@ -122,6 +97,27 @@
   color: transparent;
   background-clip: text;
   -webkit-background-clip: text;
-  /* Runs once for 2s then stops */
-  animation: light-ray-pass 2s ease-out forwards;
+  animation: light-ray-pass 2.5s ease-out forwards;
+  animation-delay: 0.5s; /* Wait for logo to start */
+  opacity: 0; /* Initially hidden */
+}
+
+/* --- CINEMATIC TRACKING ANIMATION (For Main Logo) --- */
+@keyframes tracking-in-expand {
+  0% {
+    letter-spacing: -0.5em;
+    opacity: 0;
+    filter: blur(12px);
+  }
+  40% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+.animate-cinematic-logo {
+  animation: tracking-in-expand 1.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
 }
