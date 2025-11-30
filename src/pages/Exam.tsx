@@ -152,15 +152,15 @@ const Exam = () => {
     if (!isExamStarted) return;
 
     const handleVisibilityChange = () => {
+      // IMMEDIATE TERMINATION LOGIC FOR TAB SWITCHING
       if (document.hidden) {
-        handleViolation("tab_switch", "Tab switching is strictly prohibited.");
+        submitExam("Terminated: Tab Switching Detected");
       }
     };
 
     const handleFullScreenChange = () => {
-      // IMMEDIATE TERMINATION LOGIC
+      // IMMEDIATE TERMINATION LOGIC FOR FULL SCREEN EXIT
       if (!document.fullscreenElement && !isSubmitting) {
-        // Log the specific violation before submitting if needed, or just pass the reason
         submitExam("Terminated: Exited Full Screen Mode");
       }
     };
@@ -491,7 +491,7 @@ const Exam = () => {
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
               <div>
                 <strong className="text-red-400 block mb-1">No Tab Switching</strong>
-                Moving to another tab or window is strictly prohibited.
+                <span className="text-red-300">Moving to another tab or window will <u>immediately terminate and submit</u> your exam.</span>
               </div>
             </div>
             <div className="flex gap-3 items-start text-sm">
@@ -506,7 +506,7 @@ const Exam = () => {
               <div className="text-orange-400">
                 <strong>Violation Policy</strong>
                 <p className="text-orange-400/70 text-xs mt-1">
-                  Exiting full screen terminates the exam immediately. Other violations (like tab switching) allowed up to 3 times before auto-submission.
+                  Exiting full screen or switching tabs terminates the exam immediately. Other violations (like copy/paste) are allowed up to 3 times before auto-submission.
                 </p>
               </div>
             </div>
