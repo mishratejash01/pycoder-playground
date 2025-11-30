@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle, Clock, Eye } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Eye, Lock, ChevronRight } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 
 interface Assignment {
@@ -15,31 +15,22 @@ interface AssignmentSidebarProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   questionStatuses: Record<string, QuestionStatus>;
-  preLoadedAssignments?: Assignment[]; // New optional prop
+  preLoadedAssignments?: Assignment[];
 }
 
-export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preLoadedAssignments }: AssignmentSidebarProps) => {
-  const { data: fetchedAssignments = [] } = useQuery({
-    queryKey: ['assignments'],
-    queryFn: async () => {
-      // If parent provided data, don't fetch
-      if (preLoadedAssignments) return preLoadedAssignments;
+export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preLoadedAssignments = [] }: AssignmentSidebarProps) => {
 
-      const { data, error } = await supabase
-        .from('assignments')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('title', { ascending: true });
-      
-      if (error) throw error;
-      return data as Assignment[];
-    },
-    enabled: !preLoadedAssignments, // Disable query if data is passed via props
-  });
+  // Group Assignments by Category
+  const groupedAssignments = useMemo(() => {
+    const groups: Record<string, Assignment[]> = {};
+    preLoadedAssignments.forEach(a => {
+      const cat = a.category || "General";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(a);
+    });
+    return groups;
+  }, [preLoadedAssignments]);
 
-  const assignments = preLoadedAssignments || fetchedAssignments;
-
-  // Helper to get status color
   const getStatusColor = (id: string) => {
     const status = questionStatuses[id] || 'not-visited';
     switch (status) {
@@ -61,7 +52,7 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#0c0c0e]">
       {/* Legend Area */}
       <div className="p-4 border-b border-white/10 bg-black/20">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Question Palette</h3>
@@ -74,28 +65,38 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4">
-          <div className="grid grid-cols-4 gap-3">
-            {assignments.map((assignment, index) => (
-              <button
-                key={assignment.id}
-                onClick={() => onSelect(assignment.id)}
-                className={cn(
-                  "aspect-square rounded-xl flex flex-col items-center justify-center gap-1 border transition-all duration-200 relative group",
-                  getStatusColor(assignment.id),
-                  selectedId === assignment.id && "ring-2 ring-primary ring-offset-2 ring-offset-black"
-                )}
-              >
-                <span className="text-sm font-bold font-mono">{index + 1}</span>
-                {getStatusIcon(assignment.id)}
-                
-                {/* Tooltip for Title */}
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max max-w-[200px] bg-popover border border-white/10 text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
-                  {assignment.title}
-                </div>
-              </button>
+        <div className="p-2">
+          <Accordion type="multiple" defaultValue={Object.keys(groupedAssignments)} className="w-full space-y-2">
+            {Object.entries(groupedAssignments).map(([category, items], catIndex) => (
+              <AccordionItem key={category} value={category} className="border border-white/5 rounded-lg bg-white/5 overflow-hidden">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-white/5 text-sm font-medium text-white/90 data-[state=open]:text-primary">
+                  <div className="flex items-center gap-2">
+                     <span className="uppercase tracking-wider text-xs opacity-70">{category}</span>
+                     <span className="bg-black/40 text-[10px] px-1.5 rounded-full text-muted-foreground">{items.length}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-3 bg-black/20">
+                  <div className="grid grid-cols-4 gap-2">
+                    {items.map((assignment, idx) => (
+                      <button
+                        key={assignment.id}
+                        onClick={() => onSelect(assignment.id)}
+                        className={cn(
+                          "aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 border transition-all duration-200 relative group",
+                          getStatusColor(assignment.id),
+                          selectedId === assignment.id && "ring-1 ring-primary ring-offset-1 ring-offset-black bg-primary/10"
+                        )}
+                        title={assignment.title}
+                      >
+                        <span className="text-xs font-bold font-mono">{idx + 1}</span>
+                        {getStatusIcon(assignment.id)}
+                      </button>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         </div>
       </ScrollArea>
     </div>
