@@ -24,10 +24,10 @@ const App = () => {
     } else {
       sessionStorage.setItem("has_seen_splash", "true");
 
-      // Increased duration to 4.5s to match the new slower animations
+      // Reduced to 3000ms (3 seconds)
       const timer = setTimeout(() => {
         setShowSplash(false);
-      }, 4500);
+      }, 3000);
 
       return () => clearTimeout(timer);
     }
