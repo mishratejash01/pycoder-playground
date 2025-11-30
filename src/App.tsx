@@ -9,6 +9,7 @@ import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import SubjectModeSelection from "./pages/SubjectModeSelection"; // Import the new page
 import { SplashScreen } from "@/components/SplashScreen";
 
 const queryClient = new QueryClient();
@@ -23,12 +24,9 @@ const App = () => {
       setShowSplash(false);
     } else {
       sessionStorage.setItem("has_seen_splash", "true");
-
-      // Reduced to 3000ms (3 seconds)
       const timer = setTimeout(() => {
         setShowSplash(false);
       }, 3000);
-
       return () => clearTimeout(timer);
     }
   }, []);
@@ -46,8 +44,15 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Standard Playground Routes */}
             <Route path="/practice" element={<Practice />} />
             <Route path="/exam" element={<Exam />} />
+            
+            {/* NEW: IITM Subject Selection Route */}
+            {/* This matches the link format in your Header: /degree/subject/:id/:name */}
+            <Route path="/degree/subject/:subjectId/:subjectName" element={<SubjectModeSelection />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
