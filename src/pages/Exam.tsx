@@ -6,12 +6,13 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Lock, Timer, Video, Maximize } from 'lucide-react';
+import { ShieldAlert, Lock, Timer, Video, Maximize, Mic } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
+// Table Maps
 const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
 const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
 
@@ -31,14 +32,17 @@ const Exam = () => {
   const iitmSubjectId = searchParams.get('iitm_subject');
   const examType = searchParams.get('type');
   const setName = searchParams.get('set_name');
+  
+  // SELECT TABLE: Use 'iitm_exam_sessions' ONLY for IITM subjects
   const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
+  const SESSION_TABLE = iitmSubjectId ? 'iitm_exam_sessions' : 'exam_sessions';
 
   // --- State ---
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   
-  // Timers
+  // Timer & Metrics
   const [elapsedTime, setElapsedTime] = useState(0); 
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
 
@@ -60,7 +64,7 @@ const Exam = () => {
 
   const MAX_VIOLATIONS = 3;
 
-  // --- 1. Data Fetching ---
+  // --- Fetch Data ---
   const { data: assignments = [] } = useQuery({
     queryKey: ['exam_assignments', iitmSubjectId, examType, setName],
     queryFn: async () => {
@@ -82,19 +86,16 @@ const Exam = () => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // --- 2. Strict Monitoring Logic ---
-
+  // --- Media Logic (Decibel Meter Fixed) ---
   const startMediaStream = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 320, height: 240, frameRate: 15 }, 
-        audio: true 
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true });
       setMediaStream(stream);
       
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioContext = new AudioContextClass();
       
+      // CRITICAL: Resume if suspended
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
@@ -114,24 +115,25 @@ const Exam = () => {
       analyzeAudio();
       return true;
     } catch (err) {
-      console.error("Media Error:", err);
-      toast({ title: "Permission Denied", description: "Camera/Mic access is mandatory.", variant: "destructive" });
+      toast({ title: "Permission Denied", description: "Camera/Mic access is required.", variant: "destructive" });
       return false;
     }
   };
 
   const analyzeAudio = () => {
     if (!analyserRef.current || !dataArrayRef.current) return;
-    
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
     
     let sum = 0;
-    for (let i = 0; i < dataArrayRef.current.length; i++) {
+    // Lower half of frequencies (Voice Range)
+    for (let i = 0; i < dataArrayRef.current.length / 2; i++) {
       sum += dataArrayRef.current[i];
     }
-    const average = sum / dataArrayRef.current.length;
-    const adjustedAverage = Math.max(0, average - 20); 
-    const volume = Math.min(100, Math.round(adjustedAverage * 3)); 
+    const average = sum / (dataArrayRef.current.length / 2);
+    
+    // Sensitivity Tuning: Subtract noise floor (15) and multiply (3.5x)
+    const adjustedAvg = Math.max(0, average - 15);
+    const volume = Math.min(100, Math.round(adjustedAvg * 3.5)); 
     
     setAudioLevel(volume);
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
@@ -146,6 +148,7 @@ const Exam = () => {
     return false;
   };
 
+  // --- Strict Monitoring ---
   const handleViolation = async (type: string, message: string) => {
     if (!isExamStarted || isSubmitting) return;
     
@@ -153,22 +156,23 @@ const Exam = () => {
     setViolationCount(newCount);
 
     if (sessionId) {
-      supabase.from('exam_sessions').update({ violation_count: newCount }).eq('id', sessionId).then();
+      // @ts-ignore
+      supabase.from(SESSION_TABLE).update({ violation_count: newCount }).eq('id', sessionId).then();
     }
 
     if (newCount >= MAX_VIOLATIONS) {
-      finishExam("Terminated: Max Violations Reached");
+      finishExam("TERMINATED: Max Violations Reached");
     } else {
       toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
     }
   };
 
-  // --- 3. Event Listeners ---
   useEffect(() => {
     if (!isExamStarted) return;
 
     const handleVisibility = () => { if (document.hidden) handleViolation("Tab Switch", "Tab switching detected."); };
-    const handleFullScreen = () => { if (!document.fullscreenElement && !isSubmitting) finishExam("Terminated: Fullscreen Exited"); };
+    // Strict Termination on Fullscreen Exit
+    const handleFullScreen = () => { if (!document.fullscreenElement && !isSubmitting) finishExam("TERMINATED: Fullscreen Exited"); };
     
     const handleKeys = (e: KeyboardEvent) => {
       if (e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS' || (e.altKey && e.key === 'Tab')) {
@@ -202,13 +206,12 @@ const Exam = () => {
     }
   }, [videoNode, mediaStream]);
 
-  // --- 4. Timers ---
+  // --- Timer ---
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isExamStarted && !isSubmitting) {
       interval = setInterval(() => {
         setElapsedTime(prev => prev + 1);
-        
         if (currentQuestionRef.current) {
           const qId = currentQuestionRef.current;
           setQuestionMetrics(prev => ({
@@ -227,32 +230,36 @@ const Exam = () => {
     return () => clearInterval(interval);
   }, [isExamStarted, isSubmitting]);
 
-  // --- 5. Handlers ---
-
+  // --- Handlers ---
   const handleStartExamRequest = async () => {
     const perms = await startMediaStream();
     if (!perms) return;
     const fs = await enterFullScreen();
     if (!fs) { toast({ title: "Full Screen Required", variant: "destructive" }); return; }
     
+    // Force Audio Resume
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      await audioContext.resume();
+      await audioContextRef.current.resume();
     }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
       
-      // INSERT SESSION WITH METADATA (Crucial for Leaderboard)
-      const { data: session } = await supabase.from('exam_sessions').insert({
+      const sessionData: any = {
         user_id: user.id,
-        total_questions: assignments.length,
         status: 'in_progress',
-        start_time: new Date().toISOString(),
-        subject_id: iitmSubjectId || null,
-        exam_type: decodeURIComponent(examType || ''),
-        set_name: setName
-      }).select().single();
+        start_time: new Date().toISOString()
+      };
+
+      if (iitmSubjectId) {
+        sessionData.subject_id = iitmSubjectId;
+        sessionData.exam_type = decodeURIComponent(examType || '');
+        sessionData.set_name = setName;
+      }
+      
+      // @ts-ignore
+      const { data: session } = await supabase.from(SESSION_TABLE).insert(sessionData).select().single();
       
       if (session) setSessionId(session.id);
       setIsExamStarted(true);
@@ -277,7 +284,7 @@ const Exam = () => {
     }));
   };
 
-  const finishExam = (reason?: string) => {
+  const finishExam = (statusReason?: string) => {
     setIsSubmitting(true);
     setFinishDialogOpen(false);
     
@@ -304,6 +311,9 @@ const Exam = () => {
       };
     });
 
+    const isTermination = statusReason?.includes("TERMINATED");
+    const displayReason = isTermination ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null);
+
     const resultsPayload = {
       stats: {
         score: totalScore,
@@ -314,9 +324,10 @@ const Exam = () => {
         attempted: qIds.length
       },
       questionDetails,
-      terminationReason: reason || null,
+      terminationReason: displayReason,
+      isError: isTermination,
       totalTime: elapsedTime,
-      examMetadata: { // Pass metadata for leaderboard query
+      examMetadata: { // Needed for IITM Leaderboard
         subjectId: iitmSubjectId,
         examType,
         setName
@@ -324,8 +335,9 @@ const Exam = () => {
     };
 
     if (sessionId) {
-      supabase.from('exam_sessions').update({
-        status: reason ? 'terminated' : 'completed',
+      // @ts-ignore
+      supabase.from(SESSION_TABLE).update({
+        status: isTermination ? 'terminated' : 'completed',
         end_time: new Date().toISOString(),
         duration_seconds: elapsedTime,
         questions_attempted: qIds.length,
@@ -356,6 +368,7 @@ const Exam = () => {
               </div>
               <div className="absolute -bottom-4 left-0 w-full text-center"><span className="text-[9px] text-red-500/70 font-mono uppercase">REC</span></div>
             </div>
+            {/* Audio Meter with FIXED sensitivity */}
             <div className="h-16 w-3 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
               {[...Array(12)].map((_, i) => <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all duration-75", audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />)}
             </div>
