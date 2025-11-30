@@ -9,8 +9,8 @@ import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
-import SubjectModeSelection from "./pages/SubjectModeSelection"; 
 import DegreeSelection from "./pages/DegreeSelection";
+import QuestionSetSelection from "./pages/QuestionSetSelection";
 import { SplashScreen } from "@/components/SplashScreen";
 
 const queryClient = new QueryClient();
@@ -50,13 +50,13 @@ const App = () => {
             <Route path="/practice" element={<Practice />} />
             <Route path="/exam" element={<Exam />} />
             
-            {/* IITM Routes */}
+            {/* IITM New Flow Routes */}
             
-            {/* Main Selection Hub (The Filter Page) */}
+            {/* 1. Main Filter Page + Mode Popup */}
             <Route path="/degree" element={<DegreeSelection />} />
             
-            {/* Mode Selection (Learning/Exam) */}
-            <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
+            {/* 2. Question Paper Set Selection */}
+            <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
