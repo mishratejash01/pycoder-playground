@@ -6,27 +6,38 @@
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
+    /* CHANGED: Default background to pure Black (0 0% 0%) to prevent grey flash */
+    --background: 0 0% 0%; 
     --foreground: 0 0% 98%;
-    --card: 240 10% 5%;
+
+    /* Card color slightly lighter than pure black for contrast */
+    --card: 240 10% 3.9%; 
     --card-foreground: 0 0% 98%;
+
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
+
     --primary: 263.4 70% 50.4%;
     --primary-foreground: 210 40% 98%;
+
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
+
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
+
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 263.4 70% 50.4%;
+
     --radius: 0.75rem;
-    
+
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -80,28 +91,7 @@
   font-family: 'Neuropol X', sans-serif;
 }
 
-/* --- 1. PREMIUM CURTAIN REVEAL (For Logo) --- */
-@keyframes curtain-reveal {
-  0% {
-    clip-path: inset(0 100% 0 0); /* Completely hidden from right */
-    opacity: 0;
-    transform: translateY(5px); /* Slight upward float */
-  }
-  100% {
-    clip-path: inset(0 0 0 0); /* Fully visible */
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-curtain-reveal {
-  /* Slow, luxurious easing */
-  animation: curtain-reveal 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: 0.3s; /* Brief pause before starting */
-  opacity: 0; /* Start hidden */
-}
-
-/* --- 2. LIGHT RAY PASS (For Subtitle) --- */
+/* --- LIGHT RAY REVEAL ANIMATION --- */
 @keyframes light-ray-pass {
   0% {
     background-position: 200% center;
@@ -119,17 +109,33 @@
 .animate-light-ray {
   background: linear-gradient(
     120deg, 
-    #27272a 0%, 
+    #52525b 0%, 
     #ffffff 50%, 
-    #27272a 100%
+    #52525b 100%
   );
   background-size: 200% auto;
   color: transparent;
   background-clip: text;
   -webkit-background-clip: text;
-  
-  /* Slower animation, started LATER to avoid overlap */
-  animation: light-ray-pass 3s ease-out forwards;
-  animation-delay: 1.8s; /* Starts after the logo is mostly revealed */
+  animation: light-ray-pass 2s ease-out forwards;
+}
+
+/* --- CURTAIN REVEAL --- */
+@keyframes curtain-reveal {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-curtain-reveal {
+  animation: curtain-reveal 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 0.3s;
   opacity: 0;
 }
