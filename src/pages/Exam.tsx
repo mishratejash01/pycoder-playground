@@ -32,6 +32,12 @@ interface ViolationLog {
   message: string;
 }
 
+interface QuestionMetrics {
+  attempts: number;
+  isCorrect: boolean;
+  score: number;
+}
+
 const Exam = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,7 +50,7 @@ const Exam = () => {
 
   const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
 
-  // Exam State
+  // --- State ---
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
@@ -52,6 +58,11 @@ const Exam = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [violationLogs, setViolationLogs] = useState<ViolationLog[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Performance Metrics State (Restored)
+  const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
+  const [examStats, setExamStats] = useState({ attempted: 0, correct: 0, score: 0, total: 0, accuracy: 0 });
+  const [summaryOpen, setSummaryOpen] = useState(false);
   
   // Media State
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
@@ -66,7 +77,7 @@ const Exam = () => {
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const MAX_VIOLATIONS = 3;
 
-  // Fetch Questions for specific SET
+  // --- Data Fetching ---
   const { data: assignments = [] } = useQuery({
     queryKey: ['exam_assignments', iitmSubjectId, examType, setName],
     queryFn: async () => {
@@ -114,6 +125,7 @@ const Exam = () => {
       analyzeAudio();
       return true;
     } catch (err) {
+      console.error("Media Error:", err);
       toast({
         title: "Permission Denied",
         description: "Camera and Microphone access are required for proctoring.",
@@ -156,11 +168,10 @@ const Exam = () => {
     setViolationCount(prev => {
       const newCount = prev + 1;
       
-      // Update session in DB
       if (sessionId) {
         supabase.from('exam_sessions').update({
           violation_count: newCount,
-          violation_logs: violation // In real app, append to array
+          violation_logs: violation // In real app, consider storing array
         }).eq('id', sessionId).then();
       }
 
@@ -180,7 +191,7 @@ const Exam = () => {
     });
   };
 
-  // Setup Event Listeners
+  // Event Listeners
   useEffect(() => {
     if (!isExamStarted) return;
 
@@ -225,7 +236,7 @@ const Exam = () => {
     };
   }, [isExamStarted, isSubmitting, sessionId]);
 
-  // Video Ref
+  // Video Node Effect
   useEffect(() => {
     if (videoNode && mediaStream) {
       videoNode.srcObject = mediaStream;
@@ -250,6 +261,8 @@ const Exam = () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
   }, [mediaStream]);
+
+  // --- Handlers ---
 
   const handleStartExamRequest = async () => {
     const permissionsGranted = await startMediaStream();
@@ -297,27 +310,52 @@ const Exam = () => {
     setQuestionStatuses(prev => ({ ...prev, [id]: 'visited' }));
   };
 
+  // Called by AssignmentView when a submission happens
+  const handleQuestionAttempt = (questionId: string, isCorrect: boolean, score: number) => {
+    setQuestionMetrics(prev => ({
+      ...prev,
+      [questionId]: {
+        attempts: (prev[questionId]?.attempts || 0) + 1,
+        isCorrect: isCorrect || prev[questionId]?.isCorrect || false,
+        score: Math.max(score, prev[questionId]?.score || 0)
+      }
+    }));
+  };
+
   const finishExam = async (reason?: string) => {
     setIsSubmitting(true);
+    setFinishDialogOpen(false);
+    
     if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+
+    // Calculate Stats
+    const questionsAttempted = Object.keys(questionMetrics).length;
+    const questionsCorrect = Object.values(questionMetrics).filter(m => m.isCorrect).length;
+    const totalScore = Object.values(questionMetrics).reduce((sum, m) => sum + m.score, 0);
+    const totalAttempts = Object.values(questionMetrics).reduce((sum, m) => sum + m.attempts, 0);
+    const accuracy = questionsAttempted > 0 ? Math.round((questionsCorrect / questionsAttempted) * 100) : 0;
+
+    setExamStats({ 
+      attempted: questionsAttempted, 
+      correct: questionsCorrect, 
+      score: totalScore, 
+      total: assignments.length, 
+      accuracy 
+    });
 
     if (sessionId) {
       await supabase.from('exam_sessions').update({
         status: reason ? 'terminated' : 'completed',
         end_time: new Date().toISOString(),
-        duration_seconds: elapsedTime
+        duration_seconds: elapsedTime,
+        questions_attempted: questionsAttempted,
+        questions_correct: questionsCorrect,
+        total_score: totalScore
       }).eq('id', sessionId);
     }
     
-    sessionStorage.clear();
-    toast({ 
-      title: reason ? "Exam Terminated" : "Exam Submitted", 
-      description: reason || "Your answers have been recorded.",
-      variant: reason ? "destructive" : "default"
-    });
-    
-    navigate('/');
+    setSummaryOpen(true);
   };
 
   const formatTime = (seconds: number) => {
@@ -340,7 +378,7 @@ const Exam = () => {
           </div>
         </div>
 
-        {isExamStarted && (
+        {isExamStarted && !summaryOpen && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
             {/* Live Video Feed */}
             <div className="relative group">
@@ -405,6 +443,7 @@ const Exam = () => {
                      onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
                      currentStatus={questionStatuses[selectedAssignmentId]}
                      tables={activeTables}
+                     onAttempt={(isCorrect, score) => handleQuestionAttempt(selectedAssignmentId, isCorrect, score)}
                    />
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
@@ -416,7 +455,7 @@ const Exam = () => {
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
-          /* SYSTEM CHECK LOBBY */
+          /* PRE-EXAM CHECK LOBBY */
           <div className="h-full flex flex-col items-center justify-center p-6 space-y-8 bg-[#09090b]">
             <div className="text-center space-y-2">
               <h1 className="text-3xl font-bold font-neuropol text-white">System Check</h1>
@@ -448,9 +487,33 @@ const Exam = () => {
       <AlertDialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
         <AlertDialogContent className="bg-[#0c0c0e] border-white/10 text-white">
           <AlertDialogHeader><AlertDialogTitle>Submit Assessment?</AlertDialogTitle><AlertDialogDescription>This will end your session and submit all answers.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => finishExam()} className="bg-red-600 hover:bg-red-700">Submit</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => finishExam("User Initiated")} className="bg-red-600 hover:bg-red-700">Submit</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* SUMMARY DIALOG (Restored) */}
+      <Dialog open={summaryOpen} onOpenChange={() => {}}>
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md [&>button]:hidden">
+          <DialogHeader>
+            <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4 border border-green-500/20"><Trophy className="w-8 h-8 text-green-500" /></div>
+            <DialogTitle className="text-2xl text-center">Exam Completed</DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">Responses recorded.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-6">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><CheckCircle2 className="w-5 h-5 text-green-500 mb-1" /><span className="text-2xl font-bold">{examStats.correct} / {examStats.total}</span><span className="text-[10px] uppercase text-muted-foreground">Correct</span></div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><Target className="w-5 h-5 text-blue-500 mb-1" /><span className="text-2xl font-bold">{examStats.attempted}</span><span className="text-[10px] uppercase text-muted-foreground">Attempted</span></div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><Clock className="w-5 h-5 text-orange-500 mb-1" /><span className="text-xl font-bold font-mono">{formatTime(elapsedTime)}</span><span className="text-[10px] uppercase text-muted-foreground">Time</span></div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><div className="text-primary font-bold text-lg mb-1">{examStats.accuracy}%</div><span className="text-[10px] uppercase text-muted-foreground">Accuracy</span></div>
+          </div>
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center"><div className="text-sm text-blue-200">Total Score</div><div className="text-3xl font-bold text-blue-400 mt-1">{examStats.score.toFixed(0)}</div></div>
+          <DialogFooter className="sm:justify-center mt-4">
+            <Button className="w-full bg-white text-black hover:bg-gray-200" onClick={() => { sessionStorage.clear(); navigate('/'); }}>Return to Home</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hidden video element for proctoring logic */}
+      <video ref={setVideoNode} className="hidden" muted playsInline />
     </div>
   );
 };
