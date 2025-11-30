@@ -6,13 +6,13 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Lock, Timer, Maximize, Video } from 'lucide-react';
+import { ShieldAlert, Lock, Timer, Video, Maximize } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-// Maps
+// Define Table Maps
 const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
 const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
 
@@ -20,13 +20,7 @@ interface QuestionMetrics {
   attempts: number;
   isCorrect: boolean;
   score: number;
-  timeSpent: number; // Track seconds per question
-}
-
-interface ViolationLog {
-  timestamp: string;
-  type: string;
-  message: string;
+  timeSpent: number;
 }
 
 const Exam = () => {
@@ -34,7 +28,6 @@ const Exam = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   
-  // URL Params
   const selectedAssignmentId = searchParams.get('q');
   const iitmSubjectId = searchParams.get('iitm_subject');
   const examType = searchParams.get('type');
@@ -46,15 +39,15 @@ const Exam = () => {
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   
-  // Timers
-  const [elapsedTime, setElapsedTime] = useState(0); // Total Exam Time
+  // Timers & Metrics
+  const [elapsedTime, setElapsedTime] = useState(0); 
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   
-  // Media
+  // Media State
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [videoNode, setVideoNode] = useState<HTMLVideoElement | null>(null);
@@ -68,7 +61,7 @@ const Exam = () => {
 
   const MAX_VIOLATIONS = 3;
 
-  // --- 1. Data Fetching ---
+  // --- Data Fetching ---
   const { data: assignments = [] } = useQuery({
     queryKey: ['exam_assignments', iitmSubjectId, examType, setName],
     queryFn: async () => {
@@ -86,12 +79,11 @@ const Exam = () => {
     },
   });
 
-  // Update ref when selection changes
   useEffect(() => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // --- 2. Strict Monitoring Logic ---
+  // --- Media & Audio Logic (FIXED) ---
 
   const startMediaStream = async () => {
     try {
@@ -104,10 +96,15 @@ const Exam = () => {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioContext = new AudioContextClass();
       
+      // Resume if suspended (Fixes "dead meter" issue)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
       analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.3;
+      analyser.smoothingTimeConstant = 0.5; // Smoother transitions
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       microphone.connect(analyser);
@@ -116,13 +113,11 @@ const Exam = () => {
       analyserRef.current = analyser;
       dataArrayRef.current = dataArray;
       
-      // Start Visualizer Loop
       analyzeAudio();
       return true;
-
     } catch (err) {
       console.error("Media Error:", err);
-      toast({ title: "Permission Denied", description: "Camera and Microphone access required.", variant: "destructive" });
+      toast({ title: "Permission Denied", description: "Camera/Mic access is mandatory.", variant: "destructive" });
       return false;
     }
   };
@@ -133,14 +128,17 @@ const Exam = () => {
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
     
     let sum = 0;
-    // Analyze lower frequencies for voice (0 to ~half of bin)
-    for (let i = 0; i < dataArrayRef.current.length / 2; i++) {
+    // Calculate average volume (0-255)
+    for (let i = 0; i < dataArrayRef.current.length; i++) {
       sum += dataArrayRef.current[i];
     }
-    const average = sum / (dataArrayRef.current.length / 2);
+    const average = sum / dataArrayRef.current.length;
     
-    // Boost sensitivity significantly for visual feedback
-    const volume = Math.min(100, Math.round(average * 5.0)); 
+    // SMART SCALING:
+    // 1. Subtract "Noise Floor" (approx 10-20) so silence shows as 0 bars
+    // 2. Multiply to scale remaining range to 0-100
+    const adjustedAverage = Math.max(0, average - 20); 
+    const volume = Math.min(100, Math.round(adjustedAverage * 3)); 
     
     setAudioLevel(volume);
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
@@ -155,9 +153,9 @@ const Exam = () => {
     return false;
   };
 
-  // Violation Handler
   const handleViolation = async (type: string, message: string) => {
     if (!isExamStarted || isSubmitting) return;
+    
     const newCount = violationCount + 1;
     setViolationCount(newCount);
 
@@ -166,20 +164,21 @@ const Exam = () => {
     }
 
     if (newCount >= MAX_VIOLATIONS) {
-      finishExam("Terminated: Maximum Violations Reached");
+      finishExam("Terminated: Max Violations Reached");
     } else {
-      toast({ title: "⚠️ Proctoring Warning", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
+      toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
     }
   };
 
-  // Event Listeners
+  // --- Strict Event Listeners ---
   useEffect(() => {
     if (!isExamStarted) return;
 
-    const handleVisibility = () => { if (document.hidden) handleViolation("Tab Switch", "Switched tabs/window."); };
+    const handleVisibility = () => { if (document.hidden) handleViolation("Tab Switch", "Tab switching detected."); };
     const handleFullScreen = () => { if (!document.fullscreenElement && !isSubmitting) finishExam("Terminated: Fullscreen Exited"); };
+    
     const handleKeys = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS')) {
+      if (e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS' || (e.altKey && e.key === 'Tab')) {
          e.preventDefault();
          handleViolation("Prohibited Key", "Restricted Key Press");
       }
@@ -203,15 +202,20 @@ const Exam = () => {
     };
   }, [isExamStarted, isSubmitting, violationCount]);
 
-  // --- Timer Logic (Global & Per Question) ---
+  // Video Ref
+  useEffect(() => {
+    if (videoNode && mediaStream) {
+      videoNode.srcObject = mediaStream;
+      videoNode.play().catch(console.error);
+    }
+  }, [videoNode, mediaStream]);
+
+  // Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isExamStarted && !isSubmitting) {
       interval = setInterval(() => {
-        // 1. Update Global Time
         setElapsedTime(prev => prev + 1);
-        
-        // 2. Update Per-Question Time
         if (currentQuestionRef.current) {
           const qId = currentQuestionRef.current;
           setQuestionMetrics(prev => ({
@@ -230,14 +234,6 @@ const Exam = () => {
     return () => clearInterval(interval);
   }, [isExamStarted, isSubmitting]);
 
-  // Video Stream
-  useEffect(() => {
-    if (videoNode && mediaStream) {
-      videoNode.srcObject = mediaStream;
-      videoNode.play().catch(console.error);
-    }
-  }, [videoNode, mediaStream]);
-
   // --- Handlers ---
 
   const handleStartExamRequest = async () => {
@@ -246,7 +242,7 @@ const Exam = () => {
     const fs = await enterFullScreen();
     if (!fs) { toast({ title: "Full Screen Required", variant: "destructive" }); return; }
     
-    // Resume Audio Context explicitly on user gesture
+    // Explicitly resume audio context
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       await audioContextRef.current.resume();
     }
@@ -254,10 +250,17 @@ const Exam = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
-      const { data: session } = await supabase.from('exam_sessions').insert({ user_id: user.id, total_questions: assignments.length, status: 'in_progress', start_time: new Date().toISOString() }).select().single();
-      if (session) setSessionId(session.id);
       
+      const { data: session } = await supabase.from('exam_sessions').insert({
+        user_id: user.id,
+        total_questions: assignments.length,
+        status: 'in_progress',
+        start_time: new Date().toISOString()
+      }).select().single();
+      
+      if (session) setSessionId(session.id);
       setIsExamStarted(true);
+      
       if (assignments.length > 0) {
         setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', assignments[0].id); return p; });
       }
@@ -272,8 +275,8 @@ const Exam = () => {
       [qId]: {
         ...prev[qId],
         attempts: (prev[qId]?.attempts || 0) + 1,
-        isCorrect: isCorrect || prev[qId]?.isCorrect || false, // Keep true if once correct
-        score: Math.max(score, prev[qId]?.score || 0) // Keep max score
+        isCorrect: isCorrect || prev[qId]?.isCorrect || false,
+        score: Math.max(score, prev[qId]?.score || 0)
       }
     }));
   };
@@ -287,14 +290,14 @@ const Exam = () => {
     if (audioContextRef.current) audioContextRef.current.close();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
-    // Prepare Result Data
+    // Metrics
     const qIds = Object.keys(questionMetrics);
     const correctCount = Object.values(questionMetrics).filter(m => m.isCorrect).length;
     const totalScore = Object.values(questionMetrics).reduce((acc, curr) => acc + curr.score, 0);
     const totalMaxScore = assignments.reduce((acc: number, curr: any) => acc + (curr.max_score || 0), 0);
     const accuracy = qIds.length > 0 ? Math.round((correctCount / qIds.length) * 100) : 0;
 
-    // Map detailed results for the next page
+    // Report
     const questionDetails = assignments.map((a: any) => {
       const m = questionMetrics[a.id] || { attempts: 0, isCorrect: false, score: 0, timeSpent: 0 };
       return {
@@ -321,7 +324,7 @@ const Exam = () => {
       totalTime: elapsedTime
     };
 
-    // Update DB
+    // DB Update
     if (sessionId) {
       supabase.from('exam_sessions').update({
         status: reason ? 'terminated' : 'completed',
@@ -333,7 +336,7 @@ const Exam = () => {
       }).eq('id', sessionId).then();
     }
     
-    // Navigate to Result Page
+    // Redirect to Result Page (Fixes 404 issue if route exists)
     navigate('/exam/result', { state: resultsPayload });
   };
 
@@ -356,9 +359,18 @@ const Exam = () => {
               </div>
               <div className="absolute -bottom-4 left-0 w-full text-center"><span className="text-[9px] text-red-500/70 font-mono uppercase">REC</span></div>
             </div>
-            {/* Fixed Audio Visualizer */}
+            
+            {/* Improved Audio Meter */}
             <div className="h-16 w-3 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
-              {[...Array(12)].map((_, i) => <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all duration-75", audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />)}
+              {[...Array(12)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "w-full flex-1 rounded-[1px] transition-all duration-75", 
+                    audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5"
+                  )} 
+                />
+              ))}
             </div>
           </div>
         )}
@@ -420,7 +432,6 @@ const Exam = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Hidden video element for internal use */}
       <video ref={setVideoNode} className="hidden" muted playsInline />
     </div>
   );
