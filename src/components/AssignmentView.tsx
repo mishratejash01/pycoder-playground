@@ -13,11 +13,24 @@ import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2 } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { cn } from '@/lib/utils';
 
+// Default table configuration
+const DEFAULT_TABLES = {
+  assignments: 'assignments',
+  testCases: 'test_cases',
+  submissions: 'submissions'
+};
+
 interface AssignmentViewProps {
   assignmentId: string;
   onStatusUpdate: (status: QuestionStatus) => void;
   currentStatus?: QuestionStatus;
   onAttempt?: (isCorrect: boolean, score: number) => void;
+  // New prop to receive dynamic table names
+  tables?: {
+    assignments: string;
+    testCases: string;
+    submissions: string;
+  };
 }
 
 // IMPROVED REGEX: Finds both 'def function_name' and 'class ClassName'
@@ -86,7 +99,13 @@ const executeTests = async (
   return { passedCount, newTestResults };
 };
 
-export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, onAttempt }: AssignmentViewProps) => {
+export const AssignmentView = ({ 
+  assignmentId, 
+  onStatusUpdate, 
+  currentStatus, 
+  onAttempt,
+  tables = DEFAULT_TABLES // Use default if not provided
+}: AssignmentViewProps) => {
   const [code, setCode] = useState<string>(''); 
   const [consoleOutput, setConsoleOutput] = useState<string>('');
   const [testResults, setTestResults] = useState<Record<string, { output: string; passed: boolean; error?: string | null }>>({});
@@ -96,33 +115,39 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // 1. Fetch Assignment Details using dynamic table
   const { data: assignment, isLoading, error, refetch } = useQuery({
-    queryKey: ['assignment', assignmentId],
+    queryKey: ['assignment', assignmentId, tables.assignments], // Add table to key to force refresh on context switch
     queryFn: async () => {
       if (!assignmentId) throw new Error("No ID");
-      const { data, error } = await supabase.from('assignments').select('*').eq('id', assignmentId).single();
+      // @ts-ignore
+      const { data, error } = await supabase.from(tables.assignments).select('*').eq('id', assignmentId).single();
       if (error) throw error;
       return data;
     },
     enabled: !!assignmentId
   });
 
+  // 2. Fetch Test Cases using dynamic table
   const { data: testCases = [] } = useQuery({
-    queryKey: ['testCases', assignmentId],
+    queryKey: ['testCases', assignmentId, tables.testCases],
     queryFn: async () => {
       if (!assignmentId) return [];
-      const { data } = await supabase.from('test_cases').select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
+      // @ts-ignore
+      const { data } = await supabase.from(tables.testCases).select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
       return data || [];
     },
     enabled: !!assignmentId
   });
 
+  // 3. Fetch Latest Submission using dynamic table
   const { data: latestSubmission } = useQuery({
-    queryKey: ['submission', assignmentId],
+    queryKey: ['submission', assignmentId, tables.submissions],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
-      const { data } = await supabase.from('submissions').select('code, score, public_tests_passed, private_tests_passed').eq('assignment_id', assignmentId).eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(1).maybeSingle();
+      // @ts-ignore
+      const { data } = await supabase.from(tables.submissions).select('code, score, public_tests_passed, private_tests_passed').eq('assignment_id', assignmentId).eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(1).maybeSingle();
       return data;
     },
     enabled: !!assignmentId
@@ -157,8 +182,8 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
       const targetName = getTargetName(code);
       if (!targetName) throw new Error("Could not find a function or class definition.");
 
-      const publicTests = testCases.filter(tc => tc.is_public);
-      const privateTests = testCases.filter(tc => !tc.is_public);
+      const publicTests = testCases.filter((tc: any) => tc.is_public);
+      const privateTests = testCases.filter((tc: any) => !tc.is_public);
 
       const publicResults = await executeTests(publicTests, code, targetName, runTestFunction);
       const privateResults = await executeTests(privateTests, code, targetName, runTestFunction);
@@ -171,7 +196,8 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
       const privatePassed = privateResults.passedCount;
       const score = totalTests > 0 ? ((publicPassed + privatePassed) / totalTests) * (assignment.max_score || 100) : 0;
 
-      await supabase.from('submissions').insert({
+      // @ts-ignore
+      await supabase.from(tables.submissions).insert({
         assignment_id: assignmentId,
         user_id: user.id,
         code,
@@ -220,7 +246,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
         return;
       }
 
-      const publicTests = testCases.filter(tc => tc.is_public);
+      const publicTests = testCases.filter((tc: any) => tc.is_public);
       
       if (publicTests.length === 0) {
         // Fallback: Just run the code if no test cases
@@ -257,8 +283,8 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
     toast({ description: "Marked for Review" });
   };
 
-  const publicTests = testCases.filter(tc => tc.is_public);
-  const privateTests = testCases.filter(tc => !tc.is_public);
+  const publicTests = testCases.filter((tc: any) => tc.is_public);
+  const privateTests = testCases.filter((tc: any) => !tc.is_public);
 
   if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-white"/></div>;
   if (error || !assignment) return <div className="text-white text-center p-10">Error loading problem. <Button onClick={() => refetch()} variant="outline" className="ml-2">Retry</Button></div>;
