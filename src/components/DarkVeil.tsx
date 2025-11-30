@@ -100,7 +100,8 @@ export default function DarkVeil({
 
     const renderer = new Renderer({
       dpr: Math.min(window.devicePixelRatio, 2),
-      canvas
+      canvas,
+      alpha: true // Ensure transparency support
     });
 
     const gl = renderer.gl;
@@ -123,6 +124,7 @@ export default function DarkVeil({
     const mesh = new Mesh(gl, { geometry, program });
 
     const resize = () => {
+      if (!parent) return;
       const w = parent.clientWidth,
         h = parent.clientHeight;
       renderer.setSize(w * resolutionScale, h * resolutionScale);
