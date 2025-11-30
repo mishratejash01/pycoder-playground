@@ -52,7 +52,7 @@ const App = () => {
             
             {/* IITM Routes */}
             
-            {/* Main Selection Hub */}
+            {/* Main Selection Hub (The Filter Page) */}
             <Route path="/degree" element={<DegreeSelection />} />
             
             {/* Mode Selection (Learning/Exam) */}
