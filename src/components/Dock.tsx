@@ -9,13 +9,13 @@ import {
   type SpringOptions,
   AnimatePresence
 } from 'framer-motion';
-import React, { Children, cloneElement, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Children, cloneElement, useEffect, useRef, useState } from 'react';
 import './Dock.css';
 
 export type DockItemData = {
   icon: React.ReactNode;
   label: React.ReactNode;
-  onClick: () => void;
+  onClick?: () => void; // Made optional
   className?: string;
 };
 
@@ -23,9 +23,7 @@ export type DockProps = {
   items: DockItemData[];
   className?: string;
   distance?: number;
-  panelHeight?: number;
   baseItemSize?: number;
-  dockHeight?: number;
   magnification?: number;
   spring?: SpringOptions;
 };
@@ -114,8 +112,8 @@ function DockLabel({ children, className = '', isHovered }: DockLabelProps) {
       {isVisible && (
         <motion.div
           initial={{ opacity: 0, y: 10, x: "-50%" }}
-          animate={{ opacity: 1, y: 0, x: "-50%" }}
-          exit={{ opacity: 0, y: 2, x: "-50%" }}
+          animate={{ opacity: 1, y: -10, x: "-50%" }} // Moves up slightly when visible
+          exit={{ opacity: 0, y: 5, x: "-50%" }}
           transition={{ duration: 0.2 }}
           className={`dock-label ${className}`}
           role="tooltip"
@@ -130,7 +128,6 @@ function DockLabel({ children, className = '', isHovered }: DockLabelProps) {
 type DockIconProps = {
   className?: string;
   children: React.ReactNode;
-  isHovered?: MotionValue<number>;
 };
 
 function DockIcon({ children, className = '' }: DockIconProps) {
@@ -143,33 +140,16 @@ export default function Dock({
   spring = { mass: 0.1, stiffness: 150, damping: 12 },
   magnification = 70,
   distance = 200,
-  panelHeight = 68,
-  dockHeight = 256,
   baseItemSize = 50
 }: DockProps) {
   const mouseX = useMotionValue(Infinity);
-  const isHovered = useMotionValue(0);
-
-  const maxHeight = useMemo(
-    () => Math.max(dockHeight, magnification + magnification / 2 + 4),
-    [magnification, dockHeight]
-  );
-  const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
-  const height = useSpring(heightRow, spring);
 
   return (
-    <motion.div style={{ height, scrollbarWidth: 'none' }} className="dock-outer">
+    <div className="dock-outer">
       <motion.div
-        onMouseMove={({ pageX }) => {
-          isHovered.set(1);
-          mouseX.set(pageX);
-        }}
-        onMouseLeave={() => {
-          isHovered.set(0);
-          mouseX.set(Infinity);
-        }}
+        onMouseMove={({ pageX }) => mouseX.set(pageX)}
+        onMouseLeave={() => mouseX.set(Infinity)}
         className={`dock-panel ${className}`}
-        style={{ height: panelHeight }}
         role="toolbar"
         aria-label="Application dock"
       >
@@ -189,6 +169,6 @@ export default function Dock({
           </DockItem>
         ))}
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
