@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
@@ -19,10 +19,11 @@ import { Home, GraduationCap, Code2, Trophy } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-// Wrapper to handle Dock Visibility Logic using useLocation
+// Wrapper to handle Dock Visibility and Navigation Logic
 const AppContent = () => {
   const [showSplash, setShowSplash] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const hasSeenSplash = sessionStorage.getItem("has_seen_splash");
@@ -43,13 +44,27 @@ const AppContent = () => {
 
   const dockItems = [
     { 
-      icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
+      icon: <Home size={20} />, 
       label: 'Home', 
-      onClick: () => window.location.href = '/' 
+      onClick: () => navigate('/') 
     },
-    { icon: <GraduationCap size={20} />, label: 'Degree', onClick: () => window.location.href = '/degree' },
-    { icon: <Code2 size={20} />, label: 'Upskill', onClick: () => window.location.href = '/practice' },
-    { icon: <Trophy size={20} />, label: 'Ranks', onClick: () => window.location.href = '/leaderboard' },
+    { 
+      // IITM Logo Block - Redirects to BS Degree Page
+      icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
+      label: 'IITM BS', 
+      onClick: () => navigate('/degree') 
+    },
+    { 
+      // Upskill Block - Disabled for now
+      icon: <Code2 size={20} className="opacity-50" />, 
+      label: 'Upskill (Coming Soon)', 
+      onClick: undefined // Disabled
+    },
+    { 
+      icon: <Trophy size={20} />, 
+      label: 'Ranks', 
+      onClick: () => navigate('/leaderboard') 
+    },
   ];
 
   return (
@@ -80,7 +95,6 @@ const AppContent = () => {
         <div className="hidden md:block">
           <Dock 
             items={dockItems} 
-            panelHeight={60}
             baseItemSize={45}
             magnification={60}
           />
