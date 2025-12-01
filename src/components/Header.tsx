@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, GraduationCap, Info, Home, BookOpen, User } from 'lucide-react';
+import { LogIn, LogOut, GraduationCap, Info, Home, User, Code2, Trophy } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -14,37 +22,40 @@ export function Header({ session, onLogout }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
-  const userName = session?.user?.user_metadata?.full_name || session?.user?.email;
+  
+  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
-  // Track scroll position to toggle bottom menu visibility
+  // Hide header elements on practice/exam pages
+  const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam');
+
   useEffect(() => {
-    const handleScroll = () => {
-      // Show menu after scrolling down 100px (past the initial hero area)
-      setIsScrolled(window.scrollY > 100);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const NavItem = ({ to, icon: Icon, label, active }: { to: string; icon: any; label: string; active?: boolean }) => (
+  if (isPracticeOrExam) return null;
+
+  const NavItem = ({ to, icon: Icon, label, active, size = "normal" }: { to: string; icon: any; label: string; active?: boolean, size?: "normal" | "large" }) => (
     <Link 
       to={to} 
       className={cn(
-        "flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 group",
+        "flex flex-col items-center justify-center rounded-xl transition-all duration-300 group relative",
+        size === "large" ? "p-3 -mt-6 bg-[#0c0c0e] border border-primary/30 shadow-[0_0_20px_rgba(59,130,246,0.2)] z-10" : "p-2",
         active 
-          ? "bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]" 
-          : "bg-white/5 text-muted-foreground border border-white/5 hover:bg-white/10 hover:text-white"
+          ? (size === "large" ? "text-primary ring-2 ring-primary/50" : "bg-primary/10 text-primary")
+          : "text-muted-foreground hover:text-white"
       )}
     >
-      <Icon className={cn("w-5 h-5 mb-1 transition-transform group-hover:scale-110", active && "scale-110")} />
-      <span className="text-[10px] font-medium tracking-wide uppercase">{label}</span>
+      <Icon className={cn("transition-transform group-hover:scale-110", size === "large" ? "w-6 h-6" : "w-5 h-5")} />
+      {size === "large" && <span className="text-[10px] font-bold mt-1 text-primary animate-pulse">UPSKILL</span>}
+      {size !== "large" && <span className="sr-only">{label}</span>}
     </Link>
   );
 
   return (
     <>
-      {/* --- Desktop & Mobile Top Header --- */}
+      {/* --- Top Header (Desktop & Mobile) --- */}
       <header className="fixed top-5 z-50 left-0 right-0 mx-auto w-full max-w-6xl px-4 md:px-0 transition-all duration-300">
         <div className={cn(
           "rounded-2xl border border-white/10 shadow-2xl",
@@ -53,110 +64,118 @@ export function Header({ session, onLogout }: HeaderProps) {
         )}>
           <nav className="flex items-center justify-between p-2 px-6">
             
-            {/* LEFT: Logo */}
-            <Link to="/" className="flex items-center gap-2 group mr-8">
-              <span className={cn(
-                "font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white",
-                "transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-              )}>
+            {/* LEFT: Logo & Signal */}
+            <Link to="/" className="flex items-center gap-3 group mr-8">
+              {/* Green Signal */}
+              <div className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
+              </div>
+
+              <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
             </Link>
 
-            {/* CENTER: Desktop Navigation (Hidden on Mobile) */}
+            {/* CENTER: Desktop Navigation */}
             <div className="hidden md:flex flex-1 justify-center gap-6">
-              <Link 
-                to="/degree" 
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md"
-              >
-                <GraduationCap className="w-4 h-4" />
-                IITM BS Degree
+              <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
+                <GraduationCap className="w-4 h-4" /> IITM BS
               </Link>
-              <Link 
-                to="/about" 
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md"
-              >
-                <Info className="w-4 h-4" />
-                About
+              <Link to="/leaderboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
+                <Trophy className="w-4 h-4" /> Leaderboard
+              </Link>
+              <Link to="/about" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
+                <Info className="w-4 h-4" /> About
               </Link>
             </div>
 
-            {/* RIGHT: Auth */}
+            {/* RIGHT: Auth & Profile */}
             <div className="flex items-center gap-2">
               {session ? (
-                <div className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner group hover:bg-white/10">
-                  <span className="text-xs font-medium text-gray-200 max-w-[150px] truncate">{userName}</span>
-                  <div className="h-4 w-px bg-white/10 mx-1" />
-                  <button onClick={onLogout} className="text-muted-foreground hover:text-white transition-colors" title="Logout">
-                    <LogOut className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner cursor-pointer hover:bg-white/10 transition-all">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border border-white/20">
+                        {userName.charAt(0).toUpperCase()}
+                      </div>
+                      {/* Name visible on all devices now */}
+                      <span className="text-xs font-medium text-gray-200 max-w-[100px] truncate">{userName}</span>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-[#0c0c0e] border-white/10 text-white">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem className="focus:bg-white/5 focus:text-white cursor-pointer" onClick={() => navigate('/profile')}>
+                      <User className="mr-2 h-4 w-4" /> Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="focus:bg-red-500/10 focus:text-red-400 text-red-400 cursor-pointer" onClick={onLogout}>
+                      <LogOut className="mr-2 h-4 w-4" /> Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
-                <Button size="sm" className="hidden md:flex bg-primary hover:bg-primary/90 text-white rounded-xl px-6" onClick={() => navigate('/auth')}>
+                <Button size="sm" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6" onClick={() => navigate('/auth')}>
                   <LogIn className="h-3.5 w-3.5 mr-2" /> Login
                 </Button>
-              )}
-              
-              {/* Mobile Auth Indicator (Simple icon if logged in) */}
-              {session && (
-                <div className="md:hidden w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
-                  <User className="w-4 h-4" />
-                </div>
               )}
             </div>
           </nav>
         </div>
       </header>
 
-      {/* --- Mobile Bottom Floating Menu --- */}
+      {/* --- Mobile Bottom Floating Menu (Refined) --- */}
       <div className={cn(
-        "fixed bottom-6 left-4 right-4 z-50 md:hidden transition-all duration-500 transform ease-in-out",
-        isScrolled ? "translate-y-0 opacity-100" : "translate-y-24 opacity-0 pointer-events-none"
+        "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
+        // Always show unless on practice/exam pages
+        !isPracticeOrExam ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
       )}>
-        <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl ring-1 ring-white/5">
-          <div className="grid grid-cols-4 gap-3">
-            
-            <NavItem 
-              to="/" 
-              icon={Home} 
-              label="Home" 
-              active={location.pathname === "/"} 
-            />
-            
-            <NavItem 
-              to="/degree" 
-              icon={GraduationCap} 
-              label="Degree" 
-              active={location.pathname.startsWith("/degree")} 
-            />
-            
-            <NavItem 
-              to="/about" 
-              icon={Info} 
-              label="About" 
-              active={location.pathname === "/about"} 
-            />
-
-            {/* Dynamic Auth Block for Mobile */}
-            {session ? (
-              <button 
-                onClick={onLogout}
-                className="flex flex-col items-center justify-center p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 active:scale-95 transition-all"
+        <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl ring-1 ring-white/5 relative">
+          
+          <div className="flex justify-between items-end px-2">
+            {/* Left Block */}
+            <div className="flex gap-4">
+              <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
+              <Link 
+                to="/degree" 
+                className={cn(
+                  "flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300",
+                  location.pathname.startsWith("/degree") ? "bg-white/10 text-white" : "text-muted-foreground"
+                )}
               >
-                <LogOut className="w-5 h-5 mb-1" />
-                <span className="text-[10px] font-medium tracking-wide uppercase">Logout</span>
-              </button>
-            ) : (
-              <NavItem 
-                to="/auth" 
-                icon={LogIn} 
-                label="Login" 
-                active={location.pathname === "/auth"} 
-              />
-            )}
+                {/* Monochrome IITM-like Icon */}
+                <GraduationCap className="w-5 h-5 mb-1 opacity-70" />
+                <span className="sr-only">BS Degree</span>
+              </Link>
+            </div>
 
+            {/* Center Block (Prominent) */}
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
+               <NavItem 
+                 to="/practice" 
+                 icon={Code2} 
+                 label="Upskill" 
+                 active={location.pathname.startsWith("/practice")} 
+                 size="large"
+               />
+            </div>
+
+            {/* Right Block */}
+            <div className="flex gap-4">
+              <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
+              {session ? (
+                 <NavItem to="/profile" icon={User} label="Profile" active={location.pathname === "/profile"} />
+              ) : (
+                 <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Footer Logo (Subtle) */}
+          <div className="absolute -bottom-6 left-0 right-0 text-center">
+             <span className="text-[9px] font-neuropol text-white/20 tracking-widest">CODéVO</span>
           </div>
         </div>
       </div>
