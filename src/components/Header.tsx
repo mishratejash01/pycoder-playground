@@ -64,14 +64,8 @@ export function Header({ session, onLogout }: HeaderProps) {
         )}>
           <nav className="flex items-center justify-between p-2 px-6">
             
-            {/* LEFT: Logo & Signal */}
+            {/* LEFT: Logo */}
             <Link to="/" className="flex items-center gap-3 group mr-8">
-              {/* Green Signal */}
-              <div className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
-              </div>
-
               <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
@@ -101,8 +95,15 @@ export function Header({ session, onLogout }: HeaderProps) {
                       <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border border-white/20">
                         {userName.charAt(0).toUpperCase()}
                       </div>
-                      {/* Name visible on all devices now */}
+                      
+                      {/* Name visible on all devices */}
                       <span className="text-xs font-medium text-gray-200 max-w-[100px] truncate">{userName}</span>
+
+                      {/* Green Signal - Beside Username */}
+                      <div className="relative flex h-2 w-2 ml-1" title="Online">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
+                      </div>
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 bg-[#0c0c0e] border-white/10 text-white">
