@@ -1,14 +1,10 @@
-{
-type: "uploaded file",
-fileName: "mishratejash01/pycoder-playground/pycoder-playground-a782311e0675fe1aa4ad6c605c2f37df7aa93d6f/src/App.tsx",
-fullContent: `
 import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, Home, BookOpen, User, Trophy, LogOut } from 'lucide-react';
+import { GraduationCap, Home, BookOpen, Trophy } from 'lucide-react';
 
 import Landing from "./pages/Landing";
 import Practice from "./pages/Practice";
@@ -19,6 +15,8 @@ import Auth from "./pages/Auth";
 import DegreeSelection from "./pages/DegreeSelection";
 import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
+import SubjectOppeSelection from "./pages/SubjectOppeSelection";
+import SubjectModeSelection from "./pages/SubjectModeSelection";
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 
@@ -102,6 +100,8 @@ const App = () => {
             <Route path="/exam" element={<Exam />} />
             <Route path="/exam/result" element={<ExamResult />} />
             <Route path="/degree" element={<DegreeSelection />} />
+            <Route path="/degree/oppe/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
+            <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
             <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="*" element={<NotFound />} />
@@ -113,5 +113,3 @@ const App = () => {
 };
 
 export default App;
-`
-}
