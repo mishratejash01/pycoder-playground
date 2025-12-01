@@ -1,7 +1,3 @@
-{
-type: "uploaded file",
-fileName: "mishratejash01/pycoder-playground/pycoder-playground-a782311e0675fe1aa4ad6c605c2f37df7aa93d6f/src/pages/Leaderboard.tsx",
-fullContent: `
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -171,7 +167,7 @@ const Leaderboard = () => {
                               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                                 <User className="w-4 h-4 text-gray-400" />
                               </div>
-                              <span className="font-medium text-gray-200">{entry.full_name || \`Coder \${entry.user_id.slice(0, 4)}\`}</span>
+                              <span className="font-medium text-gray-200">{entry.full_name || `Coder ${entry.user_id.slice(0, 4)}`}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-center text-gray-400">{entry.questions_correct}</TableCell>
@@ -227,5 +223,3 @@ const Leaderboard = () => {
 };
 
 export default Leaderboard;
-`
-}
