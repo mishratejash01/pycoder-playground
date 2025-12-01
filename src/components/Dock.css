@@ -1,0 +1,67 @@
+.dock-outer {
+  margin: 0 0.5rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  pointer-events: none; /* Let clicks pass through the container area */
+  position: fixed;
+  bottom: 1rem;
+  z-index: 50;
+}
+
+.dock-panel {
+  pointer-events: auto; /* Re-enable clicks on the dock itself */
+  display: flex;
+  align-items: flex-end;
+  width: fit-content;
+  gap: 1rem;
+  border-radius: 1.5rem;
+  background-color: rgba(6, 0, 16, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem 0.75rem 1rem;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+.dock-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  outline: none;
+  transition: background-color 0.2s;
+}
+
+.dock-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e5e5e5;
+}
+
+.dock-label {
+  position: absolute;
+  top: -2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #0c0c0e;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
