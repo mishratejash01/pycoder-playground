@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, GraduationCap, Info, Home, User, Code2, Trophy } from 'lucide-react';
+import { LogIn, LogOut, Info, Home, User, Code2, Trophy } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +29,14 @@ export function Header({ session, onLogout }: HeaderProps) {
   const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam');
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      // Show menu only after scrolling past the Hero section (approx 1 viewport height)
+      setIsScrolled(window.scrollY > window.innerHeight - 100);
+    };
+    
+    // Initial check
+    handleScroll();
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -76,7 +83,12 @@ export function Header({ session, onLogout }: HeaderProps) {
             {/* CENTER: Desktop Navigation */}
             <div className="hidden md:flex flex-1 justify-center gap-6">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                <GraduationCap className="w-4 h-4" /> IITM BS
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
+                  alt="IITM" 
+                  className="w-4 h-4 object-contain opacity-80" 
+                /> 
+                IITM BS
               </Link>
               <Link to="/leaderboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
                 <Trophy className="w-4 h-4" /> Leaderboard
@@ -109,7 +121,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                   <DropdownMenuContent align="end" className="w-56 bg-[#0c0c0e] border-white/10 text-white">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-white/10" />
-                    {/* Removed Profile Option as requested */}
                     <DropdownMenuItem className="focus:bg-red-500/10 focus:text-red-400 text-red-400 cursor-pointer" onClick={onLogout}>
                       <LogOut className="mr-2 h-4 w-4" /> Logout
                     </DropdownMenuItem>
@@ -128,8 +139,8 @@ export function Header({ session, onLogout }: HeaderProps) {
       {/* --- Mobile Bottom Floating Menu (Refined) --- */}
       <div className={cn(
         "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
-        // Always show unless on practice/exam pages
-        !isPracticeOrExam ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
+        // Show ONLY if not practice/exam AND we have scrolled past hero
+        (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
       )}>
         <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl ring-1 ring-white/5 relative">
           
@@ -144,8 +155,12 @@ export function Header({ session, onLogout }: HeaderProps) {
                   location.pathname.startsWith("/degree") ? "bg-white/10 text-white" : "text-muted-foreground"
                 )}
               >
-                {/* Monochrome IITM-like Icon */}
-                <GraduationCap className="w-5 h-5 mb-1 opacity-70" />
+                {/* IITM Logo Illustration */}
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
+                  alt="IITM" 
+                  className={cn("w-5 h-5 mb-1 object-contain transition-all", location.pathname.startsWith("/degree") ? "opacity-100 grayscale-0" : "opacity-70 grayscale")} 
+                />
                 <span className="sr-only">BS Degree</span>
               </Link>
             </div>
@@ -165,6 +180,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             <div className="flex gap-4">
               <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
               {session ? (
+                 // Just a placeholder/profile link if needed, logout is now in top nav dropdown
                  <NavItem to="/profile" icon={User} label="Profile" active={location.pathname === "/profile"} />
               ) : (
                  <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
