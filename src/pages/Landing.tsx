@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import DarkVeil from '@/components/DarkVeil';
 import { cn } from "@/lib/utils";
+import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 
 // --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
@@ -58,6 +59,18 @@ const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg"
 ];
 
+// --- Animation Scenario Data ---
+const DEMO_SCENARIO = {
+  question: "Write a function to check if a number is prime.",
+  code: `def is_prime(n):
+    if n <= 1:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True`
+};
+
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -69,6 +82,63 @@ const Landing = () => {
   // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
   const helloWorldText = useTypewriter("Hello World", 150, 1500);
+
+  // --- Showcase Animation States ---
+  const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
+  const [typedCode, setTypedCode] = useState('');
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    let charIndex = 0;
+
+    const animate = () => {
+      // Phase 1: Show Question (Wait 3s)
+      setShowcasePhase('question');
+      setTypedCode('');
+      setActiveKey(null);
+
+      timeoutId = setTimeout(() => {
+        // Phase 2: Switch to Terminal & Type
+        setShowcasePhase('terminal');
+        
+        const typeChar = () => {
+          if (charIndex < DEMO_SCENARIO.code.length) {
+            const char = DEMO_SCENARIO.code[charIndex];
+            setTypedCode(prev => prev + char);
+            setActiveKey(char); // Light up key
+            
+            // Randomize typing speed slightly for realism
+            const delay = Math.random() * 50 + 30; 
+            charIndex++;
+            timeoutId = setTimeout(typeChar, delay);
+          } else {
+            // Finished typing, wait then reset
+            setActiveKey(null);
+            timeoutId = setTimeout(() => {
+              charIndex = 0;
+              animate(); // Loop
+            }, 3000);
+          }
+        };
+        // Start typing after brief pause in terminal view
+        timeoutId = setTimeout(typeChar, 500);
+
+      }, 3000);
+    };
+
+    animate();
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Clear active key shortly after it's set to create a "tap" effect
+  useEffect(() => {
+    if (activeKey) {
+      const t = setTimeout(() => setActiveKey(null), 100);
+      return () => clearTimeout(t);
+    }
+  }, [activeKey, typedCode]); // Depend on typedCode to trigger on every char
 
   // Monitor Auth State
   useEffect(() => {
@@ -133,6 +203,20 @@ const Landing = () => {
         }
         .animate-marquee:hover {
           animation-play-state: paused;
+        }
+        /* Blinking Cursor */
+        .cursor-blink {
+          display: inline-block;
+          width: 8px;
+          height: 15px;
+          background-color: #3b82f6;
+          animation: blink 1s step-end infinite;
+          vertical-align: middle;
+          margin-left: 2px;
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
         }
       `}</style>
 
@@ -279,64 +363,79 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* --- NEW SHOWCASE SECTION (Laptop & Mobile & Marquee) --- */}
-        <section id="showcase-section" className="w-full bg-[#09090b] pt-32 pb-24 relative z-10 overflow-hidden">
+        {/* --- INTERACTIVE SHOWCASE SECTION (Keyboard & Terminal) --- */}
+        <section id="showcase-section" className="w-full bg-[#09090b] pt-24 pb-24 relative z-10 overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6">
             
-            {/* Device Mockups Container */}
-            <div className="relative w-full max-w-5xl mx-auto flex flex-col items-center mb-32">
+            <div className="grid lg:grid-cols-2 gap-12 items-center mb-32 max-w-7xl mx-auto">
               
-              {/* Laptop Mockup */}
-              <div className="relative w-full md:w-[80%] aspect-[16/10] bg-[#1a1a1a] rounded-t-2xl rounded-b-md border-[4px] border-gray-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10">
-                
-                {/* Camera Dot */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gray-700 rounded-full z-20" />
-                
-                {/* Screen Content */}
-                <div className="absolute inset-[6px] bg-black rounded-lg overflow-hidden border border-white/5">
-                  <video 
-                    src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
-                    className="w-full h-full object-cover opacity-90"
-                    autoPlay 
-                    loop 
-                    muted 
-                    playsInline 
-                  />
-                  {/* Glare Effect */}
-                  <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
-                </div>
+              {/* LEFT: Constant Keyboard */}
+              <div className="relative order-2 lg:order-1">
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  Input Stream
+                </h3>
+                <VirtualKeyboard activeChar={activeKey} />
+              </div>
 
-                {/* iPhone Mockup - Absolute Positioning on Right Edge */}
-                <div className="absolute -right-4 md:-right-16 bottom-[-20px] md:bottom-[-40px] w-[90px] md:w-[140px] aspect-[9/19] bg-[#050505] rounded-[1.5rem] md:rounded-[2.5rem] border-[4px] md:border-[6px] border-[#1a1a1a] shadow-[0_15px_40px_rgba(0,0,0,0.6)] z-30 transform rotate-[-5deg] overflow-hidden">
-                  
-                  {/* Dynamic Island Notch */}
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[30%] h-4 bg-black rounded-full z-40" />
-                  
-                  {/* Phone Screen (Blacked Out) */}
-                  <div className="absolute inset-1 bg-black rounded-[1.2rem] md:rounded-[2.2rem] overflow-hidden">
-                    <div className="w-full h-full flex flex-col items-center justify-center relative">
-                      {/* Subtle Reflection */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
-                      
-                      {/* Optional: Minimal Logo or Icon inside phone */}
-                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center opacity-50">
-                        <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
-                      </div>
-                    </div>
+              {/* RIGHT: Dynamic Screen (Question -> Terminal) */}
+              <div className="relative order-1 lg:order-2 h-[400px] md:h-[500px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
+                
+                {/* Window Chrome */}
+                <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  <div className="ml-4 text-xs text-muted-foreground font-mono opacity-50 flex-1 text-center">
+                    {showcasePhase === 'question' ? 'problem_statement.md' : 'solution.py'}
                   </div>
                 </div>
 
-              </div>
-              
-              {/* Laptop Base */}
-              <div className="relative w-[100%] md:w-[90%] h-3 md:h-4 bg-[#2a2a2a] rounded-b-xl rounded-t-sm shadow-xl z-0 mt-[-2px]">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-b-md" /> {/* Hinge */}
+                {/* Content Area */}
+                <div className="flex-1 relative p-8 font-mono text-sm md:text-base overflow-hidden">
+                  
+                  {/* Phase 1: Question View */}
+                  <div 
+                    className={cn(
+                      "absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out",
+                      showcasePhase === 'question' ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-10 scale-95 pointer-events-none"
+                    )}
+                  >
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
+                      <span className="text-3xl">?</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-4">Problem Statement</h3>
+                    <p className="text-muted-foreground max-w-md leading-relaxed text-lg">
+                      "{DEMO_SCENARIO.question}"
+                    </p>
+                  </div>
+
+                  {/* Phase 2: Terminal View */}
+                  <div 
+                    className={cn(
+                      "absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 ease-in-out flex flex-col",
+                      showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 text-muted-foreground mb-4 opacity-50 text-xs">
+                      <Terminal className="w-4 h-4" />
+                      <span>user@codevo:~/projects/algo $ python3</span>
+                    </div>
+                    
+                    <div className="font-mono text-blue-400 whitespace-pre-wrap leading-relaxed">
+                      {typedCode}
+                      <span className="cursor-blink" />
+                    </div>
+                  </div>
+
+                </div>
               </div>
 
             </div>
 
             {/* Infinite Scrolling Tech Marquee */}
-            <div className="w-full max-w-7xl mx-auto overflow-hidden relative group">
+            <div className="w-full max-w-7xl mx-auto overflow-hidden relative group mt-12">
               {/* Gradient Masks */}
               <div className="absolute left-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
               <div className="absolute right-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
