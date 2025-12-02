@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { usePyodide } from './usePyodide';
 
-// Piston API Endpoint (Public Instance)
+// Piston API (Public Execution Engine)
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 
-export type Language = 'python' | 'java' | 'c' | 'cpp' | 'javascript';
+export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript';
 
 interface ExecutionResult {
   success: boolean;
@@ -16,7 +16,7 @@ export const useCodeRunner = () => {
   const { runCode: runPython, runTestFunction: runPythonTests, loading: pythonLoading } = usePyodide();
   const [loading, setLoading] = useState(false);
 
-  // Helper for Piston Execution
+  // Helper to execute code via Piston API (for Java, C++, JS)
   const runPiston = async (language: string, version: string, code: string, stdin: string = "") => {
     try {
       const response = await fetch(PISTON_API_URL, {
@@ -26,7 +26,7 @@ export const useCodeRunner = () => {
           language,
           version,
           files: [{ content: code }],
-          stdin: stdin, // Pass input for test cases here
+          stdin, // Input for the program (test case input)
         }),
       });
       const data = await response.json();
@@ -34,13 +34,13 @@ export const useCodeRunner = () => {
       if (data.run) {
         return {
           success: data.run.code === 0,
-          output: data.run.output, // Combined stdout and stderr
+          output: data.run.output, // Captures stdout and stderr
           error: data.run.code !== 0 ? data.run.stderr : undefined
         };
       }
-      return { success: false, output: "", error: "Execution failed" };
+      return { success: false, output: "", error: "Execution failed to start." };
     } catch (e: any) {
-      return { success: false, output: "", error: e.message };
+      return { success: false, output: "", error: `Network Error: ${e.message}` };
     }
   };
 
@@ -51,20 +51,19 @@ export const useCodeRunner = () => {
     try {
       switch (language) {
         case 'python':
-          // Use your existing Client-Side Pyodide
-          // Note: Pyodide usually captures stdout via the hook setup, 
-          // you might need to adapt it to accept 'stdin' if your Pyodide implementation supports input()
-          const pyResult = await runPython(code); // Assuming runPython doesn't take input in your current impl
+          // Keep using Client-Side Pyodide for Python (Fast & Offline-capable)
+          // Note: Standard Pyodide run doesn't take stdin easily, 
+          // but our wrapper in AssignmentView handles function calls.
+          const pyResult = await runPython(code); 
           result = { success: pyResult.success, output: pyResult.output || pyResult.error || "" };
           break;
 
         case 'javascript':
-          // Use Piston for secure execution (Node.js)
           result = await runPiston('javascript', '18.15.0', code, input);
           break;
 
         case 'java':
-          // Java requires a class name. Piston handles 'Main' usually.
+          // Piston automatically handles a public class named 'Main' or infers it
           result = await runPiston('java', '15.0.2', code, input);
           break;
 
@@ -79,6 +78,8 @@ export const useCodeRunner = () => {
         default:
           result = { success: false, output: "Language not supported", error: "Unsupported language" };
       }
+    } catch (err: any) {
+      result = { success: false, output: "", error: err.message };
     } finally {
       setLoading(false);
     }
