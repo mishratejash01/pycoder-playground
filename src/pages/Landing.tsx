@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu } from 'lucide-react';
+import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu, Zap, Shield, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -9,7 +9,7 @@ import DarkVeil from '@/components/DarkVeil';
 import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
-import { CodevoShowcase } from '@/components/CodevoShowcase'; // Imported the new component
+import { CodevoShowcase } from '@/components/CodevoShowcase';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Typewriter Hook ---
@@ -21,13 +21,11 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
     const delayTimer = setTimeout(() => {
       setStarted(true);
     }, startDelay);
-
     return () => clearTimeout(delayTimer);
   }, [startDelay]);
 
   useEffect(() => {
     if (!started) return;
-
     const interval = setInterval(() => {
       setDisplayText((currentText) => {
         if (currentText.length < text.length) {
@@ -37,7 +35,6 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
         return currentText;
       });
     }, speed);
-
     return () => clearInterval(interval);
   }, [started, text, speed]);
 
@@ -175,12 +172,12 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale
+  // Adjusted Scale for "Less Shrinking" to remove white gaps
   const scale = Math.max(0.985, 1 - scrollY / 4000);
   const borderRadius = Math.min(24, scrollY / 20);
 
   return (
-    <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#000000] selection:bg-primary/20 flex flex-col relative overflow-hidden">
       <style>{`
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
@@ -238,7 +235,7 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[120vh] bg-[#09090b]"> 
+        <div className="relative w-full h-[120vh] bg-[#000000]"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -297,7 +294,6 @@ const Landing = () => {
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
-          {/* Grid Background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <div className="container mx-auto px-6 relative z-10">
@@ -320,7 +316,6 @@ const Landing = () => {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start gap-8">
-                  {/* BUTTON */}
                   <Button 
                     onClick={handlePracticeClick}
                     className="group relative h-14 px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
@@ -331,7 +326,6 @@ const Landing = () => {
                     </span>
                   </Button>
 
-                  {/* Tech Stack Marquee */}
                   <div className="w-full max-w-md">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left opacity-70 font-mono">
                       // POWERED BY MODERN TECHNOLOGIES
@@ -458,7 +452,7 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 4: "CODE ON CODEVO" (IMPORTED COMPONENT) --- */}
+        {/* --- SECTION 4: CODE ON CODEVO (New Component) --- */}
         <CodevoShowcase />
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
@@ -467,13 +461,11 @@ const Landing = () => {
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
 
           <div className="container mx-auto px-6 relative z-20">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
-                Play n <span className="font-neuropol text-white">Codé</span>
+            {/* Left aligned, Sans Serif, No description */}
+            <div className="text-left mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight font-sans">
+                Play n Codé
               </h2>
-              <p className="text-gray-400 max-w-xl mx-auto text-lg">
-                 Taking a break? Keep your reflexes sharp with our integrated asteroid simulation. Warning: System locks after inactivity.
-              </p>
             </div>
 
             <div className="max-w-5xl mx-auto">
@@ -482,6 +474,43 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* Modes Section */}
+        <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24 border-t border-white/5">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-white">Select Mode</h2>
+              <p className="text-muted-foreground text-lg">Choose how you want to code today.</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex-1">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20"><Code2 className="w-8 h-8 text-primary" /></div>
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Standard practice console with instant feedback.</div>
+                </div>
+                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg h-12 text-base font-medium transition-all hover:scale-[1.02]">
+                    {session ? "Enter Learning Mode" : "Login to Practice"} <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex-1">
+                  <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20"><Lock className="w-8 h-8 text-red-500" /></div>
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Secure proctored environment with strict monitoring.</div>
+                </div>
+                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                  <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]" onClick={() => session ? navigate('/exam') : navigate('/auth')}>
+                    {session ? "Enter Exam Hall" : "Login to Exam"} <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t border-white/10 mt-0 bg-[#0c0c0e] relative z-10">
