@@ -9,7 +9,7 @@ import DarkVeil from '@/components/DarkVeil';
 import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 
 // --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
@@ -75,7 +75,6 @@ const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
-  const [scrollY, setScrollY] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
@@ -87,6 +86,18 @@ const Landing = () => {
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  // Framer Motion Scroll Logic
+  const { scrollY } = useScroll();
+  
+  // Transform scroll range [0, 500] to scale [1, 0.9]
+  const rawScale = useTransform(scrollY, [0, 500], [1, 0.9]);
+  // Add spring physics to the scale for "slowly animated" effect when scrolling up/down
+  const smoothScale = useSpring(rawScale, { stiffness: 60, damping: 20, mass: 0.5 });
+
+  // Transform scroll range [0, 500] to border radius [0, 32]
+  const rawRadius = useTransform(scrollY, [0, 500], [0, 32]);
+  const smoothRadius = useSpring(rawRadius, { stiffness: 60, damping: 20, mass: 0.5 });
 
   // Animation Loop
   useEffect(() => {
@@ -140,13 +151,7 @@ const Landing = () => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setSession(session));
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      subscription.unsubscribe();
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => subscription.unsubscribe();
   }, [toast]);
 
   const handleLogout = async () => {
@@ -170,12 +175,6 @@ const Landing = () => {
       session ? navigate('/practice') : navigate('/auth');
     }, 800);
   };
-
-  // --- ANIMATION LOGIC (TIGHTER) ---
-  // Scale drops faster (divider 500) to match the reduced height
-  const scale = Math.max(0.9, 1 - scrollY / 500);
-  // Radius rounds immediately
-  const borderRadius = Math.min(32, scrollY / 4);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -236,16 +235,15 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        {/* Height reduced to 102vh - effectively removing the 'scroll track' gap */}
         <div className="relative w-full h-[102vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
-            <div 
+            <motion.div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
               style={{
-                transform: `scale(${scale})`, 
+                scale: smoothScale, 
                 transformOrigin: 'top center', 
-                borderBottomLeftRadius: `${borderRadius}px`,
-                borderBottomRightRadius: `${borderRadius}px`,
+                borderBottomLeftRadius: smoothRadius,
+                borderBottomRightRadius: smoothRadius,
               }}
             >
               <div className="absolute inset-0 z-0 w-full h-full"><DarkVeil /><div className="absolute inset-0 bg-black/60" /></div>
@@ -258,29 +256,29 @@ const Landing = () => {
                       <div className="relative bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-6 py-3 shadow-2xl flex items-center gap-3">
                         <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500/50" /><div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" /><div className="w-2.5 h-2.5 rounded-full bg-green-500/50" /></div>
                         <div className="h-4 w-px bg-white/10 mx-1" />
-                        <p className="font-mono text-base md:text-lg text-green-400 font-medium tracking-wide"><span className="text-gray-500 mr-3 select-none">$</span>{taglineText}</p>
+                        <p className="font-mono text-xs md:text-lg text-green-400 font-medium tracking-wide"><span className="text-gray-500 mr-3 select-none">$</span>{taglineText}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col items-center gap-2">
-                    <span className="text-3xl md:text-5xl text-white font-bold tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">Évolve from</span>
+                    <span className="text-2xl md:text-5xl text-white font-bold tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">Évolve from</span>
                     <div className="flex flex-wrap items-baseline justify-center gap-3 md:gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-                      <span className="font-mono text-primary text-5xl md:text-8xl font-bold drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">{helloWorldText}</span>
-                      <span className="text-2xl md:text-4xl text-muted-foreground/60 font-light">to</span>
-                      <span className="text-5xl md:text-8xl font-extrabold text-[#1a1a1a] transition-colors duration-700 hover:text-white cursor-default" title="Keep coding to reveal">Hired</span>
+                      <span className="font-mono text-primary text-3xl md:text-8xl font-bold drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">{helloWorldText}</span>
+                      <span className="text-xl md:text-4xl text-muted-foreground/60 font-light">to</span>
+                      <span className="text-4xl md:text-8xl font-extrabold text-[#1a1a1a] transition-colors duration-700 hover:text-white cursor-default" title="Keep coding to reveal">Hired</span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center justify-center gap-4 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
                     <div className="flex items-center -space-x-4">
                       {[{ src: "https://images.unsplash.com/photo-1628157588553-5eeea00af15c?w=150&h=150&fit=crop", rotate: "-rotate-6", zIndex: "z-0" }, { src: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&h=150&fit=crop", rotate: "rotate-3", zIndex: "z-10" }, { src: "https://images.unsplash.com/photo-1619895862022-09114b41f16f?w=150&h=150&fit=crop", rotate: "-rotate-3", zIndex: "z-20" }, { src: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=150&h=150&fit=crop", rotate: "rotate-6", zIndex: "z-30" }].map((item, i) => (
-                        <div key={i} className={cn("relative w-10 h-12 md:w-12 md:h-14 rounded-xl border-[2px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:!z-50 hover:border-white/40 hover:shadow-2xl bg-gray-800", item.rotate, item.zIndex)}>
+                        <div key={i} className={cn("relative w-10 h-10 md:w-12 md:h-12 rounded-xl border-[2px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:!z-50 hover:border-white/40 hover:shadow-2xl bg-gray-800", item.rotate, item.zIndex)}>
                           <img src={item.src} alt="User" className="w-full h-full object-cover opacity-90 hover:opacity-100" />
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs md:text-sm font-medium text-muted-foreground/80 tracking-wide border-l border-white/10 pl-4 h-full flex items-center">Trusted by <span className="text-white font-semibold mx-1">100K+</span> community users</p>
+                    <p className="text-[10px] md:text-sm font-medium text-muted-foreground/80 tracking-wide border-l border-white/10 pl-4 h-full flex items-center">Trusted by <span className="text-white font-semibold mx-1">100K+</span> community users</p>
                   </div>
                 </div>
               </div>
@@ -290,28 +288,28 @@ const Landing = () => {
                   <div className="animate-scroll-arrow"><ChevronsDown className="w-5 h-5 text-white/90" /></div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
-        {/* Reduced padding from py-24 to py-12 */}
-        <section id="laptop-section" className="w-full bg-[#09090b] py-12 relative overflow-hidden border-b border-white/5">
+        {/* Added z-20 relative to stack on top of the hero's white background area cleanly */}
+        <section id="laptop-section" className="w-full bg-[#09090b] py-12 relative z-20 overflow-hidden border-b border-white/5">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
-          <div className="container mx-auto px-6 relative z-10">
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
               {/* LEFT: Text & Button */}
-              <div className="flex-1 space-y-10 text-center lg:text-left">
+              <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase">
                     <Activity className="w-3 h-3 animate-pulse" />
                     System::Online
                   </div>
-                  <h2 className="text-4xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
+                  <h2 className="text-3xl md:text-5xl font-mono font-bold tracking-tight text-white leading-tight">
                     EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
                   </h2>
-                  <p className="font-mono text-sm md:text-base text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                  <p className="font-mono text-xs md:text-base text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed">
                     A fully functional development environment right in your browser. <br/>
                     <span className="text-white">Write. Run. Debug. Succeed.</span>
                   </p>
@@ -320,7 +318,7 @@ const Landing = () => {
                 <div className="flex flex-col items-center lg:items-start gap-8">
                   <Button 
                     onClick={handlePracticeClick}
-                    className="group relative h-14 px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
+                    className="group relative h-12 md:h-14 px-8 md:px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-base md:text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
                   >
                     <span className="relative z-10 flex items-center gap-2">
                       Start Coding
@@ -333,11 +331,11 @@ const Landing = () => {
                       // POWERED BY MODERN TECHNOLOGIES
                     </p>
                     <div className="w-full overflow-hidden relative mask-gradient-x">
-                      <div className="absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
-                      <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
-                      <div className="flex gap-8 animate-marquee whitespace-nowrap items-center">
+                      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
+                      <div className="flex gap-6 animate-marquee whitespace-nowrap items-center">
                         {[...TECH_STACK, ...TECH_STACK, ...TECH_STACK].map((src, i) => (
-                          <div key={i} className="flex-shrink-0 w-10 h-10 opacity-50 hover:opacity-100 transition-all grayscale hover:grayscale-0 cursor-pointer">
+                          <div key={i} className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 opacity-50 hover:opacity-100 transition-all grayscale hover:grayscale-0 cursor-pointer">
                             <img src={src} alt="tech" className="w-full h-full object-contain" />
                           </div>
                         ))}
@@ -348,7 +346,7 @@ const Landing = () => {
               </div>
 
               {/* RIGHT: 3D Laptop Mockup */}
-              <div className="flex-1 w-full max-w-2xl lg:max-w-none perspective-1000">
+              <div className="flex-1 w-full max-w-full lg:max-w-none perspective-1000 px-2 md:px-0">
                 <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
                   <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
                     <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-700 rounded-full z-20" />
@@ -360,12 +358,12 @@ const Landing = () => {
                           <div className="w-10 h-3 bg-white/5 rounded" />
                         </div>
                         <div className="flex-1 flex overflow-hidden">
-                          <div className="w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
+                          <div className="w-8 md:w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
                             <LayoutGrid className="w-3 h-3 text-primary" />
                             <Code2 className="w-3 h-3 opacity-50" />
                             <Server className="w-3 h-3 opacity-50" />
                           </div>
-                          <div className="flex-1 p-3 relative bg-[#09090b]">
+                          <div className="flex-1 p-2 md:p-3 relative bg-[#09090b] overflow-hidden">
                             <div className="text-blue-400">def optimize_route(nodes):</div>
                             <div className="text-gray-500 pl-4"># Initialize dynamic programming table</div>
                             <div className="text-purple-400 pl-4">dp = [float('inf')] * len(nodes)</div>
@@ -378,7 +376,7 @@ const Landing = () => {
                               <Play className="w-2 h-2 fill-current" /> EXECUTE
                             </div>
                           </div>
-                          <div className="w-1/3 border-l border-white/10 bg-black/60 p-2 font-mono">
+                          <div className="w-1/3 border-l border-white/10 bg-black/60 p-2 font-mono hidden sm:block">
                             <div className="text-green-500 mb-1">➜  ~ running tests...</div>
                             <div className="mt-2 space-y-1">
                               <div className="flex items-center gap-1 text-green-400">✓ Case 1 Passed</div>
@@ -406,7 +404,7 @@ const Landing = () => {
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
               {/* LEFT: Terminal */}
-              <div className="relative order-2 lg:order-1 h-[350px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
+              <div className="relative order-2 lg:order-1 h-[300px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
                 <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
                   <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
                   <div className="ml-4 text-xs text-muted-foreground font-mono opacity-50 flex-1 text-center">
@@ -423,7 +421,7 @@ const Landing = () => {
                       </div>
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight">Codevo Challenge</h3>
-                    <p className="text-muted-foreground max-w-md leading-relaxed text-base md:text-lg">"{DEMO_SCENARIO.question}"</p>
+                    <p className="text-muted-foreground max-w-md leading-relaxed text-sm md:text-lg">"{DEMO_SCENARIO.question}"</p>
                   </div>
 
                   <div className={cn("absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 ease-in-out flex flex-col", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none")}>
@@ -445,97 +443,84 @@ const Landing = () => {
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   Real-time Interaction
                 </h3>
-                <VirtualKeyboard activeChar={activeKey} />
+                <div className="scale-90 md:scale-100 origin-left">
+                  <VirtualKeyboard activeChar={activeKey} />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* --- SECTION 4: CODE ON CODEVO --- */}
-        {/* Reduced padding from py-24 to py-12 */}
         <section className="w-full bg-[#050505] py-12 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6 max-w-7xl">
             
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
               <div className="max-w-xl">
-                <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight leading-[1.1]">
+                <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-[1.1]">
                   Code on <span className="font-neuropol text-white">CODéVO</span>
                 </h2>
               </div>
               <div className="max-w-sm">
-                <p className="text-lg text-gray-400 leading-relaxed">
+                <p className="text-base md:text-lg text-gray-400 leading-relaxed">
                   Experience the future of coding. Featuring frontier capabilities in real-time execution, secure proctoring, and global competition.
                 </p>
               </div>
             </div>
 
             {/* Screens Container */}
-            <div className="relative w-full h-[450px] md:h-[700px] mt-12">
+            <div className="relative w-full h-[400px] md:h-[700px] mt-12">
               
               {/* Desktop IDE View */}
-              <div className="absolute left-0 top-0 w-[85%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
+              <div className="absolute left-0 top-0 w-[95%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
                  <div className="w-full h-full flex flex-col bg-[#0c0c0e] rounded-xl border border-white/5 overflow-hidden">
-                    <div className="h-12 border-b border-white/5 flex items-center px-6 justify-between bg-[#151517]">
+                    <div className="h-12 border-b border-white/5 flex items-center px-4 md:px-6 justify-between bg-[#151517]">
                        <div className="flex gap-2">
                           <div className="w-3 h-3 rounded-full bg-white/10" />
                           <div className="w-3 h-3 rounded-full bg-white/10" />
                           <div className="w-3 h-3 rounded-full bg-white/10" />
                        </div>
-                       <div className="text-sm text-gray-500 font-mono">codevo_ide_v2.tsx</div>
-                       <div className="w-20 h-8 bg-white/5 rounded-md" />
+                       <div className="text-xs md:text-sm text-gray-500 font-mono">codevo_ide_v2.tsx</div>
+                       <div className="w-16 md:w-20 h-8 bg-white/5 rounded-md" />
                     </div>
-                    <div className="flex-1 p-8 font-mono text-sm md:text-base text-gray-400 space-y-4">
+                    <div className="flex-1 p-4 md:p-8 font-mono text-xs md:text-base text-gray-400 space-y-2 md:space-y-4">
                        <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">1</span>
-                          <span className="text-purple-400">import</span> <span className="text-white">React</span> <span className="text-purple-400">from</span> <span className="text-green-400">'react'</span>;
+                          <span className="text-gray-600 select-none w-4">1</span>
+                          <span><span className="text-purple-400">import</span> <span className="text-white">React</span> <span className="text-purple-400">from</span> <span className="text-green-400">'react'</span>;</span>
                        </div>
                        <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">2</span>
-                          <span className="text-blue-400">const</span> <span className="text-yellow-200">App</span> = () <span className="text-blue-400">=&gt;</span> {'{'}
+                          <span className="text-gray-600 select-none w-4">2</span>
+                          <span><span className="text-blue-400">const</span> <span className="text-yellow-200">App</span> = () <span className="text-blue-400">=&gt;</span> {'{'}</span>
                        </div>
                        <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">3</span>
-                          <span className="pl-8 text-pink-400">return</span> (
+                          <span className="text-gray-600 select-none w-4">3</span>
+                          <span className="pl-4 md:pl-8 text-pink-400">return</span> (
                        </div>
                        <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">4</span>
-                          <span className="pl-12 text-gray-300">&lt;<span className="text-blue-300">CodevoEnvironment</span> mode=<span className="text-green-300">"pro"</span> /&gt;</span>
+                          <span className="text-gray-600 select-none w-4">4</span>
+                          <span className="pl-8 md:pl-12 text-gray-300">&lt;<span className="text-blue-300">CodevoEnvironment</span> /&gt;</span>
                        </div>
                     </div>
                  </div>
               </div>
 
               {/* Mobile Phone Overlay */}
-              <div className="absolute right-[5%] bottom-[-20px] w-[140px] md:w-[300px] aspect-[9/19] bg-black rounded-[2rem] md:rounded-[3rem] border-[6px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-5 md:h-7 bg-black rounded-b-xl z-40" />
-                 <div className="h-full w-full bg-[#0c0c0e] pt-12 px-3 md:px-5 pb-8 flex flex-col relative">
-                    <div className="flex justify-between items-center mb-6">
-                       <div className="w-8 h-8 rounded-full bg-white/10" />
-                       <div className="w-20 h-4 bg-white/10 rounded-full" />
+              <div className="absolute right-[2%] md:right-[5%] bottom-[10px] md:bottom-[-20px] w-[100px] md:w-[300px] aspect-[9/19] bg-black rounded-[1.5rem] md:rounded-[3rem] border-[4px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-4 md:h-7 bg-black rounded-b-xl z-40" />
+                 <div className="h-full w-full bg-[#0c0c0e] pt-8 md:pt-12 px-2 md:px-5 pb-4 md:pb-8 flex flex-col relative">
+                    <div className="flex justify-between items-center mb-4 md:mb-6">
+                       <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white/10" />
+                       <div className="w-12 md:w-20 h-3 md:h-4 bg-white/10 rounded-full" />
                     </div>
-                    <div className="bg-white/5 rounded-2xl p-4 mb-3 border border-white/5 backdrop-blur-md">
+                    <div className="bg-white/5 rounded-xl md:rounded-2xl p-2 md:p-4 mb-2 md:mb-3 border border-white/5 backdrop-blur-md">
                        <div className="h-2 w-1/2 bg-blue-500/40 rounded mb-2" />
                        <div className="h-2 w-3/4 bg-white/10 rounded mb-1" />
                        <div className="h-2 w-full bg-white/10 rounded" />
                     </div>
-                    <div className="bg-white/10 rounded-2xl p-4 mb-3 border border-blue-500/20 relative overflow-hidden">
-                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10" />
-                       <div className="relative z-10">
-                          <div className="flex justify-between items-center mb-3">
-                             <div className="h-3 w-12 bg-green-500/40 rounded" />
-                             <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-                          </div>
-                          <div className="space-y-2">
-                             <div className="h-2 w-full bg-white/20 rounded" />
-                             <div className="h-2 w-5/6 bg-white/20 rounded" />
-                          </div>
-                       </div>
+                    <div className="mt-auto w-full h-8 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-[8px] md:text-sm shadow-lg">
+                       Start
                     </div>
-                    <div className="mt-auto w-full h-10 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-lg cursor-pointer hover:scale-105 transition-transform">
-                       Start Coding
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
                  </div>
               </div>
             </div>
@@ -548,7 +533,7 @@ const Landing = () => {
 
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
             <div className="text-left mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight font-sans">
+              <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-sans">
                 Play n Codé
               </h2>
             </div>
