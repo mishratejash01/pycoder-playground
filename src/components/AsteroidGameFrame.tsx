@@ -1,46 +1,93 @@
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Trophy } from 'lucide-react';
+import { Heart, Trophy, MousePointer2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 export const AsteroidGameFrame = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
+  
+  // Inactivity state
+  const [inactive, setInactive] = useState(false);
+  const lastActivity = useRef(Date.now());
 
-  // Game State Refs (to avoid re-renders during loop)
+  // Game State
   const gameState = useRef({
-    player: { x: 0, y: 0, angle: 0, dx: 0, dy: 0, dead: false },
+    player: { x: 0, y: 0, angle: 0 },
     bullets: [] as { x: number; y: number; dx: number; dy: number; life: number }[],
-    asteroids: [] as { x: number; y: number; dx: number; dy: number; size: number }[],
-    keys: { w: false, a: false, d: false, space: false },
-    lastShot: 0
+    asteroids: [] as { x: number; y: number; dx: number; dy: number; size: number; color: string }[],
+    stars: [] as { x: number; y: number; s: number; alpha: number }[],
+    keys: { a: false, d: false },
+    particles: [] as { x: number; y: number; dx: number; dy: number; life: number; color: string }[]
   });
+
+  // Helper: Fire Bullet
+  const fireBullet = () => {
+    const state = gameState.current;
+    state.bullets.push({
+      x: state.player.x + Math.sin(state.player.angle) * 15,
+      y: state.player.y - Math.cos(state.player.angle) * 15,
+      dx: Math.sin(state.player.angle) * 8, // Faster bullets
+      dy: -Math.cos(state.player.angle) * 8,
+      life: 80
+    });
+  };
 
   // Input Handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      if (key === 'w') gameState.current.keys.w = true;
-      if (key === 'a') gameState.current.keys.a = true;
-      if (key === 'd') gameState.current.keys.d = true;
-      if (e.code === 'Space') gameState.current.keys.space = true;
+      if (key === 'a' || key === 'arrowleft') gameState.current.keys.a = true;
+      if (key === 'd' || key === 'arrowright') gameState.current.keys.d = true;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        fireBullet();
+      }
+      lastActivity.current = Date.now();
+      setInactive(false);
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      if (key === 'w') gameState.current.keys.w = false;
-      if (key === 'a') gameState.current.keys.a = false;
-      if (key === 'd') gameState.current.keys.d = false;
-      if (e.code === 'Space') gameState.current.keys.space = false;
+      if (key === 'a' || key === 'arrowleft') gameState.current.keys.a = false;
+      if (key === 'd' || key === 'arrowright') gameState.current.keys.d = false;
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (canvasRef.current && canvasRef.current.contains(e.target as Node)) {
+        fireBullet();
+        lastActivity.current = Date.now();
+        setInactive(false);
+      }
+    };
+
+    const handleMouseMove = () => {
+      if (inactive) {
+        lastActivity.current = Date.now();
+        setInactive(false);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
+  }, [inactive]);
+
+  // Inactivity Timer
+  useEffect(() => {
+    const checkActivity = setInterval(() => {
+      if (Date.now() - lastActivity.current > 40000) { 
+        setInactive(true);
+      }
+    }, 1000);
+    return () => clearInterval(checkActivity);
   }, []);
 
   // Game Loop
@@ -50,205 +97,242 @@ export const AsteroidGameFrame = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Initialize
-    gameState.current.player = { x: canvas.width / 2, y: canvas.height / 2, angle: 0, dx: 0, dy: 0, dead: false };
-    gameState.current.asteroids = [];
-    for (let i = 0; i < 8; i++) {
-      gameState.current.asteroids.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
+    let animationId: number;
+
+    // --- SPAWN HELPERS ---
+    const spawnAsteroid = (canvasW: number, canvasH: number, size?: number, x?: number, y?: number) => {
+      let startX = x, startY = y;
+      
+      if (x === undefined || y === undefined) {
+        const edge = Math.floor(Math.random() * 4);
+        switch(edge) {
+          case 0: startX = Math.random() * canvasW; startY = -40; break;
+          case 1: startX = canvasW + 40; startY = Math.random() * canvasH; break;
+          case 2: startX = Math.random() * canvasW; startY = canvasH + 40; break;
+          case 3: startX = -40; startY = Math.random() * canvasH; break;
+        }
+      }
+
+      // Premium Colors for Bubbles
+      const colors = ['#a855f7', '#3b82f6', '#ec4899', '#06b6d4']; 
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      return {
+        x: startX || 0,
+        y: startY || 0,
         dx: (Math.random() - 0.5) * 2,
         dy: (Math.random() - 0.5) * 2,
-        size: Math.random() * 20 + 15
+        size: size || Math.random() * 15 + 25, // Big by default (25-40)
+        color
+      };
+    };
+
+    // Generate Stars Background
+    for (let i = 0; i < 50; i++) {
+      gameState.current.stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        s: Math.random() * 1.5,
+        alpha: Math.random()
       });
     }
 
-    let animationId: number;
+    // Init Asteroids
+    for (let i = 0; i < 5; i++) {
+      gameState.current.asteroids.push(spawnAsteroid(canvas.width, canvas.height));
+    }
 
     const update = () => {
       if (!canvas) return;
       
-      // Resize handling
+      // Resize
       if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
       }
 
-      const state = gameState.current;
       const width = canvas.width;
       const height = canvas.height;
+      const state = gameState.current;
 
-      // --- PHYSICS ---
-      if (!state.player.dead) {
-        // Rotation
-        if (state.keys.a) state.player.angle -= 0.07;
-        if (state.keys.d) state.player.angle += 0.07;
+      // --- RENDER BACKGROUND (Premium Gradient) ---
+      const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+      gradient.addColorStop(0, '#1a1b26');  // Deep Blue/Gray center
+      gradient.addColorStop(1, '#000000');  // Black edges
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
 
-        // Thrust
-        if (state.keys.w) {
-          state.player.dx += Math.sin(state.player.angle) * 0.1;
-          state.player.dy -= Math.cos(state.player.angle) * 0.1;
-        }
+      // Draw Stars
+      ctx.fillStyle = '#ffffff';
+      state.stars.forEach(star => {
+        ctx.globalAlpha = star.alpha * 0.5 + 0.2;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.s, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
 
-        // Friction
-        state.player.dx *= 0.99;
-        state.player.dy *= 0.99;
+      // --- UPDATE STATE ---
 
-        // Move
-        state.player.x += state.player.dx;
-        state.player.y += state.player.dy;
+      // 1. Player
+      state.player.x = width / 2;
+      state.player.y = height / 2;
+      if (state.keys.a) state.player.angle -= 0.08;
+      if (state.keys.d) state.player.angle += 0.08;
 
-        // Screen Wrap
-        if (state.player.x < 0) state.player.x = width;
-        if (state.player.x > width) state.player.x = 0;
-        if (state.player.y < 0) state.player.y = height;
-        if (state.player.y > height) state.player.y = 0;
-
-        // Shoot
-        if (state.keys.space && Date.now() - state.lastShot > 250) {
-          state.bullets.push({
-            x: state.player.x + Math.sin(state.player.angle) * 10,
-            y: state.player.y - Math.cos(state.player.angle) * 10,
-            dx: Math.sin(state.player.angle) * 5 + state.player.dx,
-            dy: -Math.cos(state.player.angle) * 5 + state.player.dy,
-            life: 60
-          });
-          state.lastShot = Date.now();
-        }
-      }
-
-      // Update Bullets
+      // 2. Bullets
       for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
         b.x += b.dx;
         b.y += b.dy;
         b.life--;
-        if (b.life <= 0 || b.x < 0 || b.x > width || b.y < 0 || b.y > height) {
+        
+        // Trail
+        if (Math.random() > 0.7) {
+          state.particles.push({ x: b.x, y: b.y, dx: 0, dy: 0, life: 10, color: '#60a5fa' });
+        }
+
+        if (b.life <= 0 || b.x < -50 || b.x > width + 50 || b.y < -50 || b.y > height + 50) {
           state.bullets.splice(i, 1);
         }
       }
 
-      // Update Asteroids & Collisions
+      // 3. Asteroids (Bubbles)
       for (let i = state.asteroids.length - 1; i >= 0; i--) {
         const a = state.asteroids[i];
         a.x += a.dx;
         a.y += a.dy;
 
-        // Wrap asteroid
-        if (a.x < -a.size) a.x = width + a.size;
-        if (a.x > width + a.size) a.x = -a.size;
-        if (a.y < -a.size) a.y = height + a.size;
-        if (a.y > height + a.size) a.y = -a.size;
+        // Wrap
+        if (a.x < -a.size - 10) a.x = width + a.size;
+        if (a.x > width + a.size + 10) a.x = -a.size;
+        if (a.y < -a.size - 10) a.y = height + a.size;
+        if (a.y > height + a.size + 10) a.y = -a.size;
 
-        // Collision Player
-        if (!state.player.dead) {
-           const dx = state.player.x - a.x;
-           const dy = state.player.y - a.y;
-           const dist = Math.sqrt(dx*dx + dy*dy);
-           if (dist < a.size + 10) { // Simple radius collision
-              // Game Over Logic would go here
-              // For this demo we just push player slightly
-              state.player.dx -= dx * 0.05;
-              state.player.dy -= dy * 0.05;
-           }
-        }
-
-        // Collision Bullet
+        // Collision Logic
         for (let j = state.bullets.length - 1; j >= 0; j--) {
           const b = state.bullets[j];
           const dx = b.x - a.x;
           const dy = b.y - a.y;
-          if (Math.sqrt(dx*dx + dy*dy) < a.size) {
-            // Hit!
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          if (dist < a.size + 5) { 
+            // HIT!
+            
+            // Explosion particles
+            for (let k = 0; k < 8; k++) {
+               state.particles.push({
+                 x: a.x, y: a.y,
+                 dx: (Math.random() - 0.5) * 5,
+                 dy: (Math.random() - 0.5) * 5,
+                 life: 25,
+                 color: a.color
+               });
+            }
+            
             state.bullets.splice(j, 1);
             state.asteroids.splice(i, 1);
-            setScore(s => s + 100);
+            setScore(s => s + (a.size > 20 ? 50 : 100));
             
-            // Spawn smaller ones if big enough
-            if (a.size > 15) {
-              for(let k=0; k<2; k++) {
-                state.asteroids.push({
-                  x: a.x, y: a.y,
-                  dx: (Math.random() - 0.5) * 3,
-                  dy: (Math.random() - 0.5) * 3,
-                  size: a.size / 2
-                });
-              }
+            // SPLIT LOGIC:
+            // If it was big (e.g. > 20), split into smaller ones
+            if (a.size > 20) {
+              // Create 2 small ones
+              state.asteroids.push(spawnAsteroid(width, height, a.size / 1.8, a.x, a.y));
+              state.asteroids.push(spawnAsteroid(width, height, a.size / 1.8, a.x, a.y));
+            }
+            // If it was small, it just disappears (destroyed)
+
+            // Ensure minimum population to keep game going
+            if (state.asteroids.length < 3) {
+               setTimeout(() => {
+                 if (gameState.current.asteroids.length < 5) {
+                    gameState.current.asteroids.push(spawnAsteroid(width, height));
+                 }
+               }, 1000);
             }
             break; 
           }
         }
       }
-      
-      // Respawn asteroids if empty
-      if (state.asteroids.length === 0) {
-         for (let i = 0; i < 5; i++) {
-            state.asteroids.push({
-              x: Math.random() * width,
-              y: Math.random() * height,
-              dx: (Math.random() - 0.5) * 2,
-              dy: (Math.random() - 0.5) * 2,
-              size: Math.random() * 20 + 15
-            });
-         }
+
+      // 4. Particles
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const p = state.particles[i];
+        p.x += p.dx;
+        p.y += p.dy;
+        p.life--;
+        if (p.life <= 0) state.particles.splice(i, 1);
       }
 
-      // --- RENDER ---
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, width, height);
+      // --- DRAWING ---
 
-      // Grid
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      const gridSize = 40;
-      for(let x=0; x<width; x+=gridSize) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,height); ctx.stroke(); }
-      for(let y=0; y<height; y+=gridSize) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(width,y); ctx.stroke(); }
+      // Draw Particles
+      state.particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life / 25;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.random() * 2 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
 
-      // Draw Player
-      ctx.save();
-      ctx.translate(state.player.x, state.player.y);
-      ctx.rotate(state.player.angle);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, -15);
-      ctx.lineTo(-10, 10);
-      ctx.lineTo(0, 5);
-      ctx.lineTo(10, 10);
-      ctx.closePath();
-      ctx.stroke();
-      // Thruster
-      if (state.keys.w) {
-         ctx.strokeStyle = '#f59e0b'; // Amber
-         ctx.beginPath();
-         ctx.moveTo(-5, 12);
-         ctx.lineTo(0, 20 + Math.random() * 5);
-         ctx.lineTo(5, 12);
-         ctx.stroke();
-      }
-      ctx.restore();
+      // Draw Bubbles (Asteroids)
+      state.asteroids.forEach(a => {
+        // Glow
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = a.color;
+        
+        // Stroke
+        ctx.strokeStyle = a.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Fill (Glassy look)
+        ctx.fillStyle = a.color + '20'; // Low opacity hex
+        ctx.fill();
+
+        // Reflection (Shine)
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffffffaa';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.size * 0.7, Math.PI * 1.2, Math.PI * 1.5);
+        ctx.stroke();
+      });
 
       // Draw Bullets
-      ctx.fillStyle = '#0ea5e9'; // Sky blue
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#ffffff';
+      ctx.fillStyle = '#ffffff';
       state.bullets.forEach(b => {
         ctx.beginPath();
         ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
         ctx.fill();
       });
+      ctx.shadowBlur = 0;
 
-      // Draw Asteroids
+      // Draw Player
+      ctx.save();
+      ctx.translate(state.player.x, state.player.y);
+      ctx.rotate(state.player.angle);
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#ffffff';
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
-      state.asteroids.forEach(a => {
-        ctx.beginPath();
-        ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
-        ctx.stroke();
-        // Detail line
-        ctx.beginPath();
-        ctx.moveTo(a.x - a.size/2, a.y);
-        ctx.lineTo(a.x + a.size/2, a.y + a.size/3);
-        ctx.stroke();
-      });
+      ctx.fillStyle = '#000';
+      
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.lineTo(10, 15);
+      ctx.lineTo(0, 10);
+      ctx.lineTo(-10, 15);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
 
       animationId = requestAnimationFrame(update);
     };
@@ -258,49 +342,56 @@ export const AsteroidGameFrame = () => {
   }, []);
 
   return (
-    <div className="relative w-full aspect-video bg-black rounded-t-3xl border-t border-x border-white/10 overflow-hidden shadow-2xl group">
+    <div className={cn(
+      "relative w-full aspect-video bg-[#050505] rounded-t-3xl border-t border-x border-white/10 overflow-hidden shadow-2xl group select-none",
+      inactive && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
+    )}>
       
-      {/* Screen Glare & Scanlines */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,6px_100%] pointer-events-none z-20 opacity-20" />
-      <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none z-10" />
-
       {/* HUD */}
-      <div className="absolute top-6 left-8 z-30 flex items-center gap-4">
+      <div className="absolute top-6 left-8 z-30 flex items-center gap-4 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
           <Heart className="w-4 h-4 text-red-500 fill-current" />
           <span className="text-xs font-mono text-white font-bold">100%</span>
         </div>
       </div>
       
-      <div className="absolute top-6 right-8 z-30">
+      <div className="absolute top-6 right-8 z-30 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
           <Trophy className="w-4 h-4 text-yellow-500" />
           <span className="text-xs font-mono text-white font-bold">{score.toString().padStart(6, '0')}</span>
         </div>
       </div>
 
-      {/* Canvas */}
-      <canvas ref={canvasRef} className="w-full h-full block cursor-crosshair" />
+      {/* Inactivity Warning */}
+      {inactive && (
+        <div className="absolute inset-0 flex items-center justify-center z-40 bg-red-950/20 backdrop-blur-[1px] pointer-events-none">
+          <div className="bg-black/90 border border-red-500 px-8 py-4 rounded text-red-500 font-mono text-lg animate-bounce shadow-[0_0_30px_rgba(220,38,38,0.5)]">
+            SYSTEM_IDLE // WAKE_UP_PILOT
+          </div>
+        </div>
+      )}
 
-      {/* Bottom Bar with Controls Guide */}
-      <div className="absolute bottom-0 left-0 right-0 h-14 bg-black/90 backdrop-blur border-t border-white/10 flex items-center justify-between px-6 z-30">
+      {/* Canvas */}
+      <canvas 
+        ref={canvasRef} 
+        className="w-full h-full block cursor-crosshair" 
+      />
+
+      {/* Bottom Bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-14 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-between px-6 z-30 pointer-events-none">
          <div className="flex items-center gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-400 uppercase tracking-widest items-center">
                <div className="flex gap-1">
-                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white">W</span>
-               </div>
-               <span>Thrust</span>
-            </div>
-            <div className="flex gap-2 text-[10px] font-mono text-gray-400 uppercase tracking-widest items-center">
-               <div className="flex gap-1">
-                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white">A</span>
-                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white">D</span>
+                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white shadow-sm">A</span>
+                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white shadow-sm">D</span>
                </div>
                <span>Rotate</span>
             </div>
             <div className="flex gap-2 text-[10px] font-mono text-gray-400 uppercase tracking-widest items-center">
-               <span className="border border-white/20 bg-white/5 px-4 py-1 rounded text-white">SPACE</span>
-               <span>Fire</span>
+               <div className="flex items-center gap-1 border border-white/20 bg-white/5 px-3 py-1 rounded text-white shadow-sm">
+                 <MousePointer2 className="w-3 h-3" /> <span>Click</span>
+               </div>
+               <span>/ Space to Fire</span>
             </div>
          </div>
          
