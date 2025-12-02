@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu, Zap, Shield, TrendingUp } from 'lucide-react';
+import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -175,8 +175,10 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale
-  const scale = Math.max(0.985, 1 - scrollY / 4000);
+  // Adjusted Scale for "Very Minimal White Space"
+  // Height reduced to 102vh so scroll interaction finishes quickly
+  // Scale min set to 0.99 for barely any shrinking
+  const scale = Math.max(0.99, 1 - scrollY / 5000);
   const borderRadius = Math.min(24, scrollY / 20);
 
   return (
@@ -238,11 +240,10 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        {/* CHANGED: Background is now white to show the shrinking effect correctly */}
-        <div className="relative w-full h-[120vh] bg-white"> 
+        <div className="relative w-full h-[102vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
-              className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
+              className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center will-change-transform"
               style={{
                 transform: `scale(${scale})`, 
                 transformOrigin: 'top center', 
@@ -459,15 +460,15 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 4: CODE ON CODEVO (New Component) --- */}
+        {/* --- SECTION 4: CODE ON CODEVO --- */}
         <CodevoShowcase />
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
         <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
           {/* Fade to footer */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
 
-          <div className="container mx-auto px-6 relative z-20">
+          <div className="container mx-auto px-6 relative z-20 max-w-7xl">
             {/* Header: Left Aligned, Sans-Serif */}
             <div className="text-left mb-12">
               <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight font-sans">
