@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Trophy, MousePointer2 } from 'lucide-react';
+import { Heart, Trophy, MousePointer2, ArrowLeft, ArrowRight, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,20 @@ export const AsteroidGameFrame = () => {
       dy: -Math.cos(state.player.angle) * 8,
       life: 80
     });
+    lastActivity.current = Date.now();
+    setInactive(false);
+  };
+
+  // Touch Control Handlers
+  const handleLeftStart = (e: React.TouchEvent | React.MouseEvent) => { e.preventDefault(); gameState.current.keys.a = true; lastActivity.current = Date.now(); setInactive(false); };
+  const handleLeftEnd = (e: React.TouchEvent | React.MouseEvent) => { e.preventDefault(); gameState.current.keys.a = false; };
+  
+  const handleRightStart = (e: React.TouchEvent | React.MouseEvent) => { e.preventDefault(); gameState.current.keys.d = true; lastActivity.current = Date.now(); setInactive(false); };
+  const handleRightEnd = (e: React.TouchEvent | React.MouseEvent) => { e.preventDefault(); gameState.current.keys.d = false; };
+  
+  const handleFireStart = (e: React.TouchEvent | React.MouseEvent) => { 
+    e.preventDefault(); 
+    fireBullet(); 
   };
 
   // Input Handling
@@ -57,10 +71,9 @@ export const AsteroidGameFrame = () => {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
-      if (canvasRef.current && canvasRef.current.contains(e.target as Node)) {
+      // Only fire if clicking on canvas directly (not on controls)
+      if (canvasRef.current && canvasRef.current === e.target) {
         fireBullet();
-        lastActivity.current = Date.now();
-        setInactive(false);
       }
     };
 
@@ -297,7 +310,7 @@ export const AsteroidGameFrame = () => {
 
   return (
     <div className={cn(
-      "relative w-full h-[300px] md:h-[600px] bg-[#050505] rounded-[1.5rem] md:rounded-[2rem] border-[8px] md:border-[12px] border-white/5 overflow-hidden shadow-2xl group select-none",
+      "relative w-full h-[350px] md:h-[600px] bg-[#050505] rounded-[1.5rem] md:rounded-[2rem] border-[8px] md:border-[12px] border-white/5 overflow-hidden shadow-2xl group select-none",
       inactive && gameStarted && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
     )}>
       
@@ -317,6 +330,44 @@ export const AsteroidGameFrame = () => {
             >
               Start Mission
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Touch Controls (Visible only when game started and on touch devices/small screens) */}
+      {gameStarted && (
+        <div className="absolute inset-0 z-40 pointer-events-none flex flex-col justify-between p-6 md:hidden">
+          <div className="flex-1" /> {/* Spacer */}
+          
+          <div className="flex justify-between items-end w-full">
+             {/* Left Controls: Rotate */}
+             <div className="flex gap-4 pointer-events-auto">
+                <button 
+                  className="w-14 h-14 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center active:bg-white/30 active:scale-95 transition-all"
+                  onTouchStart={handleLeftStart} onTouchEnd={handleLeftEnd}
+                  onMouseDown={handleLeftStart} onMouseUp={handleLeftEnd}
+                >
+                  <ArrowLeft className="w-6 h-6 text-white" />
+                </button>
+                <button 
+                  className="w-14 h-14 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center active:bg-white/30 active:scale-95 transition-all"
+                  onTouchStart={handleRightStart} onTouchEnd={handleRightEnd}
+                  onMouseDown={handleRightStart} onMouseUp={handleRightEnd}
+                >
+                  <ArrowRight className="w-6 h-6 text-white" />
+                </button>
+             </div>
+
+             {/* Right Control: Fire */}
+             <div className="pointer-events-auto">
+               <button 
+                  className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/40 backdrop-blur-md flex items-center justify-center active:bg-red-500/40 active:scale-95 transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+                  onTouchStart={handleFireStart}
+                  onMouseDown={handleFireStart}
+                >
+                  <Crosshair className="w-8 h-8 text-red-400" />
+                </button>
+             </div>
           </div>
         </div>
       )}
@@ -344,8 +395,8 @@ export const AsteroidGameFrame = () => {
       {/* Canvas */}
       <canvas ref={canvasRef} className="w-full h-full block cursor-crosshair" />
 
-      {/* Bottom Bar (Controls) */}
-      <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-6 z-30 pointer-events-none opacity-80">
+      {/* Bottom Bar (Legend - Hidden on Mobile if controls are active) */}
+      <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-6 z-30 pointer-events-none opacity-80 md:flex hidden">
          <div className="flex items-center gap-4 md:gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex gap-1">
