@@ -171,12 +171,11 @@ const Landing = () => {
     }, 800);
   };
 
-  // --- ANIMATION LOGIC ---
-  // 1. Scale down further to 0.90 for better side balance.
-  // 2. Divisor 1000 makes the animation complete faster (less vertical scroll needed).
-  const scale = Math.max(0.9, 1 - scrollY / 1000);
-  // 3. Radius rounds faster to match the quicker scroll.
-  const borderRadius = Math.min(32, scrollY / 8);
+  // --- ANIMATION LOGIC (TIGHTER) ---
+  // Scale drops faster (divider 500) to match the reduced height
+  const scale = Math.max(0.9, 1 - scrollY / 500);
+  // Radius rounds immediately
+  const borderRadius = Math.min(32, scrollY / 4);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -237,8 +236,8 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        {/* Height reduced to 110vh to minimize vertical scroll distance before next section */}
-        <div className="relative w-full h-[110vh] bg-white"> 
+        {/* Height reduced to 102vh - effectively removing the 'scroll track' gap */}
+        <div className="relative w-full h-[102vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -296,7 +295,8 @@ const Landing = () => {
         </div>
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
-        <section id="laptop-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
+        {/* Reduced padding from py-24 to py-12 */}
+        <section id="laptop-section" className="w-full bg-[#09090b] py-12 relative overflow-hidden border-b border-white/5">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <div className="container mx-auto px-6 relative z-10">
@@ -402,7 +402,8 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
-        <section className="py-24 relative overflow-hidden bg-[#09090b] border-t border-white/5">
+        {/* Reduced padding from py-24 to py-12 */}
+        <section className="py-12 relative overflow-hidden bg-[#09090b] border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
               {/* LEFT: Terminal */}
@@ -452,7 +453,8 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 4: CODE ON CODEVO --- */}
-        <section className="w-full bg-[#050505] py-24 relative overflow-hidden border-t border-white/5">
+        {/* Reduced padding from py-24 to py-12 */}
+        <section className="w-full bg-[#050505] py-12 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6 max-w-7xl">
             
             {/* Header */}
@@ -542,7 +544,8 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
-        <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
+        {/* Reduced padding from py-20 to py-12 */}
+        <section className="w-full bg-[#000000] py-12 relative overflow-hidden border-t border-white/5">
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
 
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
