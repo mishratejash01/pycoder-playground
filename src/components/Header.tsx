@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Info, Home, User, Code2, Trophy } from 'lucide-react';
+import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal } from 'lucide-react'; // Added Terminal icon
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,18 +25,14 @@ export function Header({ session, onLogout }: HeaderProps) {
   
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
-  // Hide header elements on practice/exam pages
-  const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam');
+  // Hide header elements on practice/exam/compiler pages
+  const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam') || location.pathname.includes('/compiler');
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show menu only after scrolling past the Hero section (approx 1 viewport height)
       setIsScrolled(window.scrollY > window.innerHeight - 100);
     };
-    
-    // Initial check
     handleScroll();
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -62,7 +58,6 @@ export function Header({ session, onLogout }: HeaderProps) {
 
   return (
     <>
-      {/* --- Top Header (Desktop & Mobile) --- */}
       <header className="fixed top-5 z-50 left-0 right-0 mx-auto w-full max-w-6xl px-4 md:px-0 transition-all duration-300">
         <div className={cn(
           "rounded-2xl border border-white/10 shadow-2xl",
@@ -71,7 +66,6 @@ export function Header({ session, onLogout }: HeaderProps) {
         )}>
           <nav className="flex items-center justify-between p-2 px-6">
             
-            {/* LEFT: Logo */}
             <Link to="/" className="flex items-center gap-3 group mr-8">
               <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
                 COD
@@ -80,8 +74,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               </span>
             </Link>
 
-            {/* CENTER: Desktop Navigation */}
-            <div className="hidden md:flex flex-1 justify-center gap-6">
+            <div className="hidden md:flex flex-1 justify-center gap-4">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
                 <img 
                   src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
@@ -89,6 +82,10 @@ export function Header({ session, onLogout }: HeaderProps) {
                   className="w-4 h-4 object-contain opacity-80" 
                 /> 
                 IITM BS
+              </Link>
+              {/* Added Compiler Button */}
+              <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">
+                <Terminal className="w-4 h-4" /> Compiler
               </Link>
               <Link to="/leaderboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
                 <Trophy className="w-4 h-4" /> Leaderboard
@@ -98,7 +95,6 @@ export function Header({ session, onLogout }: HeaderProps) {
               </Link>
             </div>
 
-            {/* RIGHT: Auth & Profile */}
             <div className="flex items-center gap-2">
               {session ? (
                 <DropdownMenu>
@@ -107,11 +103,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                       <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border border-white/20">
                         {userName.charAt(0).toUpperCase()}
                       </div>
-                      
-                      {/* Name visible on all devices */}
                       <span className="text-xs font-medium text-gray-200 max-w-[100px] truncate">{userName}</span>
-
-                      {/* Green Signal - Beside Username */}
                       <div className="relative flex h-2 w-2 ml-1" title="Online">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
@@ -136,59 +128,31 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* --- Mobile Bottom Floating Menu (Refined) --- */}
       <div className={cn(
         "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
-        // Show ONLY if not practice/exam AND we have scrolled past hero
         (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
       )}>
         <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl ring-1 ring-white/5 relative">
-          
           <div className="flex justify-between items-end px-2">
-            {/* Left Block */}
             <div className="flex gap-4">
               <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
-              <Link 
-                to="/degree" 
-                className={cn(
-                  "flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300",
-                  location.pathname.startsWith("/degree") ? "bg-white/10 text-white" : "text-muted-foreground"
-                )}
-              >
-                {/* IITM Logo Illustration */}
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
-                  alt="IITM" 
-                  className={cn("w-5 h-5 mb-1 object-contain transition-all", location.pathname.startsWith("/degree") ? "opacity-100 grayscale-0" : "opacity-70 grayscale")} 
-                />
-                <span className="sr-only">BS Degree</span>
+              <Link to="/compiler" className={cn("flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300", location.pathname === "/compiler" ? "bg-white/10 text-white" : "text-muted-foreground")}>
+                <Terminal className="w-5 h-5 mb-1" />
+                <span className="sr-only">Compiler</span>
               </Link>
             </div>
-
-            {/* Center Block (Prominent) */}
             <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
-               <NavItem 
-                 to="/practice" 
-                 icon={Code2} 
-                 label="Upskill" 
-                 active={location.pathname.startsWith("/practice")} 
-                 size="large"
-               />
+               <NavItem to="/practice" icon={Code2} label="Upskill" active={location.pathname.startsWith("/practice")} size="large" />
             </div>
-
-            {/* Right Block */}
             <div className="flex gap-4">
               <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
               {session ? (
-                 // Just a placeholder/profile link if needed, logout is now in top nav dropdown
                  <NavItem to="/profile" icon={User} label="Profile" active={location.pathname === "/profile"} />
               ) : (
                  <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
               )}
             </div>
           </div>
-
-          {/* Mobile Footer Logo (Subtle) */}
           <div className="absolute -bottom-6 left-0 right-0 text-center">
              <span className="text-[9px] font-neuropol text-white/20 tracking-widest">CODéVO</span>
           </div>
