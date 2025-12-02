@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
+import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu, Zap, Shield, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -175,9 +175,11 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale for "Aligned" look (roughly matches typical container width when scrolled)
-  const scale = Math.max(0.92, 1 - scrollY / 1000);
-  const borderRadius = Math.min(40, scrollY / 10);
+  // TIGHTER SCROLL ANIMATION
+  // Only shrinks to 0.99 (barely visible border)
+  // Factor increased to 6000 to make shrinking slower/subtle
+  const scale = Math.max(0.99, 1 - scrollY / 6000);
+  const borderRadius = Math.min(24, scrollY / 20);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -238,7 +240,8 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[120vh] bg-white"> 
+        {/* HEIGHT REDUCED to 105vh to minimize white scroll gap */}
+        <div className="relative w-full h-[105vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -296,7 +299,7 @@ const Landing = () => {
         </div>
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
-        <section id="laptop-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
+        <section id="laptop-section" className="w-full bg-[#09090b] py-16 relative overflow-hidden border-b border-white/5">
           {/* Grid Background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
@@ -408,7 +411,7 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
-        <section className="py-24 relative overflow-hidden bg-[#09090b] border-t border-white/5">
+        <section className="py-16 relative overflow-hidden bg-[#09090b] border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
               
@@ -462,9 +465,10 @@ const Landing = () => {
         <CodevoShowcase />
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
-        <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
-          {/* Fade to footer */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
+        <section className="w-full bg-[#000000] py-16 relative overflow-hidden border-t border-white/5">
+          
+          {/* FADE EFFECT: Shrinking into footer */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
 
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
             {/* Header: Left Aligned, Sans-Serif */}
