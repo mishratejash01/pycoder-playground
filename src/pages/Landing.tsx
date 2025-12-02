@@ -173,13 +173,12 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale for "Less Shrinking"
-  // Starts at 1, goes down to 0.985 (very subtle border)
-  const scale = Math.max(0.985, 1 - scrollY / 4000);
-  const borderRadius = Math.min(24, scrollY / 20);
+  // Adjusted Scale: Even closer to 1 to minimize white space
+  const scale = Math.max(0.99, 1 - scrollY / 6000);
+  const borderRadius = Math.min(20, scrollY / 30);
 
   return (
-    <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col relative overflow-hidden">
       <style>{`
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
@@ -237,7 +236,7 @@ const Landing = () => {
       <main className="flex-1 w-full">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[120vh] bg-[#09090b]"> 
+        <div className="relative w-full h-[120vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -294,7 +293,7 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* --- SECTION 2: 3D LAPTOP & SIMPLE TEXT --- */}
+        {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
           {/* Grid Background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
@@ -319,7 +318,7 @@ const Landing = () => {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start gap-8">
-                  {/* BUTTON */}
+                  {/* BUTTON: Round Rectangular with Arrow */}
                   <Button 
                     onClick={handlePracticeClick}
                     className="group relative h-14 px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
@@ -330,7 +329,7 @@ const Landing = () => {
                     </span>
                   </Button>
 
-                  {/* Tech Stack Marquee */}
+                  {/* Tech Stack Marquee (Below Button) */}
                   <div className="w-full max-w-md">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left opacity-70 font-mono">
                       // POWERED BY MODERN TECHNOLOGIES
@@ -413,6 +412,9 @@ const Landing = () => {
                   <div className="h-2.5 md:h-3.5 bg-[#1f1f1f] rounded-b-lg border-t border-black/50 shadow-2xl relative z-10 mx-[1px]">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-b-[2px]" />
                   </div>
+                  
+                  {/* Reflection/Shadow under laptop */}
+                  <div className="absolute -bottom-10 left-4 right-4 h-8 bg-black/40 blur-xl rounded-full transform scale-y-50" />
                 </div>
               </div>
 
@@ -420,13 +422,13 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
+        {/* --- SECTION 3: KEYBOARD & TERMINAL (Reordered) --- */}
         <section className="py-24 relative overflow-hidden bg-[#09090b] border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
               
-              {/* RIGHT: Dynamic Terminal */}
-              <div className="relative order-1 lg:order-2 h-[350px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
+              {/* LEFT: Terminal (Question/Output) - Swapped */}
+              <div className="relative order-2 lg:order-1 h-[350px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
                 <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
                   <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
                   <div className="ml-4 text-xs text-muted-foreground font-mono opacity-50 flex-1 text-center">
@@ -458,8 +460,8 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* LEFT: Keyboard */}
-              <div className="relative order-2 lg:order-1">
+              {/* RIGHT: Keyboard - Swapped */}
+              <div className="relative order-1 lg:order-2">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
                 <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
@@ -483,19 +485,17 @@ const Landing = () => {
                 </h2>
               </div>
               <div className="max-w-sm">
-                <p className="text-lg text-gray-400 leading-relaxed">
+                <p className="text-sm md:text-base text-gray-400 leading-relaxed">
                   Experience the future of coding. Featuring frontier capabilities in real-time execution, secure proctoring, and global competition.
                 </p>
               </div>
             </div>
 
-            {/* Screens Container (Black Frame with Mobile Overlay) */}
-            {/* NO OVERFLOW HIDDEN ON PARENT - Allows Phone to Pop Out */}
+            {/* Screens Container */}
             <div className="relative w-full h-[450px] md:h-[700px] mt-12">
               
-              {/* Desktop IDE View (Clipped) */}
+              {/* Desktop IDE View */}
               <div className="absolute left-0 top-0 w-[85%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
-                 {/* Desktop Content */}
                  <div className="w-full h-full flex flex-col bg-[#0c0c0e] rounded-xl border border-white/5 overflow-hidden">
                     <div className="h-12 border-b border-white/5 flex items-center px-6 justify-between bg-[#151517]">
                        <div className="flex gap-2">
@@ -527,10 +527,9 @@ const Landing = () => {
                  </div>
               </div>
 
-              {/* Mobile Phone Overlay (Floating on Top) */}
+              {/* Mobile Phone Overlay */}
               <div className="absolute right-[5%] bottom-[50px] md:bottom-[-20px] w-[140px] md:w-[300px] aspect-[9/19] bg-black rounded-[2rem] md:rounded-[3rem] border-[6px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-5 md:h-7 bg-black rounded-b-xl z-40" />
-                 
                  <div className="h-full w-full bg-[#0c0c0e] pt-12 px-3 md:px-5 pb-8 flex flex-col relative">
                     <div className="flex justify-between items-center mb-6">
                        <div className="w-8 h-8 rounded-full bg-white/10" />
@@ -564,38 +563,43 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Features Grid */}
-        <section className="bg-[#09090b] py-20 relative overflow-hidden border-t border-white/5">
+        {/* Modes Section */}
+        <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24 border-t border-white/5">
           <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Cpu className="w-24 h-24" /></div>
-                <div className="relative z-10">
-                  <Zap className="w-8 h-8 text-yellow-400 mb-4" />
-                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors">01_INSTANT_EVAL</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">Client-side Pyodide WASM engine. Zero latency. 100% speed.</p>
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-white">Select Mode</h2>
+              <p className="text-muted-foreground text-lg">Choose how you want to code today.</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex-1">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20"><Code2 className="w-8 h-8 text-primary" /></div>
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Standard practice console with instant feedback.</div>
+                </div>
+                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg h-12 text-base font-medium transition-all hover:scale-[1.02]">
+                    {session ? "Enter Learning Mode" : "Login to Practice"} <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
               </div>
-              <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><ArrowRight className="w-24 h-24" /></div>
-                <div className="relative z-10">
-                  <Shield className="w-8 h-8 text-blue-400 mb-4" />
-                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">02_SECURE_ENV</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">Proctored exam simulations. Fullscreen enforcement.</p>
+              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex-1">
+                  <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20"><Lock className="w-8 h-8 text-red-500" /></div>
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Secure proctored environment with strict monitoring.</div>
                 </div>
-              </div>
-              <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Activity className="w-24 h-24" /></div>
-                <div className="relative z-10">
-                  <TrendingUp className="w-8 h-8 text-green-400 mb-4" />
-                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-green-400 transition-colors">03_GLOBAL_RANKS</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">Live leaderboards. Compete against the best.</p>
+                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                  <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]" onClick={() => session ? navigate('/exam') : navigate('/auth')}>
+                    {session ? "Enter Exam Hall" : "Login to Exam"} <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
         </section>
-
       </main>
 
       <footer className="border-t border-white/10 mt-12 bg-[#0c0c0e] relative z-10">
