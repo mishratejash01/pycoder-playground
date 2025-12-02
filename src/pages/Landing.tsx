@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Play, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import DarkVeil from '@/components/DarkVeil';
 import { cn } from "@/lib/utils";
-import { VirtualKeyboard } from '@/components/VirtualKeyboard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
@@ -41,109 +41,29 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   return displayText;
 };
 
-// Tech Stack Icons for Marquee
+// Filtered Tech Stack (Python, Java, SQL, Web, Linux)
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg"
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg",
 ];
-
-// --- Marketing Animation Scenario ---
-const DEMO_SCENARIO = {
-  question: "How do I fast-track my coding career?",
-  code: `import codevo
-
-def level_up_career(user):
-    # Learn by doing, not just watching
-    skills = codevo.practice(["Python", "DSA", "System Design"])
-    
-    # Get instant feedback & analytics
-    confidence = codevo.analyze(skills)
-    
-    if confidence >= 100:
-        return "You're HIRED!"
-
-print(level_up_career(me))`
-};
 
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
   const helloWorldText = useTypewriter("Hello World", 150, 1500);
-
-  // --- Showcase Animation States ---
-  const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
-  const [typedCode, setTypedCode] = useState('');
-  const [activeKey, setActiveKey] = useState<string | null>(null);
-
-  // Animation Loop
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    let charIndex = 0;
-
-    const animate = () => {
-      // Phase 1: Show Marketing Hook (Question)
-      setShowcasePhase('question');
-      setTypedCode('');
-      setActiveKey(null);
-
-      timeoutId = setTimeout(() => {
-        // Phase 2: Switch to Terminal & Type Codevo Promo
-        setShowcasePhase('terminal');
-        
-        const typeChar = () => {
-          if (charIndex < DEMO_SCENARIO.code.length) {
-            const char = DEMO_SCENARIO.code[charIndex];
-            setTypedCode(prev => prev + char);
-            setActiveKey(char); 
-            
-            // Varied typing speed for realism
-            const delay = Math.random() * 30 + 30; 
-            charIndex++;
-            timeoutId = setTimeout(typeChar, delay);
-          } else {
-            // Finished typing, hold for reading, then reset
-            setActiveKey(null);
-            timeoutId = setTimeout(() => {
-              charIndex = 0;
-              animate(); // Loop back
-            }, 5000);
-          }
-        };
-        // Brief pause before typing starts
-        timeoutId = setTimeout(typeChar, 800);
-
-      }, 3500); // Duration of Question Phase
-    };
-
-    animate();
-
-    return () => clearTimeout(timeoutId);
-  }, []);
-
-  // Clear active key shortly after it's set
-  useEffect(() => {
-    if (activeKey) {
-      const t = setTimeout(() => setActiveKey(null), 150);
-      return () => clearTimeout(t);
-    }
-  }, [activeKey, typedCode]);
 
   // Monitor Auth & Scroll
   useEffect(() => {
@@ -171,17 +91,39 @@ const Landing = () => {
   };
 
   const scrollToContent = () => {
-    const element = document.getElementById('showcase-section');
+    const element = document.getElementById('practice-preview-section');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handlePracticeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Capture button position for the animation origin
+    const rect = e.currentTarget.getBoundingClientRect();
+    setButtonPosition({
+      x: rect.left,
+      y: rect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+    
+    setIsNavigating(true);
+
+    // Wait for animation to cover screen before pushing route
+    setTimeout(() => {
+      if (session) {
+        navigate('/practice');
+      } else {
+        navigate('/auth');
+      }
+    }, 800);
   };
 
   const scale = Math.max(0.9, 1 - scrollY / 1500);
   const borderRadius = Math.min(60, scrollY / 8);
 
   return (
-    <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col">
+    <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col relative overflow-hidden">
       <style>{`
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
@@ -197,22 +139,49 @@ const Landing = () => {
           100% { transform: translateX(-50%); }
         }
         .animate-marquee {
-          animation: marquee 40s linear infinite;
+          animation: marquee 30s linear infinite;
         }
         .animate-marquee:hover {
           animation-play-state: paused;
         }
-        .cursor-blink {
-          display: inline-block;
-          width: 8px;
-          height: 15px;
-          background-color: #3b82f6;
-          animation: blink 1s step-end infinite;
-          vertical-align: middle;
-          margin-left: 2px;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        /* Code typing animation simulation */
+        @keyframes code-blink { 50% { opacity: 0; } }
       `}</style>
+
+      {/* Page Transition Overlay */}
+      <AnimatePresence>
+        {isNavigating && (
+          <motion.div
+            initial={{ 
+              position: 'fixed',
+              top: buttonPosition.y,
+              left: buttonPosition.x,
+              width: buttonPosition.width,
+              height: buttonPosition.height,
+              borderRadius: '0.75rem',
+              backgroundColor: '#7c3aed', // Primary purple
+              zIndex: 9999,
+            }}
+            animate={{ 
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              borderRadius: 0,
+              transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+            }}
+            className="flex items-center justify-center"
+          >
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.3 } }}
+              className="text-white font-neuropol text-4xl"
+            >
+              Loading Arena...
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <Header session={session} onLogout={handleLogout} />
@@ -277,91 +246,140 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* --- KEYBOARD & TERMINAL SHOWCASE SECTION --- */}
-        <section id="showcase-section" className="w-full bg-[#09090b] pt-16 pb-24 relative z-10 overflow-hidden border-t border-white/5">
-          <div className="container mx-auto px-4 md:px-6">
-            
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-24 max-w-7xl mx-auto">
+        {/* --- PRACTICE PREVIEW SECTION --- */}
+        <section id="practice-preview-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden">
+          
+          {/* Ambient Background Glow */}
+          <div className="absolute top-1/2 right-0 -translate-y-1/2 w-1/2 h-full bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
+
+          <div className="container mx-auto px-6">
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
               
-              {/* RIGHT (Desktop) / TOP (Mobile): Dynamic Terminal Screen */}
-              <div className="relative order-1 lg:order-2 h-[350px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
-                
-                {/* Window Chrome */}
-                <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
-                  <div className="ml-4 text-xs text-muted-foreground font-mono opacity-50 flex-1 text-center">
-                    {showcasePhase === 'question' ? 'challenge.md' : 'solution.py'}
-                  </div>
+              {/* LEFT: Content & CTA */}
+              <div className="flex-1 space-y-8 text-center lg:text-left z-10">
+                <div className="space-y-4">
+                  <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-[1.1]">
+                    CODE LIKE <br/>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-primary to-purple-500 animate-pulse">
+                      YOU MEAN IT
+                    </span>
+                  </h2>
+                  <p className="text-muted-foreground text-lg md:text-xl max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                    Immerse yourself in a distraction-free environment built for pure focus. 
+                    Test against real-world scenarios, debug instantly, and climb the ranks.
+                  </p>
                 </div>
 
-                {/* Content Area */}
-                <div className="flex-1 relative p-6 md:p-8 font-mono text-sm md:text-base overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                  <Button 
+                    size="lg"
+                    onClick={handlePracticeClick}
+                    className="group relative overflow-hidden bg-white text-black hover:bg-white/90 h-14 px-8 rounded-full text-lg font-bold shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      Start Practicing
+                      <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                    </span>
+                    {/* Button Fill Animation */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </Button>
+                </div>
+
+                {/* Tech Stack Marquee (Small) */}
+                <div className="pt-8">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4 opacity-50 font-medium">Supported Technologies</p>
+                  <div className="w-full max-w-md mx-auto lg:mx-0 overflow-hidden relative mask-gradient-x">
+                    <div className="flex gap-8 animate-marquee whitespace-nowrap">
+                      {[...TECH_STACK, ...TECH_STACK, ...TECH_STACK].map((src, i) => (
+                        <div key={i} className="flex-shrink-0 w-10 h-10 opacity-40 hover:opacity-100 transition-opacity grayscale hover:grayscale-0">
+                          <img src={src} alt="Tech" className="w-full h-full object-contain" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT: 3D Laptop Mockup */}
+              <div className="flex-1 w-full max-w-2xl lg:max-w-none perspective-1000">
+                <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
                   
-                  {/* Phase 1: Question/Marketing View */}
-                  <div className={cn("absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out", showcasePhase === 'question' ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-10 scale-95 pointer-events-none")}>
+                  {/* Laptop Lid */}
+                  <div className="relative bg-[#1a1a1a] rounded-t-2xl p-2 pb-0 border-t border-x border-white/10 shadow-2xl ring-1 ring-black">
+                    {/* Camera */}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gray-800 rounded-full z-20 border border-gray-700" />
                     
-                    {/* Premium Abstract Illustration (Non-AI/Robot) */}
-                    <div className="relative mb-8 group/icon">
-                      {/* Glow Effect */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl group-hover/icon:bg-blue-500/30 transition-all duration-700" />
+                    {/* Screen Bezel & Display */}
+                    <div className="bg-black rounded-t-lg border border-white/5 overflow-hidden aspect-[16/10] relative group">
                       
-                      {/* Floating Card Stack Effect */}
-                      <div className="relative">
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-white/5 border border-white/5 rounded-2xl transform -rotate-12 scale-90" />
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-white/5 border border-white/5 rounded-2xl transform rotate-12 scale-90" />
-                        <div className="relative w-20 h-20 bg-[#1a1a1a] border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-md">
-                          <Code2 className="w-10 h-10 text-white/90 group-hover/icon:text-blue-400 transition-colors duration-300" />
+                      {/* --- MOCK INTERFACE (The Website's IDE) --- */}
+                      <div className="absolute inset-0 flex flex-col font-mono text-[10px] md:text-xs text-gray-400 bg-[#0c0c0e]">
+                        
+                        {/* Header Mock */}
+                        <div className="h-8 border-b border-white/10 flex items-center px-3 justify-between bg-[#0c0c0e]">
+                          <div className="flex gap-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500/50" />
+                            <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
+                            <div className="w-2 h-2 rounded-full bg-green-500/50" />
+                          </div>
+                          <div className="px-2 py-0.5 bg-white/5 rounded text-white/50">Assignment 1: Algorithms</div>
+                          <div className="w-16 h-4 bg-primary/20 rounded animate-pulse" />
+                        </div>
+
+                        <div className="flex-1 flex overflow-hidden">
+                          {/* Sidebar Mock */}
+                          <div className="w-12 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
+                            <LayoutGrid className="w-4 h-4 text-primary" />
+                            <div className="w-6 h-6 rounded bg-white/5" />
+                            <div className="w-6 h-6 rounded bg-white/5" />
+                          </div>
+
+                          {/* Editor Area Mock */}
+                          <div className="flex-1 p-4 relative">
+                            <div className="absolute top-4 left-4 text-blue-400">def solve_problem(input):</div>
+                            <div className="absolute top-8 left-8 text-gray-500"># Write your efficient code here</div>
+                            <div className="absolute top-12 left-8 text-purple-400">result = []</div>
+                            <div className="absolute top-16 left-8 text-white">
+                              for i in range(len(input)):
+                              <span className="inline-block w-1.5 h-3 bg-primary ml-1 animate-[code-blink_1s_infinite]" />
+                            </div>
+                            
+                            {/* Run Button Overlay */}
+                            <div className="absolute bottom-4 right-4 bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-1 rounded flex items-center gap-1 shadow-lg shadow-green-900/20 group-hover:scale-105 transition-transform">
+                              <Play className="w-3 h-3 fill-current" /> Run
+                            </div>
+                          </div>
+
+                          {/* Terminal Mock (Split) */}
+                          <div className="w-1/3 border-l border-white/10 bg-black/40 p-2 flex flex-col">
+                            <div className="flex gap-2 border-b border-white/5 pb-2 mb-2">
+                              <span className="text-white/60">Output</span>
+                              <span className="text-white/20">Test Cases</span>
+                            </div>
+                            <div className="space-y-1 opacity-70">
+                              <div className="flex items-center gap-1 text-green-500"><div className="w-1 h-1 rounded-full bg-green-500"/> Passed 3/5</div>
+                              <div className="flex items-center gap-1 text-red-500"><div className="w-1 h-1 rounded-full bg-red-500"/> Failed Case 4</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight">Codevo Challenge</h3>
-                    <p className="text-muted-foreground max-w-md leading-relaxed text-base md:text-lg">
-                      "{DEMO_SCENARIO.question}"
-                    </p>
-                  </div>
-
-                  {/* Phase 2: Terminal/Code View */}
-                  <div className={cn("absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 ease-in-out flex flex-col", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none")}>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-4 opacity-50 text-xs">
-                      <Terminal className="w-4 h-4" />
-                      <span>user@codevo:~/workspace $ code main.py</span>
-                    </div>
-                    <div className="font-mono text-blue-400 whitespace-pre-wrap leading-relaxed text-xs md:text-sm">
-                      {typedCode}<span className="cursor-blink" />
+                      
+                      {/* Screen Glare */}
+                      <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
                     </div>
                   </div>
 
+                  {/* Laptop Base */}
+                  <div className="h-3 md:h-4 bg-[#252525] rounded-b-xl border-t border-black/50 shadow-xl relative z-10">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-1.5 bg-gray-700 rounded-b-md" /> {/* Hinge */}
+                  </div>
+                  
+                  {/* Reflection/Shadow under laptop */}
+                  <div className="absolute -bottom-10 left-4 right-4 h-8 bg-black/40 blur-xl rounded-full transform scale-y-50" />
                 </div>
               </div>
 
-              {/* LEFT (Desktop) / BOTTOM (Mobile): Synchronized Keyboard */}
-              <div className="relative order-2 lg:order-1">
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
-                <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                  Live Input
-                </h3>
-                {/* Responsive Virtual Keyboard Component */}
-                <VirtualKeyboard activeChar={activeKey} />
-              </div>
-
             </div>
-
-            {/* Infinite Tech Marquee */}
-            <div className="w-full max-w-7xl mx-auto overflow-hidden relative group mt-8">
-              <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
-              <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
-              
-              <div className="flex gap-8 md:gap-16 animate-marquee whitespace-nowrap py-4">
-                {[...TECH_STACK, ...TECH_STACK, ...TECH_STACK].map((src, i) => (
-                  <div key={i} className="flex-shrink-0 flex items-center justify-center w-14 h-14 md:w-20 md:h-20 bg-white/5 rounded-2xl border border-white/5 hover:border-white/20 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm group/icon">
-                    <img src={src} alt="tech" className="w-7 h-7 md:w-10 md:h-10 object-contain opacity-40 group-hover/icon:opacity-100 group-hover/icon:scale-110 transition-all duration-300 grayscale group-hover/icon:grayscale-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
           </div>
         </section>
 
@@ -391,8 +409,13 @@ const Landing = () => {
                   </div>
                 </div>
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
-                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-12 text-base font-medium transition-all hover:scale-[1.02]">
-                    {session ? "Enter Learning Mode" : "Login to Practice"} <ArrowRight className="w-4 h-4 ml-2" />
+                  <Button 
+                    size="lg"
+                    onClick={() => session ? navigate('/practice') : navigate('/auth')}
+                    className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-12 text-base font-medium transition-all hover:scale-[1.02]"
+                  >
+                    {session ? "Enter Learning Mode" : "Login to Practice"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               </div>
@@ -414,8 +437,14 @@ const Landing = () => {
                   </div>
                 </div>
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
-                  <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]" onClick={() => session ? navigate('/exam') : navigate('/auth')}>
-                    {session ? "Enter Exam Hall" : "Login to Exam"} <ArrowRight className="w-4 h-4 ml-2" />
+                  <Button 
+                    size="lg"
+                    variant="outline"
+                    className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]"
+                    onClick={() => session ? navigate('/exam') : navigate('/auth')}
+                  >
+                    {session ? "Enter Exam Hall" : "Login to Exam"}
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               </div>
