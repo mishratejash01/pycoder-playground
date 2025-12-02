@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
-import { Loader2, Play, RefreshCw, Code2, FileCode, Home, Terminal } from 'lucide-react';
+import { Loader2, Play, RefreshCw, Code2, FileCode, Home, Terminal, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 // --- Helper Functions (Reused from AssignmentView) ---
 const getStarterTemplate = (lang: Language) => {
@@ -35,6 +36,7 @@ const getFileName = (lang: Language) => {
 
 const Compiler = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeLanguage, setActiveLanguage] = useState<Language>('python');
   const [code, setCode] = useState<string>(getStarterTemplate('python'));
   const [output, setOutput] = useState<string>('// Output will appear here...');
@@ -58,6 +60,37 @@ const Compiler = () => {
       setOutput(result.output);
     } else {
       setOutput(result.error || "An unknown error occurred.");
+    }
+  };
+
+  // --- NEW: Client-Side Download Logic ---
+  const handleDownload = () => {
+    try {
+      const filename = getFileName(activeLanguage);
+      const blob = new Blob([code], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download Started",
+        description: `Downloading ${filename}`,
+        duration: 2000,
+      });
+    } catch (err) {
+      toast({
+        title: "Download Failed",
+        description: "Could not generate file.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -101,6 +134,18 @@ const Compiler = () => {
             <FileCode className="w-3 h-3 mr-2" /> 
             {getFileName(activeLanguage)}
           </div>
+
+          {/* Download Button */}
+          <Button 
+            onClick={handleDownload} 
+            variant="outline"
+            size="sm" 
+            className="h-9 border-white/10 bg-white/5 hover:bg-white/10 text-white"
+            title="Download Source Code"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Save File</span>
+          </Button>
 
           <Button 
             onClick={handleRun} 
