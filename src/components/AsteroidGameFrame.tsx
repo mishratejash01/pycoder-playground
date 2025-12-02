@@ -109,7 +109,6 @@ export const AsteroidGameFrame = () => {
         }
       }
 
-      // MONOCHROME AESTHETIC
       const colors = ['#ffffff', '#e5e5e5', '#d4d4d4', '#a3a3a3']; 
       const color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -123,7 +122,6 @@ export const AsteroidGameFrame = () => {
       };
     };
 
-    // Only init stars if empty
     if (gameState.current.stars.length === 0) {
       for (let i = 0; i < 50; i++) {
         gameState.current.stars.push({
@@ -135,7 +133,6 @@ export const AsteroidGameFrame = () => {
       }
     }
 
-    // Init Asteroids
     if (gameState.current.asteroids.length === 0) {
       for (let i = 0; i < 5; i++) {
         gameState.current.asteroids.push(spawnAsteroid(canvas.width, canvas.height));
@@ -145,7 +142,6 @@ export const AsteroidGameFrame = () => {
     const update = () => {
       if (!canvas) return;
       
-      // Resize
       if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
@@ -155,14 +151,12 @@ export const AsteroidGameFrame = () => {
       const height = canvas.height;
       const state = gameState.current;
 
-      // --- RENDER BACKGROUND (Premium Faded B&W) ---
       const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
       gradient.addColorStop(0, '#1a1a1a');  
       gradient.addColorStop(1, '#000000'); 
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
-      // Draw Stars
       ctx.fillStyle = '#ffffff';
       state.stars.forEach(star => {
         ctx.globalAlpha = star.alpha * 0.2 + 0.05; 
@@ -172,15 +166,11 @@ export const AsteroidGameFrame = () => {
       });
       ctx.globalAlpha = 1.0;
 
-      // --- UPDATE STATE ---
-
-      // 1. Player
       state.player.x = width / 2;
       state.player.y = height / 2;
       if (state.keys.a) state.player.angle -= 0.08;
       if (state.keys.d) state.player.angle += 0.08;
 
-      // 2. Bullets
       for (let i = state.bullets.length - 1; i >= 0; i--) {
         const b = state.bullets[i];
         b.x += b.dx;
@@ -192,19 +182,16 @@ export const AsteroidGameFrame = () => {
         }
       }
 
-      // 3. Asteroids
       for (let i = state.asteroids.length - 1; i >= 0; i--) {
         const a = state.asteroids[i];
         a.x += a.dx;
         a.y += a.dy;
 
-        // Wrap
         if (a.x < -a.size - 10) a.x = width + a.size;
         if (a.x > width + a.size + 10) a.x = -a.size;
         if (a.y < -a.size - 10) a.y = height + a.size;
         if (a.y > height + a.size + 10) a.y = -a.size;
 
-        // Collision Logic
         for (let j = state.bullets.length - 1; j >= 0; j--) {
           const b = state.bullets[j];
           const dx = b.x - a.x;
@@ -212,7 +199,6 @@ export const AsteroidGameFrame = () => {
           const dist = Math.sqrt(dx*dx + dy*dy);
           
           if (dist < a.size + 5) { 
-            // Explosion particles
             for (let k = 0; k < 8; k++) {
                state.particles.push({
                  x: a.x, y: a.y,
@@ -227,13 +213,11 @@ export const AsteroidGameFrame = () => {
             state.asteroids.splice(i, 1);
             setScore(s => s + (a.size > 20 ? 50 : 100));
             
-            // Split Logic
             if (a.size > 20) {
               state.asteroids.push(spawnAsteroid(width, height, a.size / 1.6, a.x, a.y));
               state.asteroids.push(spawnAsteroid(width, height, a.size / 1.6, a.x, a.y));
             }
 
-            // Respawn Check
             if (state.asteroids.length < 3) {
                setTimeout(() => {
                  if (gameState.current.asteroids.length < 5) {
@@ -246,7 +230,6 @@ export const AsteroidGameFrame = () => {
         }
       }
 
-      // 4. Particles
       for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
         p.x += p.dx;
@@ -255,9 +238,6 @@ export const AsteroidGameFrame = () => {
         if (p.life <= 0) state.particles.splice(i, 1);
       }
 
-      // --- DRAWING ---
-
-      // Particles
       state.particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life / 25;
@@ -267,25 +247,19 @@ export const AsteroidGameFrame = () => {
       });
       ctx.globalAlpha = 1.0;
 
-      // Asteroids
       state.asteroids.forEach(a => {
         ctx.shadowBlur = 15;
         ctx.shadowColor = 'rgba(255,255,255,0.1)';
-        
         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
         ctx.lineWidth = 1.5;
-        
         ctx.beginPath();
         ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
         ctx.stroke();
-        
         ctx.fillStyle = 'rgba(255,255,255,0.02)'; 
         ctx.fill();
-        
         ctx.shadowBlur = 0;
       });
 
-      // Bullets
       ctx.shadowBlur = 8;
       ctx.shadowColor = '#ffffff';
       ctx.fillStyle = '#ffffff';
@@ -296,7 +270,6 @@ export const AsteroidGameFrame = () => {
       });
       ctx.shadowBlur = 0;
 
-      // Player
       ctx.save();
       ctx.translate(state.player.x, state.player.y);
       ctx.rotate(state.player.angle);
@@ -305,7 +278,6 @@ export const AsteroidGameFrame = () => {
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.fillStyle = '#000';
-      
       ctx.beginPath();
       ctx.moveTo(0, -12);
       ctx.lineTo(8, 12);
@@ -325,85 +297,73 @@ export const AsteroidGameFrame = () => {
 
   return (
     <div className={cn(
-      "relative w-full h-[400px] md:h-[600px] bg-[#050505] rounded-[2rem] border-[12px] border-white/5 overflow-hidden shadow-2xl group select-none",
+      "relative w-full h-[300px] md:h-[600px] bg-[#050505] rounded-[1.5rem] md:rounded-[2rem] border-[8px] md:border-[12px] border-white/5 overflow-hidden shadow-2xl group select-none",
       inactive && gameStarted && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
     )}>
       
       {/* Start Game Overlay */}
       {!gameStarted && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[2px]">
-          <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500">
-            <h3 className="text-3xl md:text-4xl font-bold text-white font-neuropol tracking-wide">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
+          <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 px-4">
+            <h3 className="text-2xl md:text-4xl font-bold text-white font-neuropol tracking-wide">
               ASTEROID DEFENSE
             </h3>
-            <p className="text-gray-400 text-sm max-w-md mx-auto px-4">
-              Defend your station from incoming debris. <br/> Use <span className="text-white border border-white/20 px-1 rounded">A</span> <span className="text-white border border-white/20 px-1 rounded">D</span> to rotate and <span className="text-white border border-white/20 px-1 rounded">SPACE</span> to fire.
+            <p className="text-gray-300 text-xs md:text-sm max-w-md mx-auto">
+              Defend your station. <span className="hidden md:inline">Use <span className="text-white border border-white/20 px-1 rounded">A</span> <span className="text-white border border-white/20 px-1 rounded">D</span> to rotate and <span className="text-white border border-white/20 px-1 rounded">SPACE</span> to fire.</span>
             </p>
             <Button 
               onClick={() => setGameStarted(true)}
-              className="bg-transparent border-2 border-white text-white hover:bg-white/10 font-bold px-10 py-6 rounded-none text-lg tracking-widest transition-all hover:scale-105"
+              className="bg-transparent border-2 border-white text-white hover:bg-white/10 hover:text-white font-bold px-8 py-6 rounded-none text-base md:text-lg tracking-widest transition-all uppercase"
             >
-              START MISSION
+              Start Mission
             </Button>
           </div>
         </div>
       )}
 
       {/* Faded Effect Mask at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#000000] via-[#000000cc] to-transparent z-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-24 md:h-32 bg-gradient-to-t from-[#000000] via-[#000000cc] to-transparent z-20 pointer-events-none" />
 
       {/* HUD (Only visible when started) */}
       <div className={cn("transition-opacity duration-500", gameStarted ? "opacity-100" : "opacity-0")}>
-        <div className="absolute top-8 left-10 z-30 flex items-center gap-4 pointer-events-none">
+        <div className="absolute top-6 left-6 z-30 flex items-center gap-4 pointer-events-none">
           <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
-            <Heart className="w-4 h-4 text-white fill-white" />
-            <span className="text-xs font-mono text-white font-bold">100%</span>
+            <Heart className="w-3 h-3 md:w-4 md:h-4 text-white fill-white" />
+            <span className="text-[10px] md:text-xs font-mono text-white font-bold">100%</span>
           </div>
         </div>
         
-        <div className="absolute top-8 right-10 z-30 pointer-events-none">
+        <div className="absolute top-6 right-6 z-30 pointer-events-none">
           <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
-            <Trophy className="w-4 h-4 text-white" />
-            <span className="text-xs font-mono text-white font-bold">{score.toString().padStart(6, '0')}</span>
+            <Trophy className="w-3 h-3 md:w-4 md:h-4 text-white" />
+            <span className="text-[10px] md:text-xs font-mono text-white font-bold">{score.toString().padStart(6, '0')}</span>
           </div>
         </div>
       </div>
 
-      {/* Inactivity Warning */}
-      {inactive && gameStarted && (
-        <div className="absolute inset-0 flex items-center justify-center z-40 bg-red-950/20 backdrop-blur-[1px] pointer-events-none">
-          <div className="bg-black/90 border border-red-500 px-8 py-4 rounded text-red-500 font-mono text-lg animate-bounce shadow-[0_0_30px_rgba(220,38,38,0.5)]">
-            SYSTEM_IDLE // WAKE_UP_PILOT
-          </div>
-        </div>
-      )}
-
       {/* Canvas */}
-      <canvas 
-        ref={canvasRef} 
-        className="w-full h-full block cursor-crosshair" 
-      />
+      <canvas ref={canvasRef} className="w-full h-full block cursor-crosshair" />
 
       {/* Bottom Bar (Controls) */}
-      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between px-8 z-30 pointer-events-none opacity-80">
-         <div className="flex items-center gap-6">
+      <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-6 z-30 pointer-events-none opacity-80">
+         <div className="flex items-center gap-4 md:gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex gap-1">
-                 <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">W</span>
-                 <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">A</span>
-                 <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">D</span>
+                 <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">W</span>
+                 <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">A</span>
+                 <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">D</span>
                </div>
                <span className="hidden sm:inline">Move</span>
             </div>
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
-               <div className="flex items-center gap-1 border border-white/10 bg-white/5 px-3 py-1 rounded text-gray-300">
+               <div className="flex items-center gap-1 border border-white/10 bg-white/5 px-2 py-0.5 rounded text-gray-300">
                  <MousePointer2 className="w-3 h-3" /> <span>Click</span>
                </div>
                <span className="hidden sm:inline">/ Space to Fire</span>
             </div>
          </div>
          
-         <div className="flex items-center gap-2 text-gray-600 text-xs">
+         <div className="flex items-center gap-2 text-gray-600 text-[10px] md:text-xs">
            <span className="hidden sm:inline">Built by</span>
            <span className="text-gray-300 font-bold">Neural AI</span>
          </div>
