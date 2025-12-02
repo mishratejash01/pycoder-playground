@@ -5,28 +5,20 @@ interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   readOnly?: boolean;
-  disableCopyPaste?: boolean; // New Prop
+  disableCopyPaste?: boolean;
+  language?: string; // New Prop
 }
 
-export const CodeEditor = ({ value, onChange, readOnly = false, disableCopyPaste = false }: CodeEditorProps) => {
+export const CodeEditor = ({ value, onChange, readOnly = false, disableCopyPaste = false, language = "python" }: CodeEditorProps) => {
   
   const handleEditorDidMount = (editor: any, monaco: any) => {
     if (disableCopyPaste) {
       const container = editor.getContainerDomNode();
-      
-      // Block Copy/Paste/Cut specifically on the editor container
-      const preventDefault = (e: any) => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      };
-
+      const preventDefault = (e: any) => { e.preventDefault(); e.stopPropagation(); return false; };
       container.addEventListener('copy', preventDefault, true);
       container.addEventListener('paste', preventDefault, true);
       container.addEventListener('cut', preventDefault, true);
       container.addEventListener('contextmenu', preventDefault, true);
-      
-      // Optional: Disable keyboard shortcuts for copy/paste within Monaco
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => null);
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => null);
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyX, () => null);
@@ -40,10 +32,10 @@ export const CodeEditor = ({ value, onChange, readOnly = false, disableCopyPaste
       <div className="h-full w-full overflow-hidden border-none shadow-2xl bg-black">
         <Editor
           height="100%"
-          defaultLanguage="python"
+          language={language} // Dynamic Language
           value={value}
           onChange={(value) => onChange(value || '')}
-          onMount={handleEditorDidMount} // Attach blocking logic
+          onMount={handleEditorDidMount}
           theme="vs-dark"
           loading={
             <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
@@ -58,7 +50,7 @@ export const CodeEditor = ({ value, onChange, readOnly = false, disableCopyPaste
             fontLigatures: true,
             lineNumbers: 'on',
             readOnly,
-            contextmenu: !disableCopyPaste, // Disable context menu option
+            contextmenu: !disableCopyPaste,
             scrollBeyondLastLine: false,
             wordWrap: 'on',
             padding: { top: 20, bottom: 20 },
