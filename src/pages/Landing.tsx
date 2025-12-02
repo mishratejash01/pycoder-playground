@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Sparkles, LayoutGrid, Play, Server, Activity, Cpu } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Sparkles, LayoutGrid, Play, Server, Activity, Cpu, Mic } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -158,7 +158,7 @@ const Landing = () => {
   };
 
   const scrollToContent = () => {
-    const element = document.getElementById('showcase-section');
+    const element = document.getElementById('laptop-section');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
@@ -173,8 +173,6 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale Calculation for "Less Shrinking"
-  // Starts at 1, goes down to 0.96 (very subtle border)
   const scale = Math.max(0.96, 1 - scrollY / 3000);
   const borderRadius = Math.min(30, scrollY / 10);
 
@@ -210,7 +208,6 @@ const Landing = () => {
           vertical-align: middle;
           margin-left: 2px;
         }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
       `}</style>
 
       {/* Page Transition Overlay */}
@@ -296,19 +293,19 @@ const Landing = () => {
         </div>
 
         {/* --- SECTION 2: 3D LAPTOP & SIMPLE TEXT --- */}
-        <section id="showcase-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
+        <section id="laptop-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
           {/* Grid Background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <div className="container mx-auto px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
               
-              {/* LEFT: Simple Text & Button */}
+              {/* LEFT: Text & Button */}
               <div className="flex-1 space-y-10 text-center lg:text-left">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 justify-center lg:justify-start text-xs font-mono text-green-500 mb-2">
+                  <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase">
                     <Activity className="w-3 h-3 animate-pulse" />
-                    <span>SYSTEM::READY</span>
+                    System::Online
                   </div>
                   <h2 className="text-4xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
                     EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
@@ -320,10 +317,9 @@ const Landing = () => {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start gap-8">
-                  {/* BUTTON: Round Rectangular with Arrow */}
                   <Button 
                     onClick={handlePracticeClick}
-                    className="group relative h-14 px-10 rounded-[1.5rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
+                    className="group relative h-14 px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
                   >
                     <span className="relative z-10 flex items-center gap-2">
                       Start Coding
@@ -331,10 +327,9 @@ const Landing = () => {
                     </span>
                   </Button>
 
-                  {/* Tech Stack Marquee (Below Button) */}
                   <div className="w-full max-w-md">
-                    <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left">
-                      POWERED BY MODERN TECHNOLOGIES
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left opacity-70 font-mono">
+                      // POWERED BY MODERN TECHNOLOGIES
                     </p>
                     <div className="w-full overflow-hidden relative mask-gradient-x">
                       <div className="absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
@@ -362,8 +357,6 @@ const Landing = () => {
                     
                     {/* Screen Content */}
                     <div className="bg-[#09090b] rounded-t-md border border-white/5 overflow-hidden aspect-[16/10] relative group">
-                      
-                      {/* Fake Interface */}
                       <div className="absolute inset-0 flex flex-col font-mono text-[9px] md:text-[10px] text-gray-400">
                         {/* Top Bar */}
                         <div className="h-6 border-b border-white/10 flex items-center px-3 justify-between bg-[#0c0c0e]">
@@ -399,18 +392,15 @@ const Landing = () => {
 
                           {/* Terminal Output */}
                           <div className="w-1/3 border-l border-white/10 bg-black/60 p-2 font-mono">
-                            <div className="text-green-500 mb-1">➜  ~ python3 test.py</div>
-                            <div className="text-white/70">Running tests...</div>
+                            <div className="text-green-500 mb-1">➜  ~ running tests...</div>
                             <div className="mt-2 space-y-1">
-                              <div className="flex items-center gap-1 text-green-400">✓ Test 1 Passed (0.02s)</div>
-                              <div className="flex items-center gap-1 text-green-400">✓ Test 2 Passed (0.01s)</div>
-                              <div className="flex items-center gap-1 text-red-400">✗ Test 3 Failed</div>
+                              <div className="flex items-center gap-1 text-green-400">✓ Case 1 Passed</div>
+                              <div className="flex items-center gap-1 text-green-400">✓ Case 2 Passed</div>
+                              <div className="flex items-center gap-1 text-red-400">✗ Case 3 Failed</div>
                             </div>
                           </div>
                         </div>
                       </div>
-                      
-                      {/* Glare */}
                       <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
                     </div>
                   </div>
@@ -485,7 +475,7 @@ const Landing = () => {
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
                 <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                  Real-time Interaction
+                  Interactive Input
                 </h3>
                 <VirtualKeyboard activeChar={activeKey} />
               </div>
@@ -493,6 +483,112 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* --- SECTION 4: GROK-STYLE SHOWCASE (Desktop & Mobile) --- */}
+        <section className="w-full bg-[#09090b] py-24 relative overflow-hidden border-t border-white/5">
+          <div className="container mx-auto px-6">
+            
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-6">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+                  Code on <span className="font-neuropol text-blue-500">CODéVO</span>
+                </h2>
+                <p className="text-muted-foreground max-w-xl text-lg leading-relaxed">
+                  Unleash your potential with our advanced coding platform. Featuring real-time execution, proctored exams, and detailed performance analytics.
+                </p>
+              </div>
+            </div>
+
+            {/* Screens Container */}
+            <div className="relative w-full h-[400px] md:h-[600px] mt-8">
+              
+              {/* Large Desktop Screen */}
+              <div className="absolute left-0 top-0 w-[85%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
+                {/* Chrome */}
+                <div className="h-12 border-b border-white/10 flex items-center px-4 justify-between bg-[#1a1a1c]">
+                   <div className="flex gap-4 text-white/40">
+                      <div className="w-6 h-6 rounded-full bg-white/5" />
+                      <div className="w-6 h-6 rounded-full bg-white/5" />
+                   </div>
+                   <div className="text-sm font-medium text-white">Codevo IDE</div>
+                   <div className="w-8 h-8 rounded-full bg-white/10" />
+                </div>
+                {/* Body */}
+                <div className="p-6 flex h-full">
+                  <div className="w-16 border-r border-white/5 hidden md:block" />
+                  <div className="flex-1 p-4 font-mono text-xs md:text-sm text-gray-400 space-y-2">
+                     <div className="text-blue-400">class Solution:</div>
+                     <div className="pl-4">def twoSum(self, nums, target):</div>
+                     <div className="pl-8">prevMap = {}  <span className="text-gray-600"># val : index</span></div>
+                     <div className="pl-8">for i, n in enumerate(nums):</div>
+                     <div className="pl-12">diff = target - n</div>
+                     <div className="pl-12">if diff in prevMap:</div>
+                     <div className="pl-16 text-green-400">return [prevMap[diff], i]</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile Phone Overlay */}
+              <div className="absolute right-0 bottom-0 w-[120px] md:w-[280px] aspect-[9/19] bg-[#000] rounded-[2rem] md:rounded-[3rem] border-[6px] border-[#1a1a1a] shadow-2xl z-20 overflow-hidden transform translate-y-10 md:translate-y-0">
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-6 bg-black rounded-b-xl z-30" />
+                 <div className="h-full w-full bg-[#0f0f11] pt-10 px-4 flex flex-col">
+                    <div className="flex gap-2 mb-6">
+                       <div className="w-10 h-6 rounded-full bg-white/10" />
+                       <div className="w-20 h-6 rounded-full bg-white/10" />
+                    </div>
+                    <div className="flex-1 bg-white/5 rounded-xl border border-white/5 p-3 space-y-2">
+                       <div className="h-2 w-1/2 bg-blue-500/50 rounded" />
+                       <div className="h-2 w-3/4 bg-white/10 rounded" />
+                       <div className="h-2 w-full bg-white/10 rounded" />
+                       <div className="mt-auto flex justify-end">
+                          <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center"><Play className="w-3 h-3 text-black fill-current"/></div>
+                       </div>
+                    </div>
+                    <div className="h-20" />
+                 </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* Modes Section */}
+        <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24 border-t border-white/5">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-white">Select Mode</h2>
+              <p className="text-muted-foreground text-lg">Choose how you want to code today.</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex-1">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20"><Code2 className="w-8 h-8 text-primary" /></div>
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Standard practice console with instant feedback.</div>
+                </div>
+                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg h-12 text-base font-medium transition-all hover:scale-[1.02]">
+                    {session ? "Enter Learning Mode" : "Login to Practice"} <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col overflow-hidden h-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex-1">
+                  <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20"><Lock className="w-8 h-8 text-red-500" /></div>
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Secure proctored environment with strict monitoring.</div>
+                </div>
+                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
+                  <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]" onClick={() => session ? navigate('/exam') : navigate('/auth')}>
+                    {session ? "Enter Exam Hall" : "Login to Exam"} <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t border-white/10 mt-12 bg-[#0c0c0e] relative z-10">
