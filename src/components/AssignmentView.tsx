@@ -7,8 +7,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CodeEditor } from './CodeEditor';
 import { TestCaseView } from './TestCaseView';
-// CHANGE 1: Import the new universal hook instead of usePyodide
-import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
+import { useCodeRunner, Language } from '@/hooks/useCodeRunner'; // Use the new hook
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2, Lock, Unlock } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
@@ -25,7 +24,7 @@ interface AssignmentViewProps {
   disableCopyPaste?: boolean;
 }
 
-// Helper: Extract function/class name for Python wrapping
+// Regex to find Python function/class name
 const getTargetName = (code: string) => {
   const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   if (funcMatch) return funcMatch[1];
@@ -34,20 +33,19 @@ const getTargetName = (code: string) => {
   return null;
 };
 
-// Helper: Normalize output for comparison (handles whitespace/quotes)
 const normalizeOutput = (str: string) => {
   if (!str) return '';
   return str.trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
-// CHANGE 2: Helper to detect language from metadata
+// Helper: Detect language based on Title or Category
 const detectLanguage = (title: string, category: string): Language => {
   const text = (title + category).toLowerCase();
   if (text.includes('java')) return 'java';
   if (text.includes('c++') || text.includes('cpp')) return 'cpp';
   if (text.includes('javascript') || text.includes('js')) return 'javascript';
-  if (text.includes('c')) return 'c';
-  return 'python'; // Default fallback
+  if (text.includes(' c ') || text.endsWith(' c')) return 'c'; // Avoid matching 'category'
+  return 'python';
 };
 
 export const AssignmentView = ({ 
@@ -63,11 +61,12 @@ export const AssignmentView = ({
   const [testResults, setTestResults] = useState<Record<string, any>>({});
   const [bottomTab, setBottomTab] = useState<'console' | 'testcases'>('testcases');
   
-  // CHANGE 3: Use the universal code runner
+  // Use the universal runner
   const { executeCode, loading: runnerLoading } = useCodeRunner();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch Assignment
   const { data: assignment, isLoading, error, refetch } = useQuery({
     queryKey: ['assignment', assignmentId, tables.assignments],
     queryFn: async () => {
@@ -101,18 +100,28 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
-  // CHANGE 4: Determine current language
-  const currentLanguage = assignment 
+  // LOGIC: Enable Multi-language ONLY for IITM assignments
+  const isIITM = tables.assignments === 'iitm_assignments';
+  const currentLanguage = (isIITM && assignment) 
     ? detectLanguage(assignment.title, assignment.category || '') 
     : 'python';
 
   useEffect(() => {
     const sessionKey = `exam_draft_${assignmentId}`;
     const savedDraft = sessionStorage.getItem(sessionKey);
+    
+    // Set Code
     if (savedDraft) setCode(savedDraft);
     else if (latestSubmission?.code) setCode(latestSubmission.code);
     else if (assignment?.starter_code) setCode(assignment.starter_code);
-    else setCode(currentLanguage === 'python' ? '# Write your Python code here\n' : '// Write your code here\n');
+    else {
+      // Default starter code based on language
+      if (currentLanguage === 'java') setCode('public class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}');
+      else if (currentLanguage === 'cpp') setCode('#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    return 0;\n}');
+      else if (currentLanguage === 'javascript') setCode('// Your JavaScript code here\n');
+      else setCode('# Write your Python code here\n');
+    }
+
     setTestResults({});
     setConsoleOutput('');
   }, [assignmentId, latestSubmission, assignment, currentLanguage]);
@@ -122,25 +131,19 @@ export const AssignmentView = ({
     sessionStorage.setItem(`exam_draft_${assignmentId}`, newCode);
   };
 
-  // Helper: Prepare code for execution
-  // For Python "function assignments", we append the call. 
-  // For other languages (or Python scripts), we execute as-is with stdin.
+  // Prepare code specifically for Python function wrapping
   const prepareExecutionCode = (rawCode: string, input: string) => {
     if (currentLanguage === 'python') {
       const targetName = getTargetName(rawCode);
-      // If a function definition exists and we have input, wrap it
       if (targetName && input) {
-        // If input looks like arguments "(1, 2)", pass directly. If not, treat as string.
-        // NOTE: This assumes inputs in DB are formatted like "1, 2" or "[1,2]" for the function.
-        // If your test cases are raw values, you might need `(${input})`.
-        // This wrapper tries to print the result of function_name(input)
+        // If it's a function assignment, wrap the call
         return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(e)`;
       }
     }
+    // For Java/C++/JS, we pass input via STDIN, so code remains as is
     return rawCode;
   };
 
-  // CHANGE 5: Refactored Submit Logic to use executeCode
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -154,11 +157,10 @@ export const AssignmentView = ({
       let passedCount = 0;
 
       for (const test of allTests) {
-        // Prepare code (wrapper for Python function calls if needed)
-        // If it's a standard script (Java/C++), input goes to STDIN via executeCode
+        // Prepare Code (Wraps Python functions, leaves others alone)
         const codeToRun = prepareExecutionCode(code, test.input);
         
-        // Run code
+        // Execute (Input is passed as STDIN for Piston languages)
         const result = await executeCode(currentLanguage, codeToRun, test.input);
         
         if (!result.success) {
@@ -168,8 +170,6 @@ export const AssignmentView = ({
 
         const actual = normalizeOutput(result.output);
         const expected = normalizeOutput(test.expected_output);
-        
-        // Simple string matching (can be enhanced with regex or type parsing)
         const isMatch = actual === expected || actual.includes(expected);
         
         if (isMatch) passedCount++;
@@ -185,22 +185,18 @@ export const AssignmentView = ({
       const total = allTests.length;
       const score = total > 0 ? (passedCount / total) * (assignment.max_score || 100) : 0;
       
-      // Calculate split counts
-      const pubPassed = publicTests.filter(t => newTestResults[t.id]?.passed).length;
-      const privPassed = privateTests.filter(t => newTestResults[t.id]?.passed).length;
-
+      // Save submission
       // @ts-ignore
       await supabase.from(tables.submissions).insert({
         assignment_id: assignmentId,
         user_id: user.id,
         code,
         score,
-        public_tests_passed: pubPassed,
+        public_tests_passed: publicTests.filter(t => newTestResults[t.id]?.passed).length,
         public_tests_total: publicTests.length,
-        private_tests_passed: privPassed,
+        private_tests_passed: privateTests.filter(t => newTestResults[t.id]?.passed).length,
         private_tests_total: privateTests.length,
       });
-      
       return { score, passedCount, total };
     },
     onSuccess: (data) => {
@@ -217,17 +213,12 @@ export const AssignmentView = ({
     }
   });
 
-  // CHANGE 6: Refactored Run Logic
   const handleRun = async () => {
     if (runnerLoading) return;
     setConsoleOutput('Running...');
     setBottomTab('console');
-    
     try {
-      // Just run the code. If it's a script, it runs. 
-      // If it's a function without a call, it might output nothing, which is expected behavior for "Run" unless user adds a print.
-      const res = await executeCode(currentLanguage, code, "");
-      
+      const res = await executeCode(currentLanguage, code, ""); 
       if (res.success) {
         setConsoleOutput(res.output || "Code executed successfully (No output).");
       } else {
@@ -240,7 +231,6 @@ export const AssignmentView = ({
 
   const publicTests = testCases.filter((tc: any) => tc.is_public);
   const privateTests = testCases.filter((tc: any) => !tc.is_public);
-
   const currentPubPassed = testResults ? Object.values(testResults).filter((r:any, i) => testCases[i]?.is_public && r.passed).length : (latestSubmission?.public_tests_passed || 0);
   const currentPrivPassed = latestSubmission?.private_tests_passed || 0; 
 
@@ -250,7 +240,7 @@ export const AssignmentView = ({
   return (
     <div className="h-full w-full bg-[#09090b] text-white overflow-hidden">
       <ResizablePanelGroup direction="horizontal" className="h-full">
-        {/* LEFT PANEL: Problem & Stats */}
+        {/* LEFT PANEL */}
         <ResizablePanel defaultSize={40} minSize={30} className="bg-[#0c0c0e] border-r border-white/10 flex flex-col">
           <div className="h-12 border-b border-white/10 flex items-center px-4 justify-between bg-black/20 shrink-0">
             <div className="flex items-center gap-2 text-sm font-medium text-white/90"><BookOpen className="w-4 h-4 text-primary" /> Problem Description</div>
@@ -266,7 +256,7 @@ export const AssignmentView = ({
               <div>
                 <h1 className="text-2xl font-bold text-white mb-2">{assignment.title}</h1>
                 <div className="flex gap-2 text-xs text-muted-foreground">
-                  <span className="uppercase tracking-wider font-bold text-blue-400">{currentLanguage}</span>
+                  <span className={cn("uppercase tracking-wider font-bold", currentLanguage !== 'python' ? "text-blue-400" : "text-yellow-400")}>{currentLanguage}</span>
                   <span>•</span>
                   <span>{assignment.category || "General"}</span>
                 </div>
@@ -274,9 +264,8 @@ export const AssignmentView = ({
               <div className="prose prose-invert prose-sm text-gray-300"><div className="whitespace-pre-wrap font-sans">{assignment.description}</div></div>
               {assignment.instructions && <div className="bg-blue-950/20 border border-blue-500/20 rounded-lg p-4 text-xs text-blue-200/70 whitespace-pre-wrap">{assignment.instructions}</div>}
 
-              {/* VISUAL METER (Stats) */}
+              {/* Progress Bars */}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
-                 {/* Public Tests */}
                  <div className="bg-white/5 rounded p-3 border border-white/10">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-xs text-muted-foreground flex items-center gap-1"><Unlock className="w-3 h-3"/> Public Tests</span>
@@ -286,7 +275,6 @@ export const AssignmentView = ({
                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${publicTests.length ? (currentPubPassed/publicTests.length)*100 : 0}%` }} />
                     </div>
                  </div>
-                 {/* Private Tests */}
                  <div className="bg-white/5 rounded p-3 border border-white/10">
                     <div className="flex items-center justify-between mb-2">
                        <span className="text-xs text-muted-foreground flex items-center gap-1"><Lock className="w-3 h-3"/> Private Tests</span>
@@ -297,42 +285,38 @@ export const AssignmentView = ({
                     </div>
                  </div>
               </div>
-
             </div>
           </ScrollArea>
         </ResizablePanel>
         
         <ResizableHandle withHandle className="bg-black border-l border-r border-white/5 w-2 hover:bg-primary/20 transition-colors" />
 
-        {/* RIGHT PANEL: Editor & Output */}
+        {/* RIGHT PANEL: Editor */}
         <ResizablePanel defaultSize={60}>
           <ResizablePanelGroup direction="vertical">
             <ResizablePanel defaultSize={70} className="flex flex-col bg-[#09090b]">
               <div className="h-12 border-b border-white/10 flex items-center justify-between px-4 bg-black/40 shrink-0">
                 <div className="flex items-center gap-2 text-sm font-medium text-white/90">
                   <Code2 className="w-4 h-4 text-green-500" /> 
-                  <span className="capitalize">{currentLanguage}</span> Editor
+                  {currentLanguage === 'java' ? 'Main.java' : currentLanguage === 'cpp' ? 'main.cpp' : 'main.py'}
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={handleRun} disabled={runnerLoading} className="h-7 text-xs gap-1.5">
-                    <Play className="w-3 h-3 mr-1"/> Run
-                  </Button>
-                  <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending || runnerLoading} size="sm" className="h-7 text-xs gap-1.5 bg-green-600 hover:bg-green-500 text-white">
-                    {submitMutation.isPending || runnerLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : 'Submit'}
-                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleRun} disabled={runnerLoading} className="h-7 text-xs gap-1.5"><Play className="w-3 h-3 mr-1"/> Run</Button>
+                  <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending || runnerLoading} size="sm" className="h-7 text-xs gap-1.5 bg-green-600 hover:bg-green-500 text-white">{submitMutation.isPending || runnerLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : 'Submit'}</Button>
                 </div>
               </div>
               <div className="flex-1 relative">
                 <CodeEditor 
                   value={code} 
                   onChange={handleCodeChange} 
-                  disableCopyPaste={disableCopyPaste}
-                  // CHANGE 7: Pass language to CodeEditor
+                  disableCopyPaste={disableCopyPaste} 
                   language={currentLanguage}
                 />
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle className="bg-black border-t border-b border-white/5 h-2 hover:bg-primary/20 transition-colors" />
+            
+            {/* BOTTOM PANEL: Console/TestCases */}
             <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col">
               <Tabs value={bottomTab} onValueChange={(v:any) => setBottomTab(v)} className="flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/20 shrink-0">
