@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Sparkles } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -299,11 +299,26 @@ const Landing = () => {
                   
                   {/* Phase 1: Question/Marketing View */}
                   <div className={cn("absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out", showcasePhase === 'question' ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-10 scale-95 pointer-events-none")}>
-                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 border border-blue-500/20">
-                      <Sparkles className="w-8 h-8 text-blue-400" />
+                    
+                    {/* Premium Abstract Illustration (Non-AI/Robot) */}
+                    <div className="relative mb-8 group/icon">
+                      {/* Glow Effect */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl group-hover/icon:bg-blue-500/30 transition-all duration-700" />
+                      
+                      {/* Floating Card Stack Effect */}
+                      <div className="relative">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-white/5 border border-white/5 rounded-2xl transform -rotate-12 scale-90" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-white/5 border border-white/5 rounded-2xl transform rotate-12 scale-90" />
+                        <div className="relative w-20 h-20 bg-[#1a1a1a] border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-md">
+                          <Code2 className="w-10 h-10 text-white/90 group-hover/icon:text-blue-400 transition-colors duration-300" />
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4">Codevo Challenge</h3>
-                    <p className="text-muted-foreground max-w-md leading-relaxed text-base md:text-lg">"{DEMO_SCENARIO.question}"</p>
+
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight">Codevo Challenge</h3>
+                    <p className="text-muted-foreground max-w-md leading-relaxed text-base md:text-lg">
+                      "{DEMO_SCENARIO.question}"
+                    </p>
                   </div>
 
                   {/* Phase 2: Terminal/Code View */}
