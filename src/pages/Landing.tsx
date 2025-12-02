@@ -402,7 +402,6 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
-        {/* Reduced padding from py-24 to py-12 */}
         <section className="py-12 relative overflow-hidden bg-[#09090b] border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
@@ -544,7 +543,6 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
-        {/* Reduced padding from py-20 to py-12 */}
         <section className="w-full bg-[#000000] py-12 relative overflow-hidden border-t border-white/5">
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
 
