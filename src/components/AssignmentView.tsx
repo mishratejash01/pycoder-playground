@@ -36,9 +36,9 @@ const normalizeOutput = (str: string) => {
   return str.trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
-// Initial detection only
 const detectInitialLanguage = (title: string, category: string): Language => {
   const text = (title + category).toLowerCase();
+  if (text.includes('bash') || text.includes('shell') || text.includes('system')) return 'bash';
   if (text.includes('sql') || text.includes('database')) return 'sql';
   if (text.includes('java')) return 'java';
   if (text.includes('c++') || text.includes('cpp')) return 'cpp';
@@ -54,6 +54,7 @@ const getStarterTemplate = (lang: Language) => {
     case 'c': return '#include <stdio.h>\n\nint main() {\n    // Your code here\n    return 0;\n}';
     case 'javascript': return 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim();\n\n// Your code here';
     case 'sql': return '-- Write your SQL Query here\n-- Note: Tables must be created within this script for testing.\n\nCREATE TABLE students (id INTEGER, name TEXT, score INTEGER);\nINSERT INTO students VALUES (1, "Alice", 90);\nINSERT INTO students VALUES (2, "Bob", 85);\n\n-- Your SELECT query below:\nSELECT * FROM students;';
+    case 'bash': return '#!/bin/bash\n\n# Read input from stdin\nread input\n\n# Your script here\necho "Received: $input"';
     default: return '# Write your Python code here\nimport sys\n\n# Read input from stdin\ninput_data = sys.stdin.read().strip()\n\n# Your logic\n';
   }
 };
@@ -65,6 +66,7 @@ const getFileName = (lang: Language) => {
     case 'c': return 'main.c';
     case 'javascript': return 'index.js';
     case 'sql': return 'query.sql';
+    case 'bash': return 'script.sh';
     default: return 'main.py';
   }
 };
@@ -168,7 +170,6 @@ export const AssignmentView = ({
     let firstError = "";
 
     try {
-      // Loop through ALL test cases on Run (same as submit)
       for (const test of testCases) {
         const codeToRun = prepareExecutionCode(code, test.input);
         const result = await executeCode(activeLanguage, codeToRun, test.input);
@@ -301,7 +302,10 @@ export const AssignmentView = ({
               <div>
                 <h1 className="text-2xl font-bold text-white mb-2">{assignment.title}</h1>
                 <div className="flex gap-2 text-xs text-muted-foreground">
-                  <span className={cn("uppercase tracking-wider font-bold", activeLanguage === 'sql' ? "text-purple-400" : activeLanguage !== 'python' ? "text-blue-400" : "text-yellow-400")}>{activeLanguage}</span>
+                  <span className={cn("uppercase tracking-wider font-bold", 
+                    activeLanguage === 'sql' ? "text-purple-400" : 
+                    activeLanguage === 'bash' ? "text-pink-400" :
+                    activeLanguage !== 'python' ? "text-blue-400" : "text-yellow-400")}>{activeLanguage}</span>
                   <span>•</span>
                   <span>{assignment.category || "General"}</span>
                 </div>
@@ -355,6 +359,7 @@ export const AssignmentView = ({
                       <SelectItem value="c">C</SelectItem>
                       <SelectItem value="javascript">JavaScript</SelectItem>
                       <SelectItem value="sql">SQL</SelectItem>
+                      <SelectItem value="bash">Bash</SelectItem>
                     </SelectContent>
                   </Select>
 
