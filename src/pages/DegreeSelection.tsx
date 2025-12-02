@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, Laptop, ShieldAlert, BrainCircuit } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Import Tabs
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, Laptop, ShieldAlert, BrainCircuit, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const getSubjectIcon = (name: string) => {
@@ -26,29 +27,71 @@ const DegreeSelection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  const [selectedDegree, setSelectedDegree] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [selectedExamData, setSelectedExamData] = useState<{id: string, name: string, type: string} | null>(null);
 
+  // 1. Fetch Degrees (Root Parent)
+  const { data: degrees = [] } = useQuery({
+    queryKey: ['iitm_degrees'],
+    queryFn: async () => {
+      // @ts-ignore - Table created in migration
+      const { data, error } = await supabase.from('iitm_degrees').select('*').order('name');
+      if (error) {
+        console.error('Error fetching degrees:', error);
+        return [];
+      }
+      return data;
+    }
+  });
+
+  // Set default degree on load
+  useEffect(() => {
+    if (degrees.length > 0 && !selectedDegree) {
+      setSelectedDegree(degrees[0].id);
+    }
+  }, [degrees, selectedDegree]);
+
+  // 2. Fetch Levels (Filtered by Selected Degree)
   const { data: levels = [] } = useQuery({
-    queryKey: ['iitm_levels'],
+    queryKey: ['iitm_levels', selectedDegree],
     queryFn: async () => {
-      const { data, error } = await supabase.from('iitm_levels').select('*').order('sequence');
+      if (!selectedDegree) return [];
+      
+      const { data, error } = await supabase
+        .from('iitm_levels')
+        .select('*')
+        .eq('degree_id', selectedDegree) // Filter by parent
+        .order('sequence');
+      
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!selectedDegree
   });
 
+  // 3. Fetch Subjects (Filtered by Selected Degree via Levels)
   const { data: subjects = [] } = useQuery({
-    queryKey: ['iitm_subjects'],
+    queryKey: ['iitm_subjects', selectedDegree],
     queryFn: async () => {
-      const { data, error } = await supabase.from('iitm_subjects').select('*').order('name');
+      if (!selectedDegree) return [];
+
+      const { data, error } = await supabase
+        .from('iitm_subjects')
+        .select('*, iitm_levels!inner(degree_id)') // Inner join to filter by degree
+        // @ts-ignore
+        .eq('iitm_levels.degree_id', selectedDegree)
+        .order('name');
+
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!selectedDegree
   });
 
+  // Fetch Assignment Types Map
   const { data: subjectExamMap = {} } = useQuery({
     queryKey: ['iitm_assignment_types'],
     queryFn: async () => {
@@ -65,7 +108,7 @@ const DegreeSelection = () => {
   });
 
   const filteredSubjects = useMemo(() => {
-    return subjects.filter(subject => {
+    return subjects.filter((subject: any) => {
       const matchesLevel = selectedLevel === 'all' || subject.level_id === selectedLevel;
       const matchesSearch = subject.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesLevel && matchesSearch;
@@ -104,15 +147,36 @@ const DegreeSelection = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto mb-12 text-center space-y-4">
+      <div className="max-w-7xl mx-auto mb-8 text-center space-y-4">
         <h1 className="text-4xl md:text-5xl font-bold font-neuropol tracking-wide text-white">
           Explore Your Curriculum
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-          Select your level and subject to access practice environments and proctored exams.
+          Select your degree, level, and subject to access practice environments and proctored exams.
         </p>
       </div>
 
+      {/* Degree Selector (Tabs) */}
+      <div className="max-w-7xl mx-auto mb-8 flex justify-center">
+        {degrees.length > 0 && (
+          <Tabs value={selectedDegree} onValueChange={setSelectedDegree} className="w-full max-w-md">
+            <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10 h-12 p-1">
+              {degrees.map((degree: any) => (
+                <TabsTrigger 
+                  key={degree.id} 
+                  value={degree.id}
+                  className="data-[state=active]:bg-primary data-[state=active]:text-white h-full"
+                >
+                  <GraduationCap className="w-4 h-4 mr-2" />
+                  {degree.name.replace('BS in ', '')}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
+      </div>
+
+      {/* Filters Bar */}
       <div className="max-w-7xl mx-auto mb-10 sticky top-24 z-30">
         <div className="bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-xl flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="w-full md:w-1/3">
@@ -122,7 +186,9 @@ const DegreeSelection = () => {
               </SelectTrigger>
               <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
                 <SelectItem value="all">All Levels</SelectItem>
-                {levels.map(level => <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>)}
+                {levels.map((level: any) => (
+                  <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -141,62 +207,69 @@ const DegreeSelection = () => {
         </div>
       </div>
 
+      {/* Subjects Grid */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredSubjects.map((subject) => {
-          const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
-          const levelName = levels.find(l => l.id === subject.level_id)?.name || 'Unknown Level';
+        {filteredSubjects.length === 0 ? (
+          <div className="col-span-full text-center py-12 text-muted-foreground">
+            No subjects found for the selected degree and level.
+          </div>
+        ) : (
+          filteredSubjects.map((subject: any) => {
+            const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
+            const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
 
-          return (
-            <Card key={subject.id} className="bg-[#0c0c0e] border-white/10 hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 flex flex-col overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <CardHeader className="flex-row gap-4 items-start space-y-0 pb-3">
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10 group-hover:bg-primary/10 group-hover:border-primary/20 transition-colors">
-                  {getSubjectIcon(subject.name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <Badge variant="outline" className="mb-2 text-xs border-white/10 text-muted-foreground bg-white/5">
-                    {levelName}
-                  </Badge>
-                  <CardTitle className="text-xl font-bold truncate text-white" title={subject.name}>
-                    {subject.name}
-                  </CardTitle>
-                </div>
-              </CardHeader>
+            return (
+              <Card key={subject.id} className="bg-[#0c0c0e] border-white/10 hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 flex flex-col overflow-hidden group">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                
+                <CardHeader className="flex-row gap-4 items-start space-y-0 pb-3">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 group-hover:bg-primary/10 group-hover:border-primary/20 transition-colors">
+                    {getSubjectIcon(subject.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Badge variant="outline" className="mb-2 text-xs border-white/10 text-muted-foreground bg-white/5">
+                      {levelName}
+                    </Badge>
+                    <CardTitle className="text-xl font-bold truncate text-white" title={subject.name}>
+                      {subject.name}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
 
-              <CardContent className="flex-1">
-                <CardDescription className="text-muted-foreground/80 line-clamp-3">
-                  Master {subject.name} through hands-on coding assignments and proctored exam simulations.
-                </CardDescription>
-              </CardContent>
+                <CardContent className="flex-1">
+                  <CardDescription className="text-muted-foreground/80 line-clamp-3">
+                    Master {subject.name} through hands-on coding assignments and proctored exam simulations.
+                  </CardDescription>
+                </CardContent>
 
-              <CardFooter className="flex flex-col gap-3 pt-0">
-                <div className="w-full h-px bg-white/5 mb-2" />
-                <div className="w-full flex gap-2 flex-wrap">
-                  {availableExams.length > 0 ? (
-                    availableExams.map((examType) => (
-                      <Button 
-                        key={examType}
-                        size="sm"
-                        className="flex-1 bg-white/5 hover:bg-primary hover:text-white text-muted-foreground border border-white/10 transition-all text-xs"
-                        onClick={() => handleExamClick(subject.id, subject.name, examType)}
-                      >
-                        {examType}
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="w-full text-center py-2 text-xs text-muted-foreground/50 italic border border-dashed border-white/10 rounded">
-                      No active exams
-                    </div>
-                  )}
-                </div>
-                <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-white h-8" onClick={() => handleShare(subject.name)}>
-                  <Share2 className="w-3 h-3 mr-2" /> Share Subject
-                </Button>
-              </CardFooter>
-            </Card>
-          );
-        })}
+                <CardFooter className="flex flex-col gap-3 pt-0">
+                  <div className="w-full h-px bg-white/5 mb-2" />
+                  <div className="w-full flex gap-2 flex-wrap">
+                    {availableExams.length > 0 ? (
+                      availableExams.map((examType: any) => (
+                        <Button 
+                          key={examType}
+                          size="sm"
+                          className="flex-1 bg-white/5 hover:bg-primary hover:text-white text-muted-foreground border border-white/10 transition-all text-xs"
+                          onClick={() => handleExamClick(subject.id, subject.name, examType)}
+                        >
+                          {examType}
+                        </Button>
+                      ))
+                    ) : (
+                      <div className="w-full text-center py-2 text-xs text-muted-foreground/50 italic border border-dashed border-white/10 rounded">
+                        No active exams
+                      </div>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-white h-8" onClick={() => handleShare(subject.name)}>
+                    <Share2 className="w-3 h-3 mr-2" /> Share Subject
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })
+        )}
       </div>
 
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
