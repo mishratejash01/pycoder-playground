@@ -11,6 +11,7 @@ import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 
+// --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [started, setStarted] = useState(false);
@@ -39,6 +40,7 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   return displayText;
 };
 
+// Filtered Tech Stack
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
@@ -50,6 +52,7 @@ const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg",
 ];
 
+// --- Animation Scenario ---
 const DEMO_SCENARIO = {
   question: "How do I fast-track my coding career?",
   code: `import codevo
@@ -75,24 +78,27 @@ const Landing = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
+  // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
   const helloWorldText = useTypewriter("Hello World", 150, 1500);
 
+  // --- Showcase Animation States ---
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  // Smooth Scroll Physics for Hero Animation
+  // Framer Motion Scroll Logic
   const { scrollY } = useScroll();
   
-  // Animate from scale 1 down to 0.90 over the first 500px of scroll
-  const rawScale = useTransform(scrollY, [0, 500], [1, 0.90]);
-  const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.2 });
+  // Transform scroll range [0, 500] to scale [1, 0.9]
+  const rawScale = useTransform(scrollY, [0, 500], [1, 0.9]);
+  const smoothScale = useSpring(rawScale, { stiffness: 60, damping: 20, mass: 0.5 });
 
-  // Animate border radius from 0 to 32px over the first 500px
+  // Transform scroll range [0, 500] to border radius [0, 32]
   const rawRadius = useTransform(scrollY, [0, 500], [0, 32]);
-  const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.2 });
+  const smoothRadius = useSpring(rawRadius, { stiffness: 60, damping: 20, mass: 0.5 });
 
+  // Animation Loop
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
@@ -144,7 +150,10 @@ const Landing = () => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setSession(session));
-    return () => subscription.unsubscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [toast]);
 
   const handleLogout = async () => {
@@ -222,12 +231,12 @@ const Landing = () => {
         )}
       </AnimatePresence>
 
+      {/* Header */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        {/* Height is slightly > 100vh to allow scroll, but white background is properly contained */}
         <div className="relative w-full h-[115vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <motion.div 
@@ -286,7 +295,6 @@ const Landing = () => {
         </div>
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
-        {/* Negative top margin pulls this section UP over the hero container's white background */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
@@ -303,7 +311,8 @@ const Landing = () => {
                   <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
                     EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
                   </h2>
-                  <p className="font-mono text-xs md:text-base text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                  {/* FIXED: Added w-full, max-w-[90vw] (responsive width), and break-words to prevent cut-off on small screens */}
+                  <p className="font-mono text-xs md:text-base text-gray-400 w-full max-w-[90vw] md:max-w-lg mx-auto lg:mx-0 leading-relaxed break-words px-2 md:px-0">
                     A fully functional development environment right in your browser. <br/>
                     <span className="text-white">Write. Run. Debug. Succeed.</span>
                   </p>
@@ -431,13 +440,14 @@ const Landing = () => {
               </div>
 
               {/* RIGHT: Keyboard */}
-              <div className="relative order-1 lg:order-2">
+              <div className="relative order-1 lg:order-2 w-full">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
                 <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   Real-time Interaction
                 </h3>
-                <div className="scale-90 md:scale-100 origin-left">
+                <div className="w-full">
+                  {/* Replaced manual transform scale with fully responsive component */}
                   <VirtualKeyboard activeChar={activeKey} />
                 </div>
               </div>
