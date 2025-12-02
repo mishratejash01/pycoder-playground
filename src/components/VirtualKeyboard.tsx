@@ -27,7 +27,6 @@ const KEY_ROWS = [
 ];
 
 export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
-  // Helper to determine if a key should be active based on the character being typed
   const isActive = (keyLabel: string, keyValue?: string) => {
     if (!activeChar) return false;
     
@@ -41,10 +40,10 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
     if (activeChar === ' ' && !keyLabel) return true; // Spacebar
     if (activeChar === '\n' && label === 'enter') return true;
     
-    // Symbol matching (checking if the char exists in the key's value string)
+    // Symbol matching
     if (keyValue && keyValue.includes(activeChar)) return true;
     
-    // Shift key logic for uppercase letters or special symbols
+    // Shift key logic
     if (label === 'shift') {
        const isUpper = activeChar !== activeChar.toLowerCase();
        const isSymbolShift = '~!@#$%^&*()_+{}|:"<>?'.includes(activeChar);
@@ -55,35 +54,40 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
   };
 
   return (
-    <div className="p-4 bg-[#1a1a1a] rounded-2xl border border-white/10 shadow-2xl select-none w-full max-w-3xl mx-auto transform hover:scale-[1.01] transition-transform duration-500">
-      <div className="flex flex-col gap-1.5">
-        {KEY_ROWS.map((row, rowIndex) => (
-          <div key={rowIndex} className="flex gap-1.5 justify-center">
-            {row.map((key, keyIndex) => {
-              const active = isActive(key.label, key.value);
-              return (
-                <div
-                  key={keyIndex}
-                  className={cn(
-                    "h-10 md:h-12 rounded-lg flex items-center justify-center text-[10px] md:text-xs font-medium transition-all duration-100 border-b-[3px]",
-                    active 
-                      ? "bg-[#1e293b] border-blue-500/50 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.6)] translate-y-[1px] border-b-[1px]" 
-                      : "bg-[#27272a] border-[#000000] text-gray-400 hover:bg-[#323235]",
-                  )}
-                  style={{ 
-                    flex: key.width || 1,
-                    minWidth: key.width ? `${key.width * 2.5}rem` : 'auto' 
-                  }}
-                >
-                  {key.label}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+    <div className="w-full mx-auto select-none perspective-1000">
+      {/* Keyboard Container - Scaled for mobile */}
+      <div className="relative p-2 md:p-4 bg-[#0f0f11] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1">
+        
+        {/* Glow Underlay */}
+        <div className="absolute -inset-2 bg-gradient-to-tr from-primary/10 via-purple-500/5 to-blue-500/10 blur-xl -z-10 rounded-full opacity-50" />
+
+        <div className="flex flex-col gap-1 md:gap-1.5">
+          {KEY_ROWS.map((row, rowIndex) => (
+            <div key={rowIndex} className="flex gap-1 md:gap-1.5 justify-center">
+              {row.map((key, keyIndex) => {
+                const active = isActive(key.label, key.value);
+                return (
+                  <div
+                    key={keyIndex}
+                    className={cn(
+                      "h-8 md:h-12 flex items-center justify-center text-[8px] md:text-[10px] lg:text-xs font-medium transition-all duration-75 rounded-[4px] md:rounded-lg border-b-[2px] md:border-b-[3px]",
+                      active 
+                        ? "bg-[#1e293b] border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] translate-y-[1px] border-b-[1px] scale-95" 
+                        : "bg-[#27272a] border-black/50 text-gray-500"
+                    )}
+                    style={{ 
+                      flex: key.width || 1,
+                      minWidth: key.width ? `${key.width * 1.5}rem` : 'auto' 
+                    }}
+                  >
+                    {key.label}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
-      {/* Keyboard Glow Underlay */}
-      <div className="absolute -inset-4 bg-blue-500/5 blur-3xl -z-10 rounded-full opacity-50" />
     </div>
   );
 }
