@@ -7,7 +7,8 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CodeEditor } from './CodeEditor';
 import { TestCaseView } from './TestCaseView';
-import { usePyodide } from '@/hooks/usePyodide';
+// CHANGE 1: Import the new universal hook instead of usePyodide
+import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2, Lock, Unlock } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
@@ -21,10 +22,10 @@ interface AssignmentViewProps {
   currentStatus?: QuestionStatus;
   onAttempt?: (isCorrect: boolean, score: number) => void;
   tables?: { assignments: string; testCases: string; submissions: string; };
-  disableCopyPaste?: boolean; // New prop
+  disableCopyPaste?: boolean;
 }
 
-// Regex and normalization helpers...
+// Helper: Extract function/class name for Python wrapping
 const getTargetName = (code: string) => {
   const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   if (funcMatch) return funcMatch[1];
@@ -33,31 +34,20 @@ const getTargetName = (code: string) => {
   return null;
 };
 
+// Helper: Normalize output for comparison (handles whitespace/quotes)
 const normalizeOutput = (str: string) => {
   if (!str) return '';
   return str.trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
-const executeTests = async (tests: any[], code: string, targetName: string, runTestFunction: any) => {
-  let passedCount = 0;
-  const newTestResults: Record<string, any> = {};
-  for (const test of tests) {
-    try {
-      const result = await runTestFunction(code, targetName, test.input);
-      if (!result.success) {
-        newTestResults[test.id] = { passed: false, output: "Error", error: result.error };
-        continue;
-      }
-      const actual = normalizeOutput(result.result);
-      const expected = normalizeOutput(test.expected_output);
-      const isMatch = actual === expected || actual.includes(expected);
-      if (isMatch) passedCount++;
-      newTestResults[test.id] = { passed: isMatch, output: result.result, error: isMatch ? null : `Expected: ${test.expected_output}` };
-    } catch (e: any) {
-      newTestResults[test.id] = { passed: false, output: "", error: e.message };
-    }
-  }
-  return { passedCount, newTestResults };
+// CHANGE 2: Helper to detect language from metadata
+const detectLanguage = (title: string, category: string): Language => {
+  const text = (title + category).toLowerCase();
+  if (text.includes('java')) return 'java';
+  if (text.includes('c++') || text.includes('cpp')) return 'cpp';
+  if (text.includes('javascript') || text.includes('js')) return 'javascript';
+  if (text.includes('c')) return 'c';
+  return 'python'; // Default fallback
 };
 
 export const AssignmentView = ({ 
@@ -73,7 +63,8 @@ export const AssignmentView = ({
   const [testResults, setTestResults] = useState<Record<string, any>>({});
   const [bottomTab, setBottomTab] = useState<'console' | 'testcases'>('testcases');
   
-  const { runCode, runTestFunction, loading: pyodideLoading } = usePyodide();
+  // CHANGE 3: Use the universal code runner
+  const { executeCode, loading: runnerLoading } = useCodeRunner();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -110,40 +101,93 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
+  // CHANGE 4: Determine current language
+  const currentLanguage = assignment 
+    ? detectLanguage(assignment.title, assignment.category || '') 
+    : 'python';
+
   useEffect(() => {
     const sessionKey = `exam_draft_${assignmentId}`;
     const savedDraft = sessionStorage.getItem(sessionKey);
     if (savedDraft) setCode(savedDraft);
     else if (latestSubmission?.code) setCode(latestSubmission.code);
     else if (assignment?.starter_code) setCode(assignment.starter_code);
-    else setCode('# Write your Python code here\n');
+    else setCode(currentLanguage === 'python' ? '# Write your Python code here\n' : '// Write your code here\n');
     setTestResults({});
     setConsoleOutput('');
-  }, [assignmentId, latestSubmission, assignment]);
+  }, [assignmentId, latestSubmission, assignment, currentLanguage]);
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
     sessionStorage.setItem(`exam_draft_${assignmentId}`, newCode);
   };
 
+  // Helper: Prepare code for execution
+  // For Python "function assignments", we append the call. 
+  // For other languages (or Python scripts), we execute as-is with stdin.
+  const prepareExecutionCode = (rawCode: string, input: string) => {
+    if (currentLanguage === 'python') {
+      const targetName = getTargetName(rawCode);
+      // If a function definition exists and we have input, wrap it
+      if (targetName && input) {
+        // If input looks like arguments "(1, 2)", pass directly. If not, treat as string.
+        // NOTE: This assumes inputs in DB are formatted like "1, 2" or "[1,2]" for the function.
+        // If your test cases are raw values, you might need `(${input})`.
+        // This wrapper tries to print the result of function_name(input)
+        return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(e)`;
+      }
+    }
+    return rawCode;
+  };
+
+  // CHANGE 5: Refactored Submit Logic to use executeCode
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please log in');
-      const targetName = getTargetName(code);
-      if (!targetName) throw new Error("Function/Class not found. Please define your function.");
       
       const publicTests = testCases.filter((tc:any) => tc.is_public);
       const privateTests = testCases.filter((tc:any) => !tc.is_public);
+      const allTests = [...publicTests, ...privateTests];
       
-      const pubRes = await executeTests(publicTests, code, targetName, runTestFunction);
-      const privRes = await executeTests(privateTests, code, targetName, runTestFunction);
+      const newTestResults: Record<string, any> = {};
+      let passedCount = 0;
+
+      for (const test of allTests) {
+        // Prepare code (wrapper for Python function calls if needed)
+        // If it's a standard script (Java/C++), input goes to STDIN via executeCode
+        const codeToRun = prepareExecutionCode(code, test.input);
+        
+        // Run code
+        const result = await executeCode(currentLanguage, codeToRun, test.input);
+        
+        if (!result.success) {
+          newTestResults[test.id] = { passed: false, output: "Error", error: result.error };
+          continue;
+        }
+
+        const actual = normalizeOutput(result.output);
+        const expected = normalizeOutput(test.expected_output);
+        
+        // Simple string matching (can be enhanced with regex or type parsing)
+        const isMatch = actual === expected || actual.includes(expected);
+        
+        if (isMatch) passedCount++;
+        newTestResults[test.id] = { 
+          passed: isMatch, 
+          output: result.output, 
+          error: isMatch ? null : `Expected: ${test.expected_output}` 
+        };
+      }
       
-      setTestResults({ ...pubRes.newTestResults, ...privRes.newTestResults });
+      setTestResults(newTestResults);
       
-      const total = testCases.length;
-      const passed = pubRes.passedCount + privRes.passedCount;
-      const score = total > 0 ? (passed / total) * (assignment.max_score || 100) : 0;
+      const total = allTests.length;
+      const score = total > 0 ? (passedCount / total) * (assignment.max_score || 100) : 0;
+      
+      // Calculate split counts
+      const pubPassed = publicTests.filter(t => newTestResults[t.id]?.passed).length;
+      const privPassed = privateTests.filter(t => newTestResults[t.id]?.passed).length;
 
       // @ts-ignore
       await supabase.from(tables.submissions).insert({
@@ -151,19 +195,20 @@ export const AssignmentView = ({
         user_id: user.id,
         code,
         score,
-        public_tests_passed: pubRes.passedCount,
+        public_tests_passed: pubPassed,
         public_tests_total: publicTests.length,
-        private_tests_passed: privRes.passedCount,
+        private_tests_passed: privPassed,
         private_tests_total: privateTests.length,
       });
-      return { score, passed, total, pubPassed: pubRes.passedCount, pubTotal: publicTests.length, privPassed: privRes.passedCount, privTotal: privateTests.length };
+      
+      return { score, passedCount, total };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['submission', assignmentId] });
       toast({ title: 'Submission Complete', description: `Score: ${data.score.toFixed(0)}%` });
       onStatusUpdate('attempted');
       setBottomTab('testcases');
-      if (onAttempt) onAttempt(data.passed === data.total, data.score);
+      if (onAttempt) onAttempt(data.passedCount === data.total, data.score);
     },
     onError: (err: any) => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -172,34 +217,32 @@ export const AssignmentView = ({
     }
   });
 
+  // CHANGE 6: Refactored Run Logic
   const handleRun = async () => {
-    if (pyodideLoading) return;
+    if (runnerLoading) return;
     setConsoleOutput('Running...');
-    setBottomTab('testcases');
+    setBottomTab('console');
+    
     try {
-      const targetName = getTargetName(code);
-      if (!targetName) {
-        const res = await runCode(code);
-        setConsoleOutput(res.success ? res.output : res.error);
-        setBottomTab('console');
-        return;
+      // Just run the code. If it's a script, it runs. 
+      // If it's a function without a call, it might output nothing, which is expected behavior for "Run" unless user adds a print.
+      const res = await executeCode(currentLanguage, code, "");
+      
+      if (res.success) {
+        setConsoleOutput(res.output || "Code executed successfully (No output).");
+      } else {
+        setConsoleOutput(res.error || "Execution failed.");
       }
-      const publicTests = testCases.filter((tc:any) => tc.is_public);
-      const { passedCount, newTestResults } = await executeTests(publicTests, code, targetName, runTestFunction);
-      setTestResults(newTestResults);
-      setConsoleOutput(passedCount === publicTests.length ? "All Public Tests Passed" : `${passedCount}/${publicTests.length} Public Tests Passed`);
     } catch (err: any) {
       setConsoleOutput(err.message);
-      setBottomTab('console');
     }
   };
 
   const publicTests = testCases.filter((tc: any) => tc.is_public);
   const privateTests = testCases.filter((tc: any) => !tc.is_public);
 
-  // Calculate current display stats
   const currentPubPassed = testResults ? Object.values(testResults).filter((r:any, i) => testCases[i]?.is_public && r.passed).length : (latestSubmission?.public_tests_passed || 0);
-  const currentPrivPassed = latestSubmission?.private_tests_passed || 0; // Private results only update on submit fetch usually, or we can use testResults if we want to show them instantly (usually hidden)
+  const currentPrivPassed = latestSubmission?.private_tests_passed || 0; 
 
   if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-white"/></div>;
   if (error || !assignment) return <div className="text-white text-center p-10"><Button onClick={() => refetch()}>Retry</Button></div>;
@@ -220,7 +263,14 @@ export const AssignmentView = ({
           </div>
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
-              <div><h1 className="text-2xl font-bold text-white mb-2">{assignment.title}</h1><div className="flex gap-2 text-xs text-muted-foreground"><span>{assignment.category || "General"}</span></div></div>
+              <div>
+                <h1 className="text-2xl font-bold text-white mb-2">{assignment.title}</h1>
+                <div className="flex gap-2 text-xs text-muted-foreground">
+                  <span className="uppercase tracking-wider font-bold text-blue-400">{currentLanguage}</span>
+                  <span>•</span>
+                  <span>{assignment.category || "General"}</span>
+                </div>
+              </div>
               <div className="prose prose-invert prose-sm text-gray-300"><div className="whitespace-pre-wrap font-sans">{assignment.description}</div></div>
               {assignment.instructions && <div className="bg-blue-950/20 border border-blue-500/20 rounded-lg p-4 text-xs text-blue-200/70 whitespace-pre-wrap">{assignment.instructions}</div>}
 
@@ -259,17 +309,26 @@ export const AssignmentView = ({
           <ResizablePanelGroup direction="vertical">
             <ResizablePanel defaultSize={70} className="flex flex-col bg-[#09090b]">
               <div className="h-12 border-b border-white/10 flex items-center justify-between px-4 bg-black/40 shrink-0">
-                <div className="flex items-center gap-2 text-sm font-medium text-white/90"><Code2 className="w-4 h-4 text-green-500" /> main.py</div>
+                <div className="flex items-center gap-2 text-sm font-medium text-white/90">
+                  <Code2 className="w-4 h-4 text-green-500" /> 
+                  <span className="capitalize">{currentLanguage}</span> Editor
+                </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={handleRun} disabled={pyodideLoading} className="h-7 text-xs gap-1.5"><Play className="w-3 h-3 mr-1"/> Run</Button>
-                  <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending} size="sm" className="h-7 text-xs gap-1.5 bg-green-600 hover:bg-green-500 text-white">{submitMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin"/> : 'Submit'}</Button>
+                  <Button variant="secondary" size="sm" onClick={handleRun} disabled={runnerLoading} className="h-7 text-xs gap-1.5">
+                    <Play className="w-3 h-3 mr-1"/> Run
+                  </Button>
+                  <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending || runnerLoading} size="sm" className="h-7 text-xs gap-1.5 bg-green-600 hover:bg-green-500 text-white">
+                    {submitMutation.isPending || runnerLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : 'Submit'}
+                  </Button>
                 </div>
               </div>
               <div className="flex-1 relative">
                 <CodeEditor 
                   value={code} 
                   onChange={handleCodeChange} 
-                  disableCopyPaste={disableCopyPaste} // Pass the restriction prop
+                  disableCopyPaste={disableCopyPaste}
+                  // CHANGE 7: Pass language to CodeEditor
+                  language={currentLanguage}
                 />
               </div>
             </ResizablePanel>
