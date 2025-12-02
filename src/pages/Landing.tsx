@@ -175,11 +175,9 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale for "Very Minimal White Space"
-  // Height reduced to 102vh so scroll interaction finishes quickly
-  // Scale min set to 0.99 for barely any shrinking
-  const scale = Math.max(0.99, 1 - scrollY / 5000);
-  const borderRadius = Math.min(24, scrollY / 20);
+  // Adjusted Scale for "Aligned" look (roughly matches typical container width when scrolled)
+  const scale = Math.max(0.92, 1 - scrollY / 1000);
+  const borderRadius = Math.min(40, scrollY / 10);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -240,10 +238,10 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[102vh] bg-white"> 
+        <div className="relative w-full h-[120vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
-              className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center will-change-transform"
+              className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
               style={{
                 transform: `scale(${scale})`, 
                 transformOrigin: 'top center', 
@@ -466,7 +464,7 @@ const Landing = () => {
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
         <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
           {/* Fade to footer */}
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
 
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
             {/* Header: Left Aligned, Sans-Serif */}
