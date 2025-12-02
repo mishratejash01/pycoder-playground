@@ -40,6 +40,24 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   return displayText;
 };
 
+// Tech Stack Icons for Marquee
+const TECH_STACK = [
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg",
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg"
+];
+
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -84,7 +102,7 @@ const Landing = () => {
   };
 
   const scrollToContent = () => {
-    const element = document.getElementById('modes-section');
+    const element = document.getElementById('showcase-section');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
@@ -106,6 +124,16 @@ const Landing = () => {
         .animate-scroll-arrow {
           animation: scroll-arrow-move 2s ease-in-out infinite;
         }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 40s linear infinite;
+        }
+        .animate-marquee:hover {
+          animation-play-state: paused;
+        }
       `}</style>
 
       {/* Header */}
@@ -113,7 +141,7 @@ const Landing = () => {
 
       <main className="flex-1 w-full">
         
-        {/* Sticky Container */}
+        {/* Sticky Hero Container */}
         <div className="relative w-full h-[120vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             
@@ -251,8 +279,87 @@ const Landing = () => {
           </div>
         </div>
 
+        {/* --- NEW SHOWCASE SECTION (Laptop & Mobile & Marquee) --- */}
+        <section id="showcase-section" className="w-full bg-[#09090b] pt-32 pb-24 relative z-10 overflow-hidden">
+          <div className="container mx-auto px-6">
+            
+            {/* Device Mockups Container */}
+            <div className="relative w-full max-w-5xl mx-auto flex flex-col items-center mb-32">
+              
+              {/* Laptop Mockup */}
+              <div className="relative w-full md:w-[80%] aspect-[16/10] bg-[#1a1a1a] rounded-t-2xl rounded-b-md border-[4px] border-gray-800 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10">
+                
+                {/* Camera Dot */}
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gray-700 rounded-full z-20" />
+                
+                {/* Screen Content */}
+                <div className="absolute inset-[6px] bg-black rounded-lg overflow-hidden border border-white/5">
+                  <video 
+                    src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
+                    className="w-full h-full object-cover opacity-90"
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline 
+                  />
+                  {/* Glare Effect */}
+                  <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
+                </div>
+
+                {/* iPhone Mockup - Absolute Positioning on Right Edge */}
+                <div className="absolute -right-4 md:-right-16 bottom-[-20px] md:bottom-[-40px] w-[90px] md:w-[140px] aspect-[9/19] bg-[#050505] rounded-[1.5rem] md:rounded-[2.5rem] border-[4px] md:border-[6px] border-[#1a1a1a] shadow-[0_15px_40px_rgba(0,0,0,0.6)] z-30 transform rotate-[-5deg] overflow-hidden">
+                  
+                  {/* Dynamic Island Notch */}
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[30%] h-4 bg-black rounded-full z-40" />
+                  
+                  {/* Phone Screen (Blacked Out) */}
+                  <div className="absolute inset-1 bg-black rounded-[1.2rem] md:rounded-[2.2rem] overflow-hidden">
+                    <div className="w-full h-full flex flex-col items-center justify-center relative">
+                      {/* Subtle Reflection */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
+                      
+                      {/* Optional: Minimal Logo or Icon inside phone */}
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center opacity-50">
+                        <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+              
+              {/* Laptop Base */}
+              <div className="relative w-[100%] md:w-[90%] h-3 md:h-4 bg-[#2a2a2a] rounded-b-xl rounded-t-sm shadow-xl z-0 mt-[-2px]">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-b-md" /> {/* Hinge */}
+              </div>
+
+            </div>
+
+            {/* Infinite Scrolling Tech Marquee */}
+            <div className="w-full max-w-7xl mx-auto overflow-hidden relative group">
+              {/* Gradient Masks */}
+              <div className="absolute left-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
+              <div className="absolute right-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
+              
+              <div className="flex gap-16 animate-marquee whitespace-nowrap py-4">
+                {/* Triple list for smoother infinite loop */}
+                {[...TECH_STACK, ...TECH_STACK, ...TECH_STACK].map((src, i) => (
+                  <div key={i} className="flex-shrink-0 flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white/5 rounded-2xl border border-white/5 hover:border-white/20 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm group/icon">
+                    <img 
+                      src={src} 
+                      alt="tech" 
+                      className="w-8 h-8 md:w-10 md:h-10 object-contain opacity-40 group-hover/icon:opacity-100 group-hover/icon:scale-110 transition-all duration-300 grayscale group-hover/icon:grayscale-0" 
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </section>
+
         {/* Modes Section */}
-        <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24">
+        <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24 border-t border-white/5">
           <div className="container mx-auto px-6">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl md:text-4xl font-bold text-white">Select Mode</h2>
