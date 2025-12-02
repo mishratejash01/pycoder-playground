@@ -38,6 +38,7 @@ const normalizeOutput = (str: string) => {
 
 const detectInitialLanguage = (title: string, category: string): Language => {
   const text = (title + category).toLowerCase();
+  if (text.includes('sql') || text.includes('database')) return 'sql';
   if (text.includes('java')) return 'java';
   if (text.includes('c++') || text.includes('cpp')) return 'cpp';
   if (text.includes('javascript') || text.includes('js')) return 'javascript';
@@ -51,6 +52,7 @@ const getStarterTemplate = (lang: Language) => {
     case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    return 0;\n}';
     case 'c': return '#include <stdio.h>\n\nint main() {\n    // Your code here\n    return 0;\n}';
     case 'javascript': return 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim();\n\n// Your code here';
+    case 'sql': return '-- Write your SQL Query here\n-- Note: Tables must be created within this script for testing.\n\nCREATE TABLE students (id INTEGER, name TEXT, score INTEGER);\nINSERT INTO students VALUES (1, "Alice", 90);\nINSERT INTO students VALUES (2, "Bob", 85);\n\n-- Your SELECT query below:\n';
     default: return '# Write your Python code here\nimport sys\n\n# Read input from stdin\ninput_data = sys.stdin.read().strip()\n\n# Your logic\n';
   }
 };
@@ -61,6 +63,7 @@ const getFileName = (lang: Language) => {
     case 'cpp': return 'main.cpp';
     case 'c': return 'main.c';
     case 'javascript': return 'index.js';
+    case 'sql': return 'query.sql';
     default: return 'main.py';
   }
 };
@@ -152,22 +155,20 @@ export const AssignmentView = ({
         return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(e)`;
       }
     }
+    // For SQL, we don't usually pass "input" (stdin) unless it's for seeding, 
+    // but here we assume the user writes the full script.
     return rawCode;
   };
 
-  // --- UPDATED RUN LOGIC: Checks code against all test cases immediately ---
   const handleRun = async () => {
     if (runnerLoading) return;
-    
-    // Switch to test cases tab to show results
     setBottomTab('testcases');
-    setTestResults({}); // Clear previous results
+    setTestResults({}); 
     
     const newTestResults: Record<string, any> = {};
     let firstError = "";
 
     try {
-      // Loop through all test cases and validate
       for (const test of testCases) {
         const codeToRun = prepareExecutionCode(code, test.input);
         const result = await executeCode(activeLanguage, codeToRun, test.input);
@@ -182,7 +183,7 @@ export const AssignmentView = ({
            const actual = normalizeOutput(result.output);
            const expected = normalizeOutput(test.expected_output);
            isMatch = actual === expected || actual.includes(expected);
-           if (!isMatch) errorMsg = `Expected: ${test.expected_output}`;
+           if (!isMatch) errorMsg = `Expected:\n${test.expected_output}`;
         }
 
         newTestResults[test.id] = { 
@@ -191,15 +192,9 @@ export const AssignmentView = ({
           error: errorMsg
         };
       }
-      
       setTestResults(newTestResults);
-      
-      // If there was a major execution error, show it in console too
-      if (firstError) {
-        setConsoleOutput(firstError);
-      } else {
-        setConsoleOutput("Execution complete. Check Test Cases tab for details.");
-      }
+      if (firstError) setConsoleOutput(firstError);
+      else setConsoleOutput("Execution complete. Check Test Cases tab.");
 
     } catch (err: any) {
       setConsoleOutput(err.message);
@@ -207,7 +202,6 @@ export const AssignmentView = ({
     }
   };
 
-  // Submit Logic (Commit to DB)
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -275,7 +269,6 @@ export const AssignmentView = ({
   const publicTests = testCases.filter((tc: any) => tc.is_public);
   const privateTests = testCases.filter((tc: any) => !tc.is_public);
   
-  // Calculate stats based on testResults if available (for instant feedback), otherwise fallback to DB stats
   const hasRunTests = Object.keys(testResults).length > 0;
   
   const currentPubPassed = hasRunTests 
@@ -308,13 +301,14 @@ export const AssignmentView = ({
               <div>
                 <h1 className="text-2xl font-bold text-white mb-2">{assignment.title}</h1>
                 <div className="flex gap-2 text-xs text-muted-foreground">
-                  <span className="bg-white/10 px-2 py-0.5 rounded text-white">{assignment.category || "General"}</span>
+                  <span className={cn("uppercase tracking-wider font-bold", activeLanguage === 'sql' ? "text-purple-400" : activeLanguage !== 'python' ? "text-blue-400" : "text-yellow-400")}>{activeLanguage}</span>
+                  <span>•</span>
+                  <span>{assignment.category || "General"}</span>
                 </div>
               </div>
               <div className="prose prose-invert prose-sm text-gray-300"><div className="whitespace-pre-wrap font-sans">{assignment.description}</div></div>
               {assignment.instructions && <div className="bg-blue-950/20 border border-blue-500/20 rounded-lg p-4 text-xs text-blue-200/70 whitespace-pre-wrap">{assignment.instructions}</div>}
 
-              {/* Stats */}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
                  <div className="bg-white/5 rounded p-3 border border-white/10">
                     <div className="flex items-center justify-between mb-2">
@@ -360,6 +354,7 @@ export const AssignmentView = ({
                       <SelectItem value="cpp">C++</SelectItem>
                       <SelectItem value="c">C</SelectItem>
                       <SelectItem value="javascript">JavaScript</SelectItem>
+                      <SelectItem value="sql">SQL</SelectItem>
                     </SelectContent>
                   </Select>
 
