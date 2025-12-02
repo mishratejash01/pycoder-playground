@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
+import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import DarkVeil from '@/components/DarkVeil';
 import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
-import { AsteroidGameFrame } from '@/components/AsteroidGameFrame'; // Imported here
+import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
+import { CodevoShowcase } from '@/components/CodevoShowcase'; // Imported the new component
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Typewriter Hook ---
@@ -174,7 +175,7 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale for "Less Shrinking"
+  // Adjusted Scale
   const scale = Math.max(0.985, 1 - scrollY / 4000);
   const borderRadius = Math.min(24, scrollY / 20);
 
@@ -457,7 +458,10 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 4: "Play n Codé" (Asteroid Game) --- */}
+        {/* --- SECTION 4: "CODE ON CODEVO" (IMPORTED COMPONENT) --- */}
+        <CodevoShowcase />
+
+        {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
         <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
           {/* Fade to footer */}
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
