@@ -172,8 +172,8 @@ const Landing = () => {
   };
 
   // Balanced Shrink Logic
-  const scale = Math.max(0.99, 1 - scrollY / 4000);
-  const borderRadius = Math.min(24, scrollY / 20);
+  const scale = Math.max(0.92, 1 - scrollY / 2000);
+  const borderRadius = Math.min(32, scrollY / 10);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -234,7 +234,7 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[105vh] bg-white"> 
+        <div className="relative w-full h-[140vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
