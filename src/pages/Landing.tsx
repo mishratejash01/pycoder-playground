@@ -171,9 +171,12 @@ const Landing = () => {
     }, 800);
   };
 
-  // Balanced Shrink Logic - Tighter sensitivity for shorter scroll distance
-  const scale = Math.max(0.92, 1 - scrollY / 1800);
-  const borderRadius = Math.min(32, scrollY / 10);
+  // --- ANIMATION LOGIC ---
+  // 1. Scale down further to 0.90 for better side balance.
+  // 2. Divisor 1000 makes the animation complete faster (less vertical scroll needed).
+  const scale = Math.max(0.9, 1 - scrollY / 1000);
+  // 3. Radius rounds faster to match the quicker scroll.
+  const borderRadius = Math.min(32, scrollY / 8);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -234,8 +237,8 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        {/* Reduced height from 140vh to 120vh to decrease vertical gap */}
-        <div className="relative w-full h-[120vh] bg-white"> 
+        {/* Height reduced to 110vh to minimize vertical scroll distance before next section */}
+        <div className="relative w-full h-[110vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
