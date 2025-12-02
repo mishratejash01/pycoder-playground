@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { cn } from "@/lib/utils";
 
 interface VirtualKeyboardProps {
@@ -29,61 +28,63 @@ const KEY_ROWS = [
 export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
   const isActive = (keyLabel: string, keyValue?: string) => {
     if (!activeChar) return false;
-    
     const char = activeChar.toLowerCase();
     const label = keyLabel.toLowerCase();
-    
-    // Direct match (letters)
     if (char === label) return true;
-    
-    // Special keys
-    if (activeChar === ' ' && !keyLabel) return true; // Spacebar
+    if (activeChar === ' ' && !keyLabel) return true;
     if (activeChar === '\n' && label === 'enter') return true;
-    
-    // Symbol matching
     if (keyValue && keyValue.includes(activeChar)) return true;
-    
-    // Shift key logic
     if (label === 'shift') {
        const isUpper = activeChar !== activeChar.toLowerCase();
        const isSymbolShift = '~!@#$%^&*()_+{}|:"<>?'.includes(activeChar);
        return isUpper || isSymbolShift;
     }
-
     return false;
   };
 
   return (
     <div className="w-full mx-auto select-none perspective-1000">
-      {/* Keyboard Container */}
-      <div className="relative p-2 md:p-4 bg-[#0f0f11] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group">
+      {/* Main Keyboard Chassis */}
+      <div className="relative p-2 md:p-4 bg-[#050505] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group">
         
-        {/* White Backlight Glow */}
-        <div className="absolute -inset-1 bg-white/5 blur-xl -z-10 rounded-full opacity-60 group-hover:opacity-80 transition-opacity" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/5 pointer-events-none rounded-xl" />
+        {/* Subtle under-glow for the whole board */}
+        <div className="absolute -inset-1 bg-blue-500/5 blur-2xl -z-10 rounded-full opacity-20" />
 
-        <div className="flex flex-col gap-1 md:gap-1.5">
+        <div className="flex flex-col gap-1.5">
           {KEY_ROWS.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex gap-1 md:gap-1.5 justify-center">
+            <div key={rowIndex} className="flex gap-1.5 justify-center">
               {row.map((key, keyIndex) => {
                 const active = isActive(key.label, key.value);
+                const isEnter = key.label === "enter";
+                
                 return (
                   <div
                     key={keyIndex}
                     className={cn(
-                      "h-8 md:h-12 flex items-center justify-center text-[8px] md:text-[10px] lg:text-xs font-medium transition-all duration-75 rounded-[4px] md:rounded-lg border-b-[2px] md:border-b-[3px] relative overflow-hidden",
-                      active 
-                        ? "bg-white text-black border-gray-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] translate-y-[1px] border-b-[1px] scale-95 z-10" 
-                        : "bg-[#1a1a1c] border-black/50 text-gray-400 hover:bg-[#252528] hover:text-white"
+                      // Base Shape & Dark Theme
+                      "h-10 md:h-12 flex items-center justify-center text-[10px] md:text-xs font-bold transition-all duration-100 rounded-[6px] border-b-[3px] relative overflow-hidden",
+                      "bg-[#111] border-black/60", // Dark button cap
+
+                      // Permanent Backlight & Text Color
+                      isEnter 
+                        ? "text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.25)] drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]" // Enter Key: Green
+                        : "text-white/80 shadow-[0_0_12px_rgba(255,255,255,0.15)] drop-shadow-[0_0_3px_rgba(255,255,255,0.3)]", // Standard: White
+
+                      // Active (Press) State
+                      active && "scale-95 border-b-[1px] translate-y-[2px] brightness-125 shadow-none"
                     )}
                     style={{ 
                       flex: key.width || 1,
-                      minWidth: key.width ? `${key.width * 1.5}rem` : 'auto' 
+                      minWidth: key.width ? `${key.width * 1.8}rem` : 'auto' 
                     }}
                   >
-                    {/* Key Shine Effect */}
-                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/20" />
-                    {key.label}
+                    {/* Inner "Light Source" gradient for depth */}
+                    <div className={cn(
+                      "absolute inset-0 opacity-10 pointer-events-none",
+                      isEnter ? "bg-gradient-to-t from-green-500/50 to-transparent" : "bg-gradient-to-t from-white/20 to-transparent"
+                    )} />
+                    
+                    <span className="relative z-10 tracking-wide">{key.label}</span>
                   </div>
                 );
               })}
