@@ -1,13 +1,198 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Home, Code2, Terminal, GraduationCap, Trophy, Shield, User, Map, LayoutGrid, Server, Database, Activity } from 'lucide-react';
+import { ArrowLeft, Home, Code2, GraduationCap, Trophy, Shield, User, Terminal, CheckCircle2, Lock, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-// --- Types & Data ---
+// --- Mini Visual Components (Mockups) ---
+
+const MiniLanding = () => (
+  <div className="flex flex-col h-full bg-[#09090b] relative overflow-hidden font-sans">
+    {/* Background Grid */}
+    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]" />
+    
+    {/* Header Mockup */}
+    <div className="h-8 border-b border-white/10 flex items-center px-4 justify-between bg-black/40 backdrop-blur-md relative z-10">
+      <div className="font-neuropol text-[8px] font-bold text-white">CODéVO</div>
+      <div className="flex gap-2">
+        {[1,2,3].map(i => <div key={i} className="w-8 h-2 bg-white/10 rounded-full" />)}
+      </div>
+    </div>
+
+    {/* Hero Section */}
+    <div className="flex-1 flex flex-col items-center justify-center relative z-10 space-y-3">
+      <div className="px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-[6px] text-green-400 font-mono flex items-center gap-1">
+        <Activity className="w-2 h-2" /> SYSTEM::ONLINE
+      </div>
+      <div className="text-center space-y-1">
+        <div className="text-xl font-bold text-white tracking-tighter">
+          Évolve from <span className="text-primary">Hello World</span>
+        </div>
+        <div className="text-xl font-bold text-white tracking-tighter">
+          to <span className="bg-white text-black px-1">Hired</span>
+        </div>
+      </div>
+      <div className="flex gap-2 mt-2">
+        <div className="h-5 w-16 bg-white rounded text-[6px] flex items-center justify-center font-bold text-black">Get Started</div>
+        <div className="h-5 w-16 bg-white/5 border border-white/10 rounded text-[6px] flex items-center justify-center text-white">Learn More</div>
+      </div>
+    </div>
+  </div>
+);
+
+const MiniAuth = () => (
+  <div className="flex h-full bg-[#09090b]">
+    <div className="w-1/2 p-6 flex flex-col justify-center space-y-4">
+      <div className="space-y-1">
+        <div className="h-3 w-20 bg-white/20 rounded" />
+        <div className="h-5 w-32 bg-white rounded" />
+      </div>
+      <div className="h-8 w-full bg-white text-black rounded flex items-center justify-center gap-2 text-[8px] font-bold">
+        <div className="w-2 h-2 bg-blue-500 rounded-full" /> Google Sign In
+      </div>
+      <div className="h-px w-full bg-white/10" />
+      <div className="font-neuropol text-[10px] text-white/50 text-center">CODéVO</div>
+    </div>
+    <div className="w-1/2 bg-black relative overflow-hidden flex items-center justify-center">
+      <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] to-transparent z-10" />
+      <div className="font-mono text-[6px] text-green-500/50 leading-tight p-2 opacity-50">
+        {Array(20).fill("01").map((_, i) => <span key={i}>{Math.random() > 0.5 ? "10 " : "01 "}</span>)}
+      </div>
+    </div>
+  </div>
+);
+
+const MiniDegree = () => (
+  <div className="flex flex-col h-full bg-[#09090b] p-4 font-sans">
+    <div className="flex items-center justify-between mb-4">
+      <div className="h-4 w-24 bg-white/10 rounded" />
+      <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center text-[8px] text-primary">BS</div>
+    </div>
+    <div className="flex gap-2 mb-3">
+      <div className="px-2 py-1 rounded bg-primary text-[6px] text-white font-bold">Foundation</div>
+      <div className="px-2 py-1 rounded bg-white/5 text-[6px] text-muted-foreground">Diploma</div>
+    </div>
+    <div className="grid grid-cols-2 gap-2">
+      {["Python", "Math 1", "Stats 1", "CT"].map((sub, i) => (
+        <div key={i} className="bg-[#0c0c0e] border border-white/10 rounded p-2 hover:border-primary/50 transition-colors group">
+          <div className="flex justify-between items-start mb-2">
+            <div className="w-4 h-4 rounded bg-white/5 group-hover:bg-primary/20" />
+            <div className="text-[6px] text-muted-foreground">4 Credits</div>
+          </div>
+          <div className="text-[8px] font-bold text-white">{sub}</div>
+          <div className="text-[6px] text-gray-500">Foundation Level</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const MiniPractice = () => (
+  <div className="flex h-full bg-[#09090b] text-[6px] font-mono">
+    <div className="w-1/4 border-r border-white/10 bg-[#0c0c0e] flex flex-col">
+      <div className="p-2 border-b border-white/10 font-bold text-gray-400">EXPLORER</div>
+      {[1,2,3,4].map(i => (
+        <div key={i} className={cn("p-2 border-b border-white/5 flex items-center gap-2", i === 1 ? "bg-white/5 border-l-2 border-l-primary" : "text-gray-600")}>
+          <div className={cn("w-1.5 h-1.5 rounded-full", i===1 ? "bg-yellow-500" : "bg-green-500")} />
+          Problem _{i}
+        </div>
+      ))}
+    </div>
+    <div className="flex-1 flex flex-col">
+      <div className="h-6 border-b border-white/10 flex items-center px-2 bg-[#0c0c0e] justify-between">
+        <span className="text-blue-400">main.py</span>
+        <div className="flex gap-1">
+          <div className="px-2 py-0.5 bg-green-900/30 text-green-400 rounded">RUN</div>
+        </div>
+      </div>
+      <div className="flex-1 p-2 space-y-1">
+        <div className="text-gray-500"># Solution</div>
+        <div><span className="text-purple-400">def</span> <span className="text-yellow-200">two_sum</span>(nums, target):</div>
+        <div className="pl-2"><span className="text-purple-400">for</span> i <span className="text-purple-400">in</span> <span className="text-blue-300">range</span>(<span className="text-blue-300">len</span>(nums)):</div>
+        <div className="pl-4 text-gray-400"># TODO: Implement logic</div>
+        <div className="pl-4"><span className="text-purple-400">pass</span></div>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ repeat: Infinity, duration: 0.8 }}
+          className="w-1 h-2 bg-primary ml-4 mt-1"
+        />
+      </div>
+      <div className="h-1/3 border-t border-white/10 bg-[#0a0a0a] p-2">
+        <div className="text-green-400 mb-1">{">"} Test Case 1: Passed</div>
+        <div className="text-red-400">{">"} Test Case 2: Failed (Expected 5, got 3)</div>
+      </div>
+    </div>
+  </div>
+);
+
+const MiniExam = () => (
+  <div className="flex flex-col h-full bg-[#000000] relative font-sans">
+    <div className="h-8 bg-red-950/20 border-b border-red-900/30 flex items-center justify-between px-3">
+      <div className="flex items-center gap-2">
+        <Shield className="w-3 h-3 text-red-500" />
+        <span className="text-[8px] font-bold text-red-400">SECURE BROWSER ENFORCED</span>
+      </div>
+      <div className="text-[8px] font-mono text-red-300">01:59:45</div>
+    </div>
+    <div className="flex-1 flex relative">
+      <div className="flex-1 p-4">
+        <div className="h-2 w-1/3 bg-white/10 rounded mb-4" />
+        <div className="space-y-2">
+          <div className="h-1.5 w-full bg-white/5 rounded" />
+          <div className="h-1.5 w-5/6 bg-white/5 rounded" />
+          <div className="h-1.5 w-4/6 bg-white/5 rounded" />
+        </div>
+        <div className="mt-6 grid grid-cols-1 gap-2">
+          <div className="h-6 border border-white/10 rounded bg-white/5 flex items-center px-2 text-[8px] text-gray-400">Option A</div>
+          <div className="h-6 border border-blue-500/50 rounded bg-blue-500/10 flex items-center px-2 text-[8px] text-blue-200">Option B</div>
+          <div className="h-6 border border-white/10 rounded bg-white/5 flex items-center px-2 text-[8px] text-gray-400">Option C</div>
+        </div>
+      </div>
+      <div className="absolute top-2 right-2 w-16 h-12 bg-gray-900 border border-white/10 rounded shadow-2xl flex items-center justify-center">
+        <div className="w-4 h-4 bg-white/10 rounded-full animate-pulse" />
+        <div className="absolute bottom-0.5 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
+      </div>
+    </div>
+  </div>
+);
+
+const MiniLeaderboard = () => (
+  <div className="flex flex-col h-full bg-[#0c0c0e] p-4 font-sans">
+    <div className="flex items-center justify-center mb-4 space-x-2">
+      <Trophy className="w-4 h-4 text-yellow-500" />
+      <span className="text-[10px] font-bold text-white font-neuropol">HALL OF FAME</span>
+    </div>
+    <div className="space-y-1.5">
+      {[
+        { name: "Alex_Dev", score: 9850, color: "text-yellow-500", bg: "bg-yellow-500/10", border: "border-yellow-500/20" },
+        { name: "CodeNinja", score: 9420, color: "text-gray-400", bg: "bg-gray-500/10", border: "border-gray-500/20" },
+        { name: "PyMaster", score: 8900, color: "text-amber-700", bg: "bg-amber-900/10", border: "border-amber-900/20" },
+      ].map((rank, i) => (
+        <div key={i} className={cn("flex items-center justify-between p-2 rounded border", rank.bg, rank.border)}>
+          <div className="flex items-center gap-2">
+            <div className={cn("w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold border", rank.border, rank.color)}>{i+1}</div>
+            <div className="text-[8px] text-white font-medium">{rank.name}</div>
+          </div>
+          <div className="text-[8px] font-mono text-gray-400">{rank.score}</div>
+        </div>
+      ))}
+      <div className="h-px w-full bg-white/5 my-1" />
+      <div className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/5 opacity-50">
+        <div className="flex items-center gap-2">
+          <div className="text-[8px] text-gray-500">#42</div>
+          <div className="text-[8px] text-gray-400">You</div>
+        </div>
+        <div className="text-[8px] font-mono text-gray-500">1200</div>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Main Data ---
 
 type DocSection = {
   id: string;
@@ -22,175 +207,86 @@ type DocSection = {
 const SECTIONS: DocSection[] = [
   {
     id: 'landing',
-    title: 'Central Hub',
+    title: 'Centralized Navigation Interface',
     route: '/',
-    icon: <Home className="w-6 h-6 text-primary" />,
-    description: "The primary interface serves as the central entry point for the CODéVO ecosystem. It orchestrates user navigation, showcases core platform capabilities, and provides immediate access to authentication and operational status metrics.",
-    technicalDetails: ["Landing Page Architecture", "Feature Showcase Matrix", "Navigation Dock Integration"],
-    visualComponent: (
-      <div className="flex flex-col h-full bg-black/90 p-4 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
-        <div className="mt-8 space-y-4 text-center z-10">
-          <div className="w-32 h-8 bg-white/10 rounded mx-auto mb-4" />
-          <div className="text-2xl font-bold text-white tracking-widest font-neuropol">CODéVO</div>
-          <div className="h-2 w-48 bg-white/20 rounded mx-auto" />
-          <div className="flex justify-center gap-2 mt-4">
-            <div className="w-8 h-8 rounded bg-white/5" />
-            <div className="w-8 h-8 rounded bg-white/5" />
-            <div className="w-8 h-8 rounded bg-white/5" />
-          </div>
-        </div>
-        <div className="mt-auto bg-[#0c0c0e] rounded-t-xl h-32 border-t border-white/10 p-3">
-           <div className="flex gap-2">
-             <div className="w-1/3 h-16 bg-white/5 rounded" />
-             <div className="w-2/3 h-16 bg-white/5 rounded" />
-           </div>
-        </div>
-      </div>
-    )
+    icon: <Home className="w-5 h-5 text-primary" />,
+    description: "The primary operational dashboard serving as the ecosystem's entry vector. It facilitates high-level navigation, presents core platform capabilities, and provides immediate operational status metrics.",
+    technicalDetails: ["Dynamic Route Rendering", "Interactive Feature Showcase", "Global State Management"],
+    visualComponent: <MiniLanding />
   },
   {
     id: 'auth',
-    title: 'Authentication Module',
+    title: 'Secure Identity Management',
     route: '/auth',
-    icon: <User className="w-6 h-6 text-blue-400" />,
-    description: "A secure gateway facilitating identity verification via OAuth 2.0 protocols. This module manages session persistence, user profile synchronization, and access control for protected academic resources.",
-    technicalDetails: ["Supabase Auth Integration", "Session Token Management", "Secure Route Protection"],
-    visualComponent: (
-      <div className="flex items-center justify-center h-full bg-[#050505] p-8">
-        <div className="w-full max-w-[200px] space-y-4">
-          <div className="h-6 w-1/2 bg-white/10 rounded" />
-          <div className="h-2 w-3/4 bg-white/5 rounded" />
-          <div className="h-10 w-full bg-white/10 rounded flex items-center justify-center gap-2 border border-white/5">
-            <div className="w-3 h-3 rounded-full bg-blue-500" />
-            <div className="h-2 w-16 bg-white/20 rounded" />
-          </div>
-          <div className="h-px w-full bg-white/10 my-4" />
-          <div className="text-center">
-             <span className="font-neuropol text-white text-xl">COD<span className="lowercase">é</span>VO</span>
-          </div>
-        </div>
-      </div>
-    )
+    icon: <User className="w-5 h-5 text-blue-400" />,
+    description: "A robust authentication gateway utilizing OAuth 2.0 protocols. This module handles secure session initiation, token persistence, and role-based access control for protected academic resources.",
+    technicalDetails: ["OAuth 2.0 Integration", "JWT Token Handling", "Session Persistence Layer"],
+    visualComponent: <MiniAuth />
   },
   {
     id: 'degree',
-    title: 'Academic Dashboard',
+    title: 'Academic Curriculum Dashboard',
     route: '/degree',
-    icon: <GraduationCap className="w-6 h-6 text-green-400" />,
-    description: "The dedicated interface for the IIT Madras BS Degree curriculum. It structures academic content hierarchically, allowing filtering by Foundation, Diploma, and Degree levels, and connects students to specific subject modules.",
-    technicalDetails: ["Hierarchical Data Modeling", "Level-based Filtering", "Dynamic Subject Retrieval"],
-    visualComponent: (
-      <div className="flex flex-col h-full bg-[#09090b] p-4">
-        <div className="flex gap-2 mb-4">
-          <div className="h-8 w-20 bg-primary/20 rounded border border-primary/30" />
-          <div className="h-8 w-20 bg-white/5 rounded border border-white/10" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="aspect-video bg-white/5 rounded border border-white/10 p-2 flex flex-col justify-between">
-              <div className="w-6 h-6 bg-white/10 rounded" />
-              <div className="h-2 w-3/4 bg-white/10 rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+    icon: <GraduationCap className="w-5 h-5 text-green-400" />,
+    description: "A specialized interface for the IIT Madras BS Degree program. It implements a hierarchical content structure, enabling granular filtering by academic level (Foundation, Diploma, Degree) and subject matter.",
+    technicalDetails: ["Relational Data Mapping", "Real-time Filtering", "Dynamic Content Hydration"],
+    visualComponent: <MiniDegree />
   },
   {
     id: 'practice',
-    title: 'Practice Environment',
+    title: 'Integrated Development Environment',
     route: '/practice',
-    icon: <Code2 className="w-6 h-6 text-purple-400" />,
-    description: "An advanced integrated development environment (IDE) tailored for skill acquisition. Features include a Monaco-based code editor, real-time syntax highlighting, and an automated test-case execution engine.",
-    technicalDetails: ["Monaco Editor Implementation", "Client-side Execution", "Test Case Validation Logic"],
-    visualComponent: (
-      <div className="flex h-full bg-[#1e1e1e] font-mono text-[6px] text-gray-400">
-        <div className="w-1/4 border-r border-white/10 p-2 space-y-2 bg-[#0c0c0e]">
-          <div className="h-2 w-10 bg-white/20 rounded" />
-          <div className="h-2 w-full bg-white/5 rounded" />
-          <div className="h-2 w-full bg-white/5 rounded" />
-        </div>
-        <div className="w-3/4 p-2 space-y-1">
-          <div className="flex gap-2"><span className="text-purple-400">def</span> <span className="text-yellow-200">solve</span>():</div>
-          <div className="pl-4 text-green-400">return "Success"</div>
-          <div className="mt-8 border-t border-white/10 pt-2 text-blue-300">
-            {">"} Running tests...
-          </div>
-        </div>
-      </div>
-    )
+    icon: <Code2 className="w-5 h-5 text-purple-400" />,
+    description: "A feature-rich coding environment tailored for skill acquisition. It integrates the Monaco Editor for syntax highlighting and employs a WebAssembly-based runtime for secure, client-side code execution.",
+    technicalDetails: ["Monaco Editor Integration", "Pyodide WASM Runtime", "Client-side Sandboxing"],
+    visualComponent: <MiniPractice />
   },
   {
     id: 'exam',
-    title: 'Proctored Assessment',
+    title: 'Proctored Assessment Environment',
     route: '/exam',
-    icon: <Shield className="w-6 h-6 text-red-500" />,
-    description: "A secure, controlled environment for high-stakes evaluations. Enforces full-screen mode, monitors tab switching, and utilizes webcam/audio inputs to ensure integrity during the examination process.",
-    technicalDetails: ["Fullscreen API Enforcement", "Media Stream Analysis", "Anti-Cheat Heuristics"],
-    visualComponent: (
-      <div className="flex flex-col h-full bg-black relative">
-        <div className="absolute top-2 right-2 w-12 h-8 bg-gray-800 rounded border border-red-500/50 flex items-center justify-center">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-        </div>
-        <div className="h-8 border-b border-white/10 flex items-center px-2 gap-2">
-          <div className="w-2 h-2 rounded-full bg-red-500" />
-          <div className="h-1 w-20 bg-white/20 rounded" />
-        </div>
-        <div className="flex-1 flex items-center justify-center text-red-900/20 font-bold text-4xl select-none">
-          SECURE
-        </div>
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-950/50 border border-red-500/30 px-3 py-1 rounded text-[8px] text-red-200">
-          ● REC
-        </div>
-      </div>
-    )
+    icon: <Shield className="w-5 h-5 text-red-500" />,
+    description: "A highly secure environment designed for formal evaluations. It enforces strict compliance via Fullscreen API integration, visibility state monitoring, and browser fingerprinting prevention mechanisms.",
+    technicalDetails: ["Fullscreen API Enforcement", "Visibility API Monitoring", "Input Event Interception"],
+    visualComponent: <MiniExam />
   },
   {
     id: 'leaderboard',
-    title: 'Global Rankings',
+    title: 'Global Performance Metrics',
     route: '/leaderboard',
-    icon: <Trophy className="w-6 h-6 text-yellow-500" />,
-    description: "A competitive tracking system displaying top performers. Aggregates scores from practice sessions and exams, presenting them in a monthly or all-time format to foster healthy competition.",
-    technicalDetails: ["Score Aggregation Algorithms", "Real-time DB Subscriptions", "Ranking Logic"],
-    visualComponent: (
-      <div className="flex flex-col h-full bg-[#0c0c0e] p-4">
-        <div className="flex justify-center mb-4"><Trophy className="w-8 h-8 text-yellow-500" /></div>
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/5">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-white/10 text-[6px] flex items-center justify-center">{i}</div>
-                <div className="w-12 h-2 bg-white/20 rounded" />
-              </div>
-              <div className="w-6 h-2 bg-yellow-500/50 rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+    icon: <Trophy className="w-5 h-5 text-yellow-500" />,
+    description: "An analytics-driven leaderboard system that aggregates user performance data. It employs real-time database subscriptions to reflect score updates instantaneously across the global user base.",
+    technicalDetails: ["Real-time Aggregation", "PostgreSQL Views", "Optimized Query Caching"],
+    visualComponent: <MiniLeaderboard />
   }
 ];
 
 // --- Components ---
 
 const LaptopFrame = ({ children }: { children: React.ReactNode }) => (
-  <div className="relative w-full max-w-[500px] aspect-[16/10] perspective-1000 group">
+  <div className="relative w-full max-w-[600px] aspect-[16/10] perspective-1000 group mx-auto">
     {/* Lid/Screen */}
-    <div className="relative w-full h-full bg-[#121212] rounded-[1rem] border-[6px] border-[#2a2a2a] shadow-2xl overflow-hidden transform-gpu transition-transform duration-700 ease-out group-hover:rotate-x-2">
-      {/* Camera Dot */}
-      <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#0f0f0f] rounded-full border border-white/10 z-20" />
+    <div className="relative w-full h-full bg-[#121212] rounded-[12px] border-[1px] border-[#333] shadow-2xl overflow-hidden transform-gpu transition-transform duration-700 ease-out group-hover:rotate-x-1 ring-1 ring-white/10">
+      {/* Bezel */}
+      <div className="absolute inset-0 border-[8px] border-[#0a0a0a] rounded-[10px] z-20 pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-[#0a0a0a] rounded-b-md flex items-center justify-center">
+           <div className="w-1.5 h-1.5 bg-[#1a1a1a] rounded-full border border-white/5" />
+        </div>
+      </div>
+      
       {/* Screen Content */}
-      <div className="w-full h-full bg-black overflow-hidden relative">
+      <div className="w-full h-full bg-black overflow-hidden relative pt-[8px] px-[8px] pb-[8px]">
         {children}
-        {/* Screen Glare */}
-        <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
+        {/* Screen Glare/Reflection */}
+        <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none mix-blend-overlay z-10" />
+        {/* Scanline Effect */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none z-10 opacity-20" />
       </div>
     </div>
     
-    {/* Base */}
-    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[120%] h-4 bg-[#1a1a1a] rounded-b-xl border-t border-[#333] shadow-xl z-0 transform translate-z-10">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-[#222] rounded-b-md" />
+    {/* Base - Keyboard Area Mockup */}
+    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[110%] h-3 bg-[#151515] rounded-b-xl border-t border-[#222] shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-0 transform translate-z-10 flex justify-center">
+      <div className="w-24 h-1 bg-[#222] rounded-b-md mt-[1px]" />
     </div>
   </div>
 );
@@ -198,8 +294,6 @@ const LaptopFrame = ({ children }: { children: React.ReactNode }) => (
 const Documentation = () => {
   const navigate = useNavigate();
   const [activeSectionId, setActiveSectionId] = useState<string>(SECTIONS[0].id);
-  
-  // Create refs for each section to observe
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -211,17 +305,10 @@ const Documentation = () => {
           }
         });
       },
-      {
-        root: null,
-        rootMargin: '-40% 0px -40% 0px', // Trigger when section is in the middle of screen
-        threshold: 0.2,
-      }
+      { root: null, rootMargin: '-45% 0px -45% 0px', threshold: 0.1 }
     );
 
-    Object.values(sectionRefs.current).forEach((el) => {
-      if (el) observer.observe(el);
-    });
-
+    Object.values(sectionRefs.current).forEach((el) => { if (el) observer.observe(el); });
     return () => observer.disconnect();
   }, []);
 
@@ -231,30 +318,28 @@ const Documentation = () => {
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-primary/30">
       
       {/* Top Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-md border-b border-white/5 h-16 flex items-center px-6 md:px-12">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/')} 
-          className="text-muted-foreground hover:text-white transition-colors pl-0 gap-2"
-        >
+      <nav className="fixed top-0 w-full z-50 bg-[#050505]/80 backdrop-blur-md border-b border-white/5 h-16 flex items-center px-6 md:px-12 justify-between">
+        <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white transition-colors pl-0 gap-2 hover:bg-transparent">
           <ArrowLeft className="w-4 h-4" /> Return to Platform
         </Button>
-        <div className="ml-auto font-neuropol text-sm tracking-widest text-white/50">
-          SYS.DOCS.V1
+        <div className="flex items-center gap-2">
+          <Terminal className="w-4 h-4 text-primary animate-pulse" />
+          <span className="font-neuropol text-sm tracking-widest text-white/50">SYS.DOCS.V1</span>
         </div>
       </nav>
 
       <div className="flex flex-col lg:flex-row relative pt-16">
         
         {/* LEFT COLUMN: Scrollable Content */}
-        <div className="w-full lg:w-1/2 p-6 md:p-16 lg:p-24 space-y-32">
+        <div className="w-full lg:w-[45%] p-6 md:p-12 lg:p-16 space-y-40 pb-40">
           
-          <div className="space-y-6 mb-24">
-            <h1 className="text-5xl md:text-7xl font-bold font-neuropol tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40">
-              System<br/>Architecture
+          <div className="space-y-6">
+            <Badge variant="outline" className="border-primary/20 text-primary bg-primary/5 uppercase tracking-widest px-3 py-1">System Architecture</Badge>
+            <h1 className="text-4xl md:text-6xl font-bold font-neuropol tracking-wide text-white leading-tight">
+              Operational<br/>Manual
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed max-w-lg">
-              This document serves as the comprehensive manual for the <span className="text-white font-bold">CODéVO</span> ecosystem. Follow this guide to navigate the platform's various operational zones.
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-md border-l-2 border-white/10 pl-6">
+              Comprehensive technical documentation for the <span className="text-white font-bold">CODéVO</span> ecosystem.
             </p>
           </div>
 
@@ -263,37 +348,45 @@ const Documentation = () => {
               key={section.id} 
               id={section.id}
               ref={el => sectionRefs.current[section.id] = el}
-              className="scroll-mt-32 space-y-8 group"
+              className="scroll-mt-40 space-y-8 group"
             >
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10 group-hover:bg-primary/10 group-hover:border-primary/50 transition-all duration-500">
+              {/* Section Header */}
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] transition-all duration-500">
                   {section.icon}
                 </div>
-                <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
-                <Badge variant="outline" className="font-mono text-xs border-white/10 text-muted-foreground">
-                  0{index + 1}
-                </Badge>
+                <div className="font-mono text-xs text-muted-foreground/60 tracking-widest">
+                  MODULE_0{index + 1}
+                </div>
               </div>
 
-              <h2 className="text-3xl md:text-4xl font-bold text-white group-hover:text-primary transition-colors duration-300">
-                {section.title}
-              </h2>
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold text-white group-hover:text-primary transition-colors duration-300">
+                  {section.title}
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="h-px w-8 bg-primary/50" />
+                  <code className="text-xs text-primary/80 bg-primary/5 px-2 py-1 rounded border border-primary/10">
+                    {section.route}
+                  </code>
+                </div>
+                <p className="text-base text-gray-400 leading-8 text-justify">
+                  {section.description}
+                </p>
+              </div>
 
-              <p className="text-lg text-gray-400 leading-8">
-                {section.description}
-              </p>
-
-              <Card className="bg-[#0a0a0a] border-white/5 shadow-inner">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground font-mono">
-                    Technical Specifications
+              {/* Technical Card */}
+              <Card className="bg-[#0a0a0a] border-white/5 overflow-hidden">
+                <CardHeader className="bg-white/[0.02] border-b border-white/5 py-3">
+                  <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-mono flex items-center gap-2">
+                    <Activity className="w-3 h-3" /> Technical Specifications
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
+                <CardContent className="p-4">
+                  <ul className="grid grid-cols-1 gap-3">
                     {section.technicalDetails.map((tech, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/50" />
+                      <li key={i} className="flex items-center gap-3 text-sm text-gray-300 group/item">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/20 group-hover/item:bg-primary transition-colors" />
                         {tech}
                       </li>
                     ))}
@@ -302,32 +395,34 @@ const Documentation = () => {
               </Card>
 
               <Button 
-                variant="link" 
+                variant="outline" 
                 onClick={() => navigate(section.route)}
-                className="text-primary hover:text-white p-0 h-auto text-base font-medium group/link"
+                className="w-full border-white/10 hover:bg-white/5 hover:text-white group/btn justify-between"
               >
-                Access Module <span className="ml-2 transition-transform group-hover/link:translate-x-1">→</span>
+                <span>Initialize Module</span>
+                <ArrowLeft className="w-4 h-4 rotate-180 transition-transform group-hover/btn:translate-x-1" />
               </Button>
             </div>
           ))}
-
-          <div className="h-[20vh]" /> {/* Bottom spacer */}
         </div>
 
         {/* RIGHT COLUMN: Sticky Visuals */}
-        <div className="hidden lg:flex w-1/2 sticky top-16 h-[calc(100vh-4rem)] items-center justify-center bg-[#050505] border-l border-white/5">
-          <div className="w-full max-w-lg relative">
-            {/* Background Decoration */}
-            <div className="absolute -inset-20 bg-gradient-to-tr from-primary/10 via-transparent to-purple-500/10 blur-3xl opacity-50 rounded-full" />
-            
+        <div className="hidden lg:flex w-[55%] sticky top-16 h-[calc(100vh-4rem)] items-center justify-center bg-[#050505] border-l border-white/5 overflow-hidden">
+          
+          {/* Animated Background Mesh */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none">
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full animate-pulse" />
+          </div>
+
+          <div className="w-full px-12 relative z-10 flex flex-col items-center gap-12">
             <LaptopFrame>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeSection.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.05 }}
-                  transition={{ duration: 0.4, ease: "circOut" }}
+                  initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="w-full h-full"
                 >
                   {activeSection.visualComponent}
@@ -335,19 +430,18 @@ const Documentation = () => {
               </AnimatePresence>
             </LaptopFrame>
 
-            <div className="mt-12 text-center">
+            <div className="text-center space-y-2">
               <motion.div
-                key={`text-${activeSection.id}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                key={`label-${activeSection.id}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md"
               >
-                <p className="font-mono text-xs text-primary uppercase tracking-[0.3em] mb-2">
-                  System Preview
-                </p>
-                <h3 className="text-xl font-bold text-white">
-                  {activeSection.title}
-                </h3>
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  Live Preview: {activeSection.title}
+                </span>
               </motion.div>
             </div>
           </div>
