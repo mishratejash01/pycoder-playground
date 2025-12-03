@@ -3,42 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Home, Code2, GraduationCap, Trophy, Shield, User, Terminal, CheckCircle2, Lock, Activity } from 'lucide-react';
+import { ArrowLeft, Home, Code2, GraduationCap, Trophy, Shield, User, Terminal, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 // --- Mini Visual Components (Mockups) ---
 
+// Reverted to Abstract Version
 const MiniLanding = () => (
-  <div className="flex flex-col h-full bg-[#09090b] relative overflow-hidden font-sans">
-    {/* Background Grid */}
-    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]" />
-    
-    {/* Header Mockup */}
-    <div className="h-8 border-b border-white/10 flex items-center px-4 justify-between bg-black/40 backdrop-blur-md relative z-10">
-      <div className="font-neuropol text-[8px] font-bold text-white">CODéVO</div>
-      <div className="flex gap-2">
-        {[1,2,3].map(i => <div key={i} className="w-8 h-2 bg-white/10 rounded-full" />)}
+  <div className="flex flex-col h-full bg-black/90 p-4 relative overflow-hidden">
+    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
+    <div className="mt-8 space-y-4 text-center z-10">
+      <div className="w-32 h-8 bg-white/10 rounded mx-auto mb-4" />
+      <div className="text-2xl font-bold text-white tracking-widest font-neuropol">CODéVO</div>
+      <div className="h-2 w-48 bg-white/20 rounded mx-auto" />
+      <div className="flex justify-center gap-2 mt-4">
+        <div className="w-8 h-8 rounded bg-white/5" />
+        <div className="w-8 h-8 rounded bg-white/5" />
+        <div className="w-8 h-8 rounded bg-white/5" />
       </div>
     </div>
-
-    {/* Hero Section */}
-    <div className="flex-1 flex flex-col items-center justify-center relative z-10 space-y-3">
-      <div className="px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-[6px] text-green-400 font-mono flex items-center gap-1">
-        <Activity className="w-2 h-2" /> SYSTEM::ONLINE
-      </div>
-      <div className="text-center space-y-1">
-        <div className="text-xl font-bold text-white tracking-tighter">
-          Évolve from <span className="text-primary">Hello World</span>
-        </div>
-        <div className="text-xl font-bold text-white tracking-tighter">
-          to <span className="bg-white text-black px-1">Hired</span>
-        </div>
-      </div>
-      <div className="flex gap-2 mt-2">
-        <div className="h-5 w-16 bg-white rounded text-[6px] flex items-center justify-center font-bold text-black">Get Started</div>
-        <div className="h-5 w-16 bg-white/5 border border-white/10 rounded text-[6px] flex items-center justify-center text-white">Learn More</div>
-      </div>
+    <div className="mt-auto bg-[#0c0c0e] rounded-t-xl h-32 border-t border-white/10 p-3">
+       <div className="flex gap-2">
+         <div className="w-1/3 h-16 bg-white/5 rounded" />
+         <div className="w-2/3 h-16 bg-white/5 rounded" />
+       </div>
     </div>
   </div>
 );
@@ -65,25 +54,18 @@ const MiniAuth = () => (
   </div>
 );
 
+// Reverted to Abstract Version
 const MiniDegree = () => (
-  <div className="flex flex-col h-full bg-[#09090b] p-4 font-sans">
-    <div className="flex items-center justify-between mb-4">
-      <div className="h-4 w-24 bg-white/10 rounded" />
-      <div className="h-6 w-6 bg-primary/20 rounded-full flex items-center justify-center text-[8px] text-primary">BS</div>
+  <div className="flex flex-col h-full bg-[#09090b] p-4">
+    <div className="flex gap-2 mb-4">
+      <div className="h-8 w-20 bg-primary/20 rounded border border-primary/30" />
+      <div className="h-8 w-20 bg-white/5 rounded border border-white/10" />
     </div>
-    <div className="flex gap-2 mb-3">
-      <div className="px-2 py-1 rounded bg-primary text-[6px] text-white font-bold">Foundation</div>
-      <div className="px-2 py-1 rounded bg-white/5 text-[6px] text-muted-foreground">Diploma</div>
-    </div>
-    <div className="grid grid-cols-2 gap-2">
-      {["Python", "Math 1", "Stats 1", "CT"].map((sub, i) => (
-        <div key={i} className="bg-[#0c0c0e] border border-white/10 rounded p-2 hover:border-primary/50 transition-colors group">
-          <div className="flex justify-between items-start mb-2">
-            <div className="w-4 h-4 rounded bg-white/5 group-hover:bg-primary/20" />
-            <div className="text-[6px] text-muted-foreground">4 Credits</div>
-          </div>
-          <div className="text-[8px] font-bold text-white">{sub}</div>
-          <div className="text-[6px] text-gray-500">Foundation Level</div>
+    <div className="grid grid-cols-2 gap-3">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="aspect-video bg-white/5 rounded border border-white/10 p-2 flex flex-col justify-between">
+          <div className="w-6 h-6 bg-white/10 rounded" />
+          <div className="h-2 w-3/4 bg-white/10 rounded" />
         </div>
       ))}
     </div>
@@ -393,15 +375,6 @@ const Documentation = () => {
                   </ul>
                 </CardContent>
               </Card>
-
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(section.route)}
-                className="w-full border-white/10 hover:bg-white/5 hover:text-white group/btn justify-between"
-              >
-                <span>Initialize Module</span>
-                <ArrowLeft className="w-4 h-4 rotate-180 transition-transform group-hover/btn:translate-x-1" />
-              </Button>
             </div>
           ))}
         </div>
