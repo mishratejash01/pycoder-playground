@@ -45,7 +45,7 @@ const AppContent = () => {
   const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam') || location.pathname.startsWith('/compiler'));
 
   // Define routes where Footer should NOT appear
-  const hideFooterRoutes = ['/practice', '/compiler', '/exam'];
+  const hideFooterRoutes = ['/practice', '/compiler', '/exam','/auth'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
