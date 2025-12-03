@@ -88,7 +88,7 @@ const Exam = () => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // --- Media & Security Logic ---
+  // --- Media Logic ---
   const startMediaStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true });
@@ -130,7 +130,6 @@ const Exam = () => {
       sum += dataArrayRef.current[i];
     }
     const average = sum / (dataArrayRef.current.length / 2);
-    
     const adjustedAvg = Math.max(0, average - 15);
     const volume = Math.min(100, Math.round(adjustedAvg * 3.5)); 
     
@@ -138,7 +137,7 @@ const Exam = () => {
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   };
 
-  // --- Strict Security Checks (HDMI/Screen Sharing) ---
+  // --- Strict Security Checks ---
   const checkMultipleScreens = async () => {
     try {
       // @ts-ignore - Experimental Window Management API
@@ -172,7 +171,7 @@ const Exam = () => {
   const handleViolation = async (type: string, message: string) => {
     if (!isExamStarted || isSubmitting) return;
     
-    // Obscure content immediately
+    // INSTANT BLACKOUT - Prevent Remote Viewer from seeing content
     setIsContentObscured(true);
     
     const newCount = violationCount + 1;
@@ -187,8 +186,13 @@ const Exam = () => {
       finishExam("TERMINATED: Max Violations Reached");
     } else {
       toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
-      // Restore visibility after 5 seconds penalty
-      setTimeout(() => setIsContentObscured(false), 5000);
+      
+      // Keep obscured until the user is back in safe state
+      setTimeout(() => {
+        if (document.fullscreenElement && document.hasFocus()) {
+           setIsContentObscured(false);
+        }
+      }, 3000);
     }
   };
 
@@ -204,13 +208,23 @@ const Exam = () => {
       if (!document.fullscreenElement && !isSubmitting) finishExam("TERMINATED: Fullscreen Exited"); 
     };
     
-    // Detect Focus Loss (Chrome Remote Desktop / Alt-Tab)
+    // Critical for Remote Desktop: RDP interaction often steals focus
     const handleBlur = () => {
-      handleViolation("Focus Lost", "Window lost focus. Possible remote interaction detected.");
+      handleViolation("Focus Lost", "Window lost focus. Possible remote interaction.");
+    };
+
+    // Detect "Screen Sharing" banners (which resize viewport in fullscreen)
+    const handleResize = () => {
+      if (document.fullscreenElement) {
+        const heightDiff = window.screen.height - window.innerHeight;
+        // If viewport is significantly smaller than screen height in fullscreen mode
+        if (heightDiff > 50) { 
+           handleViolation("External Overlay", "Screen sharing or recording overlay detected.");
+        }
+      }
     };
 
     const handleKeys = (e: KeyboardEvent) => {
-      // Block common shortcuts used in screen sharing or switching
       if (e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS' || (e.altKey && e.key === 'Tab') || e.key === 'PrintScreen') {
          e.preventDefault();
          handleViolation("Prohibited Key", "Restricted Key Press");
@@ -221,7 +235,8 @@ const Exam = () => {
 
     document.addEventListener("visibilitychange", handleVisibility);
     document.addEventListener("fullscreenchange", handleFullScreen);
-    window.addEventListener("blur", handleBlur); // Critical for Remote Desktop detection
+    window.addEventListener("blur", handleBlur); 
+    window.addEventListener("resize", handleResize);
     document.addEventListener("keydown", handleKeys);
     window.addEventListener("copy", prevent);
     window.addEventListener("paste", prevent);
@@ -231,6 +246,7 @@ const Exam = () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       document.removeEventListener("fullscreenchange", handleFullScreen);
       window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("resize", handleResize);
       document.removeEventListener("keydown", handleKeys);
       window.removeEventListener("copy", prevent);
       window.removeEventListener("paste", prevent);
@@ -271,19 +287,15 @@ const Exam = () => {
 
   // --- Handlers ---
   const handleStartExamRequest = async () => {
-    // 1. Check Monitors (Anti-HDMI)
     const isSingleScreen = await checkMultipleScreens();
     if (!isSingleScreen) return;
 
-    // 2. Start Camera/Mic
     const perms = await startMediaStream();
     if (!perms) return;
     
-    // 3. Enforce Fullscreen
     const fs = await enterFullScreen();
     if (!fs) { toast({ title: "Full Screen Required", variant: "destructive" }); return; }
     
-    // Force Audio Resume
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       await audioContextRef.current.resume();
     }
@@ -338,7 +350,6 @@ const Exam = () => {
     if (audioContextRef.current) audioContextRef.current.close();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
-    // Metrics calculation...
     const qIds = Object.keys(questionMetrics);
     const correctCount = Object.values(questionMetrics).filter(m => m.isCorrect).length;
     const totalScore = Object.values(questionMetrics).reduce((acc, curr) => acc + curr.score, 0);
@@ -401,15 +412,19 @@ const Exam = () => {
     <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden relative" onContextMenu={e => e.preventDefault()}>
       
       {/* --- CONTENT OBSCURING OVERLAY (Anti-Cheat) --- */}
+      {/* This ensures remote viewers only see THIS layer if focus is lost or sharing detected */}
       {isContentObscured && (
-        <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-200">
-          <EyeOff className="w-24 h-24 text-red-600 mb-6 animate-pulse" />
-          <h2 className="text-4xl font-bold text-red-500 font-neuropol mb-4">SECURITY LOCKOUT</h2>
-          <p className="text-xl text-gray-400 max-w-lg">
-            Suspicious activity detected. The exam content is hidden to prevent unauthorized access or recording.
+        <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-200 cursor-none">
+          <div className="relative mb-6">
+             <div className="absolute inset-0 bg-red-500 blur-3xl opacity-20 animate-pulse" />
+             <EyeOff className="w-24 h-24 text-red-600 relative z-10" />
+          </div>
+          <h2 className="text-4xl font-bold text-red-500 font-neuropol mb-4 tracking-widest">SECURITY LOCKOUT</h2>
+          <p className="text-xl text-gray-400 max-w-lg mb-8">
+            Suspicious activity detected. The exam environment has been obscured to prevent unauthorized access, recording, or remote viewing.
           </p>
-          <div className="mt-8 px-6 py-3 border border-red-500/30 rounded-full bg-red-500/10 text-red-400 font-mono">
-            Return focus to resume or terminate session.
+          <div className="px-6 py-3 border border-red-500/30 rounded-full bg-red-950/30 text-red-400 font-mono text-sm animate-pulse">
+            RETURN FOCUS TO BROWSER TO RESUME
           </div>
         </div>
       )}
@@ -429,7 +444,6 @@ const Exam = () => {
               </div>
               <div className="absolute -bottom-4 left-0 w-full text-center"><span className="text-[9px] text-red-500/70 font-mono uppercase">REC</span></div>
             </div>
-            {/* Audio Meter with FIXED sensitivity */}
             <div className="h-16 w-3 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
               {[...Array(12)].map((_, i) => <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all duration-75", audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />)}
             </div>
@@ -444,7 +458,6 @@ const Exam = () => {
       </header>
 
       <div className="flex-1 min-h-0 relative">
-        {/* Blur entire content if obscured */}
         <div className={cn("h-full transition-all duration-300", isContentObscured && "blur-2xl opacity-10 pointer-events-none")}>
           {isExamStarted ? (
             <ResizablePanelGroup direction="horizontal" className="h-full">
