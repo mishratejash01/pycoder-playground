@@ -10,7 +10,7 @@ export const Footer = () => {
           
           {/* Brand Column - Top Left */}
           <div className="space-y-4">
-            <Link to="/" className="flex flex-col items-start gap-2 group w-fit">
+            <Link to="/" className="flex flex-col items-center gap-2 group w-fit">
               {/* Logo - Solid Filled (Splash Screen Style) */}
               <span className="font-neuropol text-4xl font-bold tracking-wider text-white cursor-pointer select-none">
                 COD
@@ -18,14 +18,14 @@ export const Footer = () => {
                 VO
               </span>
               
-              {/* Subtitle - Single Line Below */}
-              <span className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground/80 whitespace-nowrap pl-1">
+              {/* Subtitle - Single Line Below, Centered relative to Logo */}
+              <span className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground/80 whitespace-nowrap">
                 The Product of Unknown IITians
               </span>
             </Link>
             
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs pt-4">
-              The ultimate platform for coding mastery.
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs pt-4 text-center md:text-left">
+              Built for the love of code.
             </p>
           </div>
           
@@ -66,7 +66,7 @@ export const Footer = () => {
         {/* Bottom Bar Details */}
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground text-center md:text-left">
-            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> in India.
+            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by Unknown IITians.
           </p>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-full border border-white/5">
