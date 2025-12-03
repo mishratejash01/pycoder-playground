@@ -17,11 +17,6 @@ export const Footer = () => {
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
-              
-              {/* Subtitle - Single Line Below, Left Aligned */}
-              <span className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground/80 whitespace-nowrap pl-1">
-                The Product of Unknown IITians
-              </span>
             </Link>
           </div>
           
@@ -61,7 +56,7 @@ export const Footer = () => {
 
         {/* Know More Section - Full Width */}
         <div className="border-t border-white/5 py-8">
-          <div className="max-w-4xl">
+          <div className="w-full">
             <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-4">Know More</h3>
             <p className="text-sm text-muted-foreground/80 leading-7 text-justify md:text-left">
               So, here's the deal. We're just a group of unknown IITians who got tired of boring, grayscale coding platforms that look like they were made in 1995. We wanted something that screams 'I code, therefore I am cool' (or at least, I try to be). CODéVO is our brain-child, born from late-night debugging sessions and way too much hostel coffee. It's built for those who think <code className="text-primary bg-primary/10 px-1 py-0.5 rounded text-xs">O(n^2)</code> is just a suggestion and that "it works on my machine" is a valid defense. Poke around, break things, and maybe learn something along the way. Just don't ask us how the backend works; it's mostly magic and duct tape.
