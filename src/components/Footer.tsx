@@ -59,7 +59,7 @@ export const Footer = () => {
           <div className="w-full">
             <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-4">Know More</h3>
             <p className="text-sm text-muted-foreground/80 leading-7 text-justify md:text-left">
-              So, here's the deal. We're just a group of unknown IITians who got tired of boring, grayscale coding platforms that look like they were made in 1995. We wanted something that screams 'I code, therefore I am cool' (or at least, I try to be). CODéVO is our brain-child, born from late-night debugging sessions and way too much hostel coffee. It's built for those who think <code className="text-primary bg-primary/10 px-1 py-0.5 rounded text-xs">O(n^2)</code> is just a suggestion and that "it works on my machine" is a valid defense. Poke around, break things, and maybe learn something along the way. Just don't ask us how the backend works; it's mostly magic and duct tape.
+              Real talk: CodeVo isn't just another compiler; it's what happens when obsession meets opportunity. We built this company because we got tired of dev tools that looked like they were designed in the stone age. We wanted a platform that screams 'performance' without the enterprise bloat. CodeVo is our answer to every 'it works on my machine' excuse ever made. We treat latency like a personal enemy and believe that a clean UI is next to godliness. Whether you're here to crush a competitive programming contest or just figure out why your recursion won't stop, we've got the infrastructure to handle it. Welcome to the big leagues—buckle up.
             </p>
           </div>
         </div>
@@ -67,7 +67,7 @@ export const Footer = () => {
         {/* Bottom Bar Details */}
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground text-center md:text-left">
-            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by Unknown IITians.
+            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by CodeVo.
           </p>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-full border border-white/5">
