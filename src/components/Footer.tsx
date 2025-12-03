@@ -9,24 +9,25 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           
           {/* Brand Column - Top Left */}
-          <div className="space-y-4">
-            <Link to="/" className="flex flex-col items-center gap-2 group w-fit">
+          <div className="space-y-6">
+            <Link to="/" className="flex flex-col items-start gap-2 group w-fit">
               {/* Logo - Solid Filled (Splash Screen Style) */}
               <span className="font-neuropol text-4xl font-bold tracking-wider text-white cursor-pointer select-none">
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
-              
-              {/* Subtitle - Single Line Below, Centered relative to Logo */}
-              <span className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground/80 whitespace-nowrap">
-                The Product of Unknown IITians
-              </span>
             </Link>
             
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs pt-4 text-center md:text-left">
-              Built for the love of code.
-            </p>
+            {/* Funky Description */}
+            <div className="space-y-4 max-w-xs">
+              <p className="text-sm text-muted-foreground/80 leading-relaxed text-left">
+                Welcome to the digital dojo where syntax errors are just spicy suggestions. 
+                We got tired of boring lectures, so we built this playground to let you break things (safely). 
+                It's like a gym for your brain, but with dark mode and zero sweating. 
+                Dive in, compile code, and maybe debug the universe while you're at it.
+              </p>
+            </div>
           </div>
           
           {/* Platform Links */}
