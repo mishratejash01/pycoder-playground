@@ -14,9 +14,10 @@ import DegreeSelection from "./pages/DegreeSelection";
 import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
 import Compiler from "./pages/Compiler";
+import Documentation from "./pages/Documentation"; // Import Documentation
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
-import { Footer } from "@/components/Footer"; // Import Footer
+import { Footer } from "@/components/Footer";
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -45,7 +46,7 @@ const AppContent = () => {
   const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam') || location.pathname.startsWith('/compiler'));
 
   // Define routes where Footer should NOT appear
-  const hideFooterRoutes = ['/practice', '/compiler', '/exam','/auth'];
+  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
@@ -88,6 +89,7 @@ const AppContent = () => {
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/compiler" element={<Compiler />} />
+        <Route path="/docs" element={<Documentation />} /> {/* Added Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
 
