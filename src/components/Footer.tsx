@@ -4,29 +4,36 @@ import { cn } from '@/lib/utils';
 
 export const Footer = () => {
   return (
-    <footer className="border-t border-white/5 bg-[#0c0c0e] pt-16 relative z-10 w-full overflow-hidden">
+    <footer className="border-t border-white/5 bg-[#0c0c0e] pt-16 pb-8 relative z-10 w-full overflow-hidden">
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           
-          {/* Brand Column */}
+          {/* Brand Column - Top Left */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-2 group w-fit">
-              {/* Logo with Hollow/Stroked Effect */}
+            <Link to="/" className="flex flex-col items-start gap-1 group w-fit">
+              {/* Logo with Unfilled/Stroked Text Effect */}
               <span className={cn(
-                "font-neuropol text-3xl font-bold tracking-widest transition-all duration-500",
-                // Base State: Hollow with faint stroke (blends with background)
+                "font-neuropol text-4xl font-bold tracking-widest transition-all duration-500",
+                // Unfilled state: Transparent text with stroke
                 "text-transparent bg-clip-text",
-                "[-webkit-text-stroke:1px_rgba(255,255,255,0.15)]", 
-                // Hover State: Bright white stroke + Glow
-                "group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.9)]",
-                "group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]",
+                "[-webkit-text-stroke:1px_rgba(255,255,255,0.6)]", 
+                // Hover state: Glow effect
+                "group-hover:[-webkit-text-stroke:1px_#ffffff]",
+                "group-hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]",
                 "cursor-pointer select-none"
               )}>
-                CODéVO
+                COD
+                <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
+                VO
+              </span>
+              {/* Subtitle - Splash Screen Design */}
+              <span className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground/60 group-hover:text-white/90 transition-colors duration-500 pl-1">
+                The Product of Unknown IITians
               </span>
             </Link>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              The ultimate platform for coding mastery. Built by IITians for the next generation of developers.
+            
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs pt-4">
+              The ultimate platform for coding mastery.
             </p>
           </div>
           
@@ -65,9 +72,9 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Bar Details */}
-        <div className="border-t border-white/5 pt-8 pb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground text-center md:text-left">
-            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by Unknown IITians.
+            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> in India.
           </p>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-full border border-white/5">
@@ -75,13 +82,6 @@ export const Footer = () => {
             All Systems Operational
           </div>
         </div>
-      </div>
-
-      {/* Full Width Footer Text */}
-      <div className="w-full border-t border-white/5 bg-[#0a0a0c] py-6">
-         <h1 className="text-center font-neuropol text-[3vw] md:text-[4vw] font-bold text-white/5 tracking-widest leading-none select-none hover:text-white/10 transition-colors w-full px-4">
-            CODEVO THE PRODUCT OF UNKNOWN IITIANS
-         </h1>
       </div>
     </footer>
   );
