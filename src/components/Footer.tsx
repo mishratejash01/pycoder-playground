@@ -4,17 +4,25 @@ import { cn } from '@/lib/utils';
 
 export const Footer = () => {
   return (
-    <footer className="border-t border-white/10 bg-[#0c0c0e] pt-16 pb-8 relative z-10">
+    <footer className="border-t border-white/10 bg-[#0c0c0e] pt-16 pb-8 relative z-10 w-full">
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           
           {/* Brand Column */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2 group w-fit">
-              <span className="font-neuropol text-2xl font-bold tracking-wider text-white transition-opacity hover:opacity-80">
-                COD
-                <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block text-primary">é</span>
-                VO
+              {/* Logo with Hollow/Stroked Effect */}
+              <span className={cn(
+                "font-neuropol text-3xl font-bold tracking-widest transition-all duration-500",
+                // Base State: Hollow with faint stroke (blends with background)
+                "text-transparent bg-clip-text",
+                "[-webkit-text-stroke:1px_rgba(255,255,255,0.15)]", 
+                // Hover State: Bright white stroke + Glow
+                "group-hover:[-webkit-text-stroke:1px_rgba(255,255,255,0.9)]",
+                "group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]",
+                "cursor-pointer select-none"
+              )}>
+                CODéVO
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
