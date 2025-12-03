@@ -41,7 +41,7 @@ const AppContent = () => {
   if (showSplash) return <SplashScreen />;
 
   // Define routes where Dock should NOT appear
-  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler']; 
+  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
   const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam') || location.pathname.startsWith('/compiler'));
 
   // Define routes where Footer should NOT appear
