@@ -10,24 +10,16 @@ export const Footer = () => {
           
           {/* Brand Column - Top Left */}
           <div className="space-y-4">
-            <Link to="/" className="flex flex-col items-start gap-1 group w-fit">
-              {/* Logo with Unfilled/Stroked Text Effect */}
-              <span className={cn(
-                "font-neuropol text-4xl font-bold tracking-widest transition-all duration-500",
-                // Unfilled state: Transparent text with stroke
-                "text-transparent bg-clip-text",
-                "[-webkit-text-stroke:1px_rgba(255,255,255,0.6)]", 
-                // Hover state: Glow effect
-                "group-hover:[-webkit-text-stroke:1px_#ffffff]",
-                "group-hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]",
-                "cursor-pointer select-none"
-              )}>
+            <Link to="/" className="flex flex-col items-start gap-2 group w-fit">
+              {/* Logo - Solid Filled (Splash Screen Style) */}
+              <span className="font-neuropol text-4xl font-bold tracking-wider text-white cursor-pointer select-none">
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
-              {/* Subtitle - Splash Screen Design */}
-              <span className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground/60 group-hover:text-white/90 transition-colors duration-500 pl-1">
+              
+              {/* Subtitle - Single Line Below */}
+              <span className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground/80 whitespace-nowrap pl-1">
                 The Product of Unknown IITians
               </span>
             </Link>
