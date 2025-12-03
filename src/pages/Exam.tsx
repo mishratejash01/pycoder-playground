@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Lock, Timer, Video, Maximize, Mic } from 'lucide-react';
+import { ShieldAlert, Lock, Timer, Video, Maximize, Mic, MonitorX, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -33,7 +33,6 @@ const Exam = () => {
   const examType = searchParams.get('type');
   const setName = searchParams.get('set_name');
   
-  // SELECT TABLE: Use 'iitm_exam_sessions' ONLY for IITM subjects
   const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
   const SESSION_TABLE = iitmSubjectId ? 'iitm_exam_sessions' : 'exam_sessions';
 
@@ -41,6 +40,9 @@ const Exam = () => {
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
+  
+  // Security State
+  const [isContentObscured, setIsContentObscured] = useState(false);
   
   // Timer & Metrics
   const [elapsedTime, setElapsedTime] = useState(0); 
@@ -86,7 +88,7 @@ const Exam = () => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // --- Media Logic (Decibel Meter Fixed) ---
+  // --- Media & Security Logic ---
   const startMediaStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true });
@@ -95,7 +97,6 @@ const Exam = () => {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioContext = new AudioContextClass();
       
-      // CRITICAL: Resume if suspended
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
@@ -125,18 +126,37 @@ const Exam = () => {
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
     
     let sum = 0;
-    // Lower half of frequencies (Voice Range)
     for (let i = 0; i < dataArrayRef.current.length / 2; i++) {
       sum += dataArrayRef.current[i];
     }
     const average = sum / (dataArrayRef.current.length / 2);
     
-    // Sensitivity Tuning: Subtract noise floor (15) and multiply (3.5x)
     const adjustedAvg = Math.max(0, average - 15);
     const volume = Math.min(100, Math.round(adjustedAvg * 3.5)); 
     
     setAudioLevel(volume);
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+  };
+
+  // --- Strict Security Checks (HDMI/Screen Sharing) ---
+  const checkMultipleScreens = async () => {
+    try {
+      // @ts-ignore - Experimental Window Management API
+      if (window.getScreenDetails) {
+        // @ts-ignore
+        const details = await window.getScreenDetails();
+        if (details.screens.length > 1) {
+          toast({ title: "External Monitor Detected", description: "Please disconnect HDMI/Secondary displays.", variant: "destructive" });
+          return false;
+        }
+      } else if ((window.screen as any).isExtended) {
+         toast({ title: "Extended Display Detected", description: "Please use a single screen only.", variant: "destructive" });
+         return false;
+      }
+    } catch (e) {
+      console.warn("Screen detection skipped (permission denied or unsupported).");
+    }
+    return true;
   };
 
   const enterFullScreen = async () => {
@@ -148,9 +168,12 @@ const Exam = () => {
     return false;
   };
 
-  // --- Strict Monitoring ---
+  // --- Violation Handler ---
   const handleViolation = async (type: string, message: string) => {
     if (!isExamStarted || isSubmitting) return;
+    
+    // Obscure content immediately
+    setIsContentObscured(true);
     
     const newCount = violationCount + 1;
     setViolationCount(newCount);
@@ -164,26 +187,41 @@ const Exam = () => {
       finishExam("TERMINATED: Max Violations Reached");
     } else {
       toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
+      // Restore visibility after 5 seconds penalty
+      setTimeout(() => setIsContentObscured(false), 5000);
     }
   };
 
+  // --- Monitoring Effects ---
   useEffect(() => {
     if (!isExamStarted) return;
 
-    const handleVisibility = () => { if (document.hidden) handleViolation("Tab Switch", "Tab switching detected."); };
-    // Strict Termination on Fullscreen Exit
-    const handleFullScreen = () => { if (!document.fullscreenElement && !isSubmitting) finishExam("TERMINATED: Fullscreen Exited"); };
+    const handleVisibility = () => { 
+      if (document.hidden) handleViolation("Tab Switch", "Tab switching detected."); 
+    };
     
+    const handleFullScreen = () => { 
+      if (!document.fullscreenElement && !isSubmitting) finishExam("TERMINATED: Fullscreen Exited"); 
+    };
+    
+    // Detect Focus Loss (Chrome Remote Desktop / Alt-Tab)
+    const handleBlur = () => {
+      handleViolation("Focus Lost", "Window lost focus. Possible remote interaction detected.");
+    };
+
     const handleKeys = (e: KeyboardEvent) => {
-      if (e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS' || (e.altKey && e.key === 'Tab')) {
+      // Block common shortcuts used in screen sharing or switching
+      if (e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS' || (e.altKey && e.key === 'Tab') || e.key === 'PrintScreen') {
          e.preventDefault();
          handleViolation("Prohibited Key", "Restricted Key Press");
       }
     };
+    
     const prevent = (e: Event) => e.preventDefault();
 
     document.addEventListener("visibilitychange", handleVisibility);
     document.addEventListener("fullscreenchange", handleFullScreen);
+    window.addEventListener("blur", handleBlur); // Critical for Remote Desktop detection
     document.addEventListener("keydown", handleKeys);
     window.addEventListener("copy", prevent);
     window.addEventListener("paste", prevent);
@@ -192,6 +230,7 @@ const Exam = () => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       document.removeEventListener("fullscreenchange", handleFullScreen);
+      window.removeEventListener("blur", handleBlur);
       document.removeEventListener("keydown", handleKeys);
       window.removeEventListener("copy", prevent);
       window.removeEventListener("paste", prevent);
@@ -232,8 +271,15 @@ const Exam = () => {
 
   // --- Handlers ---
   const handleStartExamRequest = async () => {
+    // 1. Check Monitors (Anti-HDMI)
+    const isSingleScreen = await checkMultipleScreens();
+    if (!isSingleScreen) return;
+
+    // 2. Start Camera/Mic
     const perms = await startMediaStream();
     if (!perms) return;
+    
+    // 3. Enforce Fullscreen
     const fs = await enterFullScreen();
     if (!fs) { toast({ title: "Full Screen Required", variant: "destructive" }); return; }
     
@@ -292,7 +338,7 @@ const Exam = () => {
     if (audioContextRef.current) audioContextRef.current.close();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
-    // Metrics
+    // Metrics calculation...
     const qIds = Object.keys(questionMetrics);
     const correctCount = Object.values(questionMetrics).filter(m => m.isCorrect).length;
     const totalScore = Object.values(questionMetrics).reduce((acc, curr) => acc + curr.score, 0);
@@ -327,7 +373,7 @@ const Exam = () => {
       terminationReason: displayReason,
       isError: isTermination,
       totalTime: elapsedTime,
-      examMetadata: { // Needed for IITM Leaderboard
+      examMetadata: { 
         subjectId: iitmSubjectId,
         examType,
         setName
@@ -352,7 +398,22 @@ const Exam = () => {
   const formatTime = (s: number) => new Date(s * 1000).toISOString().substr(11, 8);
 
   return (
-    <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden" onContextMenu={e => e.preventDefault()}>
+    <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden relative" onContextMenu={e => e.preventDefault()}>
+      
+      {/* --- CONTENT OBSCURING OVERLAY (Anti-Cheat) --- */}
+      {isContentObscured && (
+        <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-200">
+          <EyeOff className="w-24 h-24 text-red-600 mb-6 animate-pulse" />
+          <h2 className="text-4xl font-bold text-red-500 font-neuropol mb-4">SECURITY LOCKOUT</h2>
+          <p className="text-xl text-gray-400 max-w-lg">
+            Suspicious activity detected. The exam content is hidden to prevent unauthorized access or recording.
+          </p>
+          <div className="mt-8 px-6 py-3 border border-red-500/30 rounded-full bg-red-500/10 text-red-400 font-mono">
+            Return focus to resume or terminate session.
+          </div>
+        </div>
+      )}
+
       <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50 relative">
         <div className="flex items-center gap-3">
            <div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20"><Lock className="w-4 h-4 text-red-500" /></div>
@@ -382,47 +443,50 @@ const Exam = () => {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0">
-        {isExamStarted ? (
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-             <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 hidden md:block">
-               <AssignmentSidebar 
-                  selectedId={selectedAssignmentId} 
-                  onSelect={(id) => { setSearchParams(p => { p.set('q', id); return p; }); setQuestionStatuses(prev => ({...prev, [id]: 'visited'})); }} 
-                  questionStatuses={questionStatuses} 
-                  preLoadedAssignments={assignments as any} 
-                />
-             </ResizablePanel>
-             <ResizableHandle withHandle className="hidden md:flex bg-black border-l border-r border-white/10 w-1.5" />
-             <ResizablePanel defaultSize={80} className="h-full overflow-auto">
-               <ErrorBoundary>
-                 {selectedAssignmentId ? (
-                   <AssignmentView 
-                     key={selectedAssignmentId}
-                     assignmentId={selectedAssignmentId}
-                     onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
-                     currentStatus={questionStatuses[selectedAssignmentId]}
-                     tables={activeTables}
-                     disableCopyPaste={true}
-                     onAttempt={(isCorrect, score) => handleQuestionAttempt(selectedAssignmentId, isCorrect, score)}
-                   />
-                 ) : (
-                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground"><Lock className="w-16 h-16 mb-4 opacity-20" /><p>Select a question to begin</p></div>
-                 )}
-               </ErrorBoundary>
-             </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center p-6 space-y-8 bg-[#09090b]">
-            <div className="text-center space-y-2"><h1 className="text-3xl font-bold font-neuropol text-white">System Check</h1><p className="text-muted-foreground">Verification required.</p></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
-               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400"><Video /></div><div><h3 className="font-medium">Camera & Mic</h3><p className="text-xs text-muted-foreground">Active</p></div></div>
-               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto text-purple-400"><Maximize /></div><div><h3 className="font-medium">Full Screen</h3><p className="text-xs text-muted-foreground">Mandatory</p></div></div>
-               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-400"><ShieldAlert /></div><div><h3 className="font-medium">No Switching</h3><p className="text-xs text-muted-foreground">Instant Fail</p></div></div>
+      <div className="flex-1 min-h-0 relative">
+        {/* Blur entire content if obscured */}
+        <div className={cn("h-full transition-all duration-300", isContentObscured && "blur-2xl opacity-10 pointer-events-none")}>
+          {isExamStarted ? (
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+               <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 hidden md:block">
+                 <AssignmentSidebar 
+                    selectedId={selectedAssignmentId} 
+                    onSelect={(id) => { setSearchParams(p => { p.set('q', id); return p; }); setQuestionStatuses(prev => ({...prev, [id]: 'visited'})); }} 
+                    questionStatuses={questionStatuses} 
+                    preLoadedAssignments={assignments as any} 
+                  />
+               </ResizablePanel>
+               <ResizableHandle withHandle className="hidden md:flex bg-black border-l border-r border-white/10 w-1.5" />
+               <ResizablePanel defaultSize={80} className="h-full overflow-auto">
+                 <ErrorBoundary>
+                   {selectedAssignmentId ? (
+                     <AssignmentView 
+                       key={selectedAssignmentId}
+                       assignmentId={selectedAssignmentId}
+                       onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
+                       currentStatus={questionStatuses[selectedAssignmentId]}
+                       tables={activeTables}
+                       disableCopyPaste={true}
+                       onAttempt={(isCorrect, score) => handleQuestionAttempt(selectedAssignmentId, isCorrect, score)}
+                     />
+                   ) : (
+                     <div className="h-full flex flex-col items-center justify-center text-muted-foreground"><Lock className="w-16 h-16 mb-4 opacity-20" /><p>Select a question to begin</p></div>
+                   )}
+                 </ErrorBoundary>
+               </ResizablePanel>
+            </ResizablePanelGroup>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-6 space-y-8 bg-[#09090b]">
+              <div className="text-center space-y-2"><h1 className="text-3xl font-bold font-neuropol text-white">System Check</h1><p className="text-muted-foreground">Verification required.</p></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                 <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400"><Video /></div><div><h3 className="font-medium">Camera & Mic</h3><p className="text-xs text-muted-foreground">Active</p></div></div>
+                 <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto text-purple-400"><Maximize /></div><div><h3 className="font-medium">Full Screen</h3><p className="text-xs text-muted-foreground">Mandatory</p></div></div>
+                 <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-400"><MonitorX /></div><div><h3 className="font-medium">Single Display</h3><p className="text-xs text-muted-foreground">HDMI Blocked</p></div></div>
+              </div>
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg" onClick={handleStartExamRequest}>I Agree & Start Exam</Button>
             </div>
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg" onClick={handleStartExamRequest}>I Agree & Start Exam</Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <AlertDialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
