@@ -9,8 +9,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, Laptop, ShieldAlert, BrainCircuit, GraduationCap } from 'lucide-react';
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, Laptop, ShieldCheck, Sparkles, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const getSubjectIcon = (name: string) => {
   const n = name.toLowerCase();
@@ -148,10 +149,7 @@ const DegreeSelection = () => {
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       
-      {/* Header Section 
-        - Mobile: Relative positioning (scrolls away), reduced padding (pt-12)
-        - Desktop: Sticky positioning (stays fixed), full padding (pt-24)
-      */}
+      {/* Header Section */}
       <div className="relative md:sticky md:top-0 z-40 bg-[#09090b]/95 backdrop-blur supports-[backdrop-filter]:bg-[#09090b]/80 border-b border-white/5 pt-12 md:pt-24 pb-4 px-4 md:px-8 shadow-xl">
         <div className="max-w-7xl mx-auto space-y-6">
           
@@ -184,7 +182,7 @@ const DegreeSelection = () => {
             )}
           </div>
 
-          {/* Filters Bar - Scrolls away on mobile */}
+          {/* Filters Bar */}
           <div className="bg-[#0c0c0e] border border-white/10 p-3 rounded-xl flex flex-col md:flex-row gap-3 items-center justify-between">
             <div className="w-full md:w-1/3">
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
@@ -215,7 +213,7 @@ const DegreeSelection = () => {
         </div>
       </div>
 
-      {/* Subjects Grid - Scrollable Area */}
+      {/* Subjects Grid */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSubjects.length === 0 ? (
@@ -282,45 +280,85 @@ const DegreeSelection = () => {
         </div>
       </div>
 
+      {/* --- RESPONSIVE MODE SELECTION DIALOG --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
-        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-4xl p-0 overflow-hidden gap-0">
-          <div className="grid md:grid-cols-2 h-[500px] relative">
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
+          
+          <div className="flex flex-col md:grid md:grid-cols-2 md:h-[550px] relative">
+            
+            {/* OPTION 1: PRACTICE */}
             <div 
-              className="relative p-8 flex flex-col justify-center items-center text-center cursor-pointer group transition-all hover:bg-white/5"
+              className="relative h-64 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10"
               onClick={() => handleModeSelect('learning')}
             >
-              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="w-24 h-24 rounded-3xl bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20 group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(59,130,246,0.15)]">
-                <BrainCircuit className="w-12 h-12 text-blue-400" />
+              {/* Background Image: Coding Setup */}
+              <div className="absolute inset-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop" 
+                  alt="Practice Coding" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+                <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-blue-900/20 transition-colors" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">Practice Environment</h3>
-              <p className="text-muted-foreground text-sm max-w-xs mb-6">
-                Unlimited attempts and custom question sets.
-              </p>
-              <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20">Learning</Badge>
+
+              {/* Content */}
+              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                  <Sparkles className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-blue-400 transition-colors">Practice Mode</h3>
+                  <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-2">Learning Environment</Badge>
+                  <p className="text-gray-300 text-sm leading-relaxed max-w-xs">
+                    Unlimited attempts, instant feedback, and custom question sets to master your skills.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="hidden md:block absolute left-1/2 top-10 bottom-10 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-
+            {/* OPTION 2: PROCTORED */}
             <div 
-              className="relative p-8 flex flex-col justify-center items-center text-center cursor-pointer group transition-all hover:bg-white/5"
+              className="relative h-64 md:h-full group overflow-hidden cursor-pointer"
               onClick={() => handleModeSelect('proctored')}
             >
-              <div className="absolute inset-0 bg-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="w-24 h-24 rounded-3xl bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20 group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(239,68,68,0.15)]">
-                <ShieldAlert className="w-12 h-12 text-red-400" />
+              {/* Background Image: Exam/Focus */}
+              <div className="absolute inset-0">
+                <img 
+                  src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=1000&auto=format&fit=crop" 
+                  alt="Proctored Exam" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 grayscale group-hover:grayscale-0"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+                <div className="absolute inset-0 bg-red-900/10 group-hover:bg-red-900/20 transition-colors" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">Proctored Environment</h3>
-              <p className="text-muted-foreground text-sm max-w-xs mb-6">
-                Strict timing and full-screen enforcement.
-              </p>
-              <div className="flex items-center gap-2 text-xs text-red-400 bg-red-950/20 px-3 py-1 rounded-full border border-red-500/10">
-                <Laptop className="w-3 h-3" /> Laptop/PC Only
+
+              {/* Content */}
+              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                  <ShieldCheck className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-red-400 transition-colors">Proctored Mode</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="secondary" className="bg-red-500/10 text-red-400 border-red-500/20">Strict Environment</Badge>
+                    <span className="text-[10px] text-red-400/80 bg-red-950/40 px-2 py-0.5 rounded border border-red-500/20 flex items-center gap-1">
+                      <Laptop className="w-3 h-3" /> PC Only
+                    </span>
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed max-w-xs">
+                    Full-screen enforcement, activity monitoring, and strict timing for official assessment.
+                  </p>
+                </div>
               </div>
             </div>
+
           </div>
-          <div className="bg-black/40 p-4 text-center text-xs text-muted-foreground border-t border-white/5">
-            Selected: <span className="text-white font-medium">{selectedExamData?.name} - {selectedExamData?.type}</span>
+
+          {/* Footer Bar */}
+          <div className="bg-[#050505] p-3 text-center text-xs text-muted-foreground border-t border-white/5 flex justify-between items-center px-6">
+            <span>Selected: <span className="text-white font-medium">{selectedExamData?.name}</span></span>
+            <span className="bg-white/5 px-2 py-1 rounded text-[10px] uppercase tracking-wider">{selectedExamData?.type}</span>
           </div>
         </DialogContent>
       </Dialog>
