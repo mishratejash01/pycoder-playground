@@ -148,8 +148,11 @@ const DegreeSelection = () => {
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       
-      {/* Fixed Header Section containing Title, Tabs, and Filters */}
-      <div className="sticky top-0 z-40 bg-[#09090b]/95 backdrop-blur supports-[backdrop-filter]:bg-[#09090b]/80 border-b border-white/5 pt-24 pb-4 px-4 md:px-8 shadow-2xl">
+      {/* Header Section 
+        - Mobile: Relative positioning (scrolls away), reduced padding (pt-12)
+        - Desktop: Sticky positioning (stays fixed), full padding (pt-24)
+      */}
+      <div className="relative md:sticky md:top-0 z-40 bg-[#09090b]/95 backdrop-blur supports-[backdrop-filter]:bg-[#09090b]/80 border-b border-white/5 pt-12 md:pt-24 pb-4 px-4 md:px-8 shadow-xl">
         <div className="max-w-7xl mx-auto space-y-6">
           
           <div className="text-center space-y-2">
@@ -181,7 +184,7 @@ const DegreeSelection = () => {
             )}
           </div>
 
-          {/* Filters Bar - Integrated */}
+          {/* Filters Bar - Scrolls away on mobile */}
           <div className="bg-[#0c0c0e] border border-white/10 p-3 rounded-xl flex flex-col md:flex-row gap-3 items-center justify-between">
             <div className="w-full md:w-1/3">
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
