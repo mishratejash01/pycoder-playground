@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: mishratejash01/pycoder-playground/pycoder-playground-605e6c91abc38ad97cc337e45bbc6a57e65932d5/src/components/ProfileCompletion.tsx
+fullContent:
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Stepper, { Step } from '@/components/ui/stepper';
@@ -22,7 +26,7 @@ export const checkUserProfile = async () => {
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
   if (!profile) return false;
 
-  // Define required fields
+  // Define required fields for a "complete" profile
   const requiredFields = ['full_name', 'username', 'contact_no', 'institute_name', 'degree', 'branch'];
   // @ts-ignore
   const isComplete = requiredFields.every(field => !!profile[field]);
@@ -142,6 +146,17 @@ const ProfileFormContent = ({ formData, setFormData, masterData, handleSubmit, o
         backButtonText="Back"
         nextButtonText="Next"
         footerClassName={mode === 'sheet' ? "pb-20" : ""}
+        // Add "Ask me later" button here, ONLY if onAskLater is provided (Login mode)
+        extraLeftContent={onAskLater && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground hover:text-white text-xs h-8 -ml-2"
+            onClick={onAskLater}
+          >
+            <Clock className="w-3 h-3 mr-1.5" /> Ask me later
+          </Button>
+        )}
       >
         {/* STEP 1: IDENTITY */}
         <Step>
@@ -196,18 +211,8 @@ const ProfileFormContent = ({ formData, setFormData, masterData, handleSubmit, o
               </div>
             </div>
             
-            <div className="h-4 flex justify-between items-center mt-2">
+            <div className="h-4">
               {!step1Valid && <span className="text-xs text-red-400">Please fill in all required fields.</span>}
-              {onAskLater && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-muted-foreground hover:text-white text-xs h-8 -ml-2"
-                  onClick={onAskLater}
-                >
-                  <Clock className="w-3 h-3 mr-1.5" /> Ask me later
-                </Button>
-              )}
             </div>
           </div>
         </Step>
@@ -461,7 +466,7 @@ export const ProfileCompletion = () => {
           setFormData={setFormData} 
           masterData={masterData} 
           handleSubmit={handleSubmit}
-          onAskLater={() => setIsOpen(false)} // Ask me later logic
+          onAskLater={() => setIsOpen(false)} // Enable "Ask me later" for optional/login view
           mode="dialog"
         />
       </DialogContent>
@@ -501,6 +506,7 @@ export const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
             setFormData={setFormData} 
             masterData={masterData} 
             handleSubmit={handleSubmit}
+            // NO "Ask me later" here because it is mandatory
             mode="sheet"
           />
         </div>
@@ -508,3 +514,4 @@ export const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
     </Sheet>
   );
 };
+}
