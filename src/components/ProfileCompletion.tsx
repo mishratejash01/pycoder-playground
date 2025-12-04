@@ -142,12 +142,12 @@ const ProfileFormContent = ({ formData, setFormData, masterData, handleSubmit, o
         backButtonText="Back"
         nextButtonText="Next"
         footerClassName={mode === 'sheet' ? "pb-20" : ""}
-        // Add "Ask me later" button here, ONLY if onAskLater is provided (Login mode)
+        // "Ask me later" button with OUTLINE styling
         extraLeftContent={onAskLater && (
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
-            className="text-muted-foreground hover:text-white text-xs h-8 -ml-2"
+            className="text-xs h-8 border-white/10 bg-transparent text-muted-foreground hover:text-white hover:bg-white/5 hover:border-white/20"
             onClick={onAskLater}
           >
             <Clock className="w-3 h-3 mr-1.5" /> Ask me later
@@ -462,7 +462,7 @@ export const ProfileCompletion = () => {
           setFormData={setFormData} 
           masterData={masterData} 
           handleSubmit={handleSubmit}
-          onAskLater={() => setIsOpen(false)} // Enable "Ask me later" for optional/login view
+          onAskLater={() => setIsOpen(false)} 
           mode="dialog"
         />
       </DialogContent>
@@ -502,7 +502,7 @@ export const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
             setFormData={setFormData} 
             masterData={masterData} 
             handleSubmit={handleSubmit}
-            // NO "Ask me later" here because it is mandatory
+            // NO "Ask me later" here because it is mandatory for exams
             mode="sheet"
           />
         </div>
