@@ -19,7 +19,6 @@ import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
-import { ProfileCompletion } from "@/components/ProfileCompletion"; // Imported
 
 const queryClient = new QueryClient();
 
@@ -80,9 +79,6 @@ const AppContent = () => {
 
   return (
     <>
-      {/* Profile Completion Modal Check - Runs globally */}
-      <ProfileCompletion />
-
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
