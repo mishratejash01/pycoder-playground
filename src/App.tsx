@@ -15,6 +15,10 @@ import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
 import Compiler from "./pages/Compiler";
 import Documentation from "./pages/Documentation";
+// --- NEW IMPORTS ---
+import PracticeArena from "./pages/PracticeArena";
+import PracticeSolver from "./pages/PracticeSolver";
+// -------------------
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
@@ -42,6 +46,8 @@ const AppContent = () => {
   if (showSplash) return <SplashScreen />;
 
   // Define routes where Dock should NOT appear
+  // Note: /practice-arena starts with /practice, so it might hide the dock depending on desired behavior.
+  // If you want the dock visible on the Arena lobby but hidden in the Solver, you might need to adjust specific checks.
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
   const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam') || location.pathname.startsWith('/compiler'));
 
@@ -60,15 +66,17 @@ const AppContent = () => {
       label: 'IITM BS', 
       onClick: () => navigate('/degree') 
     },
+    // --- UPDATED PRACTICE ITEM ---
+    { 
+      icon: <Code2 size={20} />, 
+      label: 'Practice', 
+      onClick: () => navigate('/practice-arena') 
+    },
+    // -----------------------------
     { 
       icon: <Terminal size={20} />, 
       label: 'Compiler', 
       onClick: () => navigate('/compiler') 
-    },
-    { 
-      icon: <Code2 size={20} className="opacity-50" />, 
-      label: 'Upskill (Coming Soon)', 
-      onClick: undefined 
     },
     { 
       icon: <Trophy size={20} />, 
@@ -82,11 +90,21 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
+        
+        {/* Existing Routes */}
         <Route path="/practice" element={<Practice />} />
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result" element={<ExamResult />} />
+        
+        {/* Degree & IITM Specific */}
         <Route path="/degree" element={<DegreeSelection />} />
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
+        
+        {/* --- NEW PRACTICE ARENA ROUTES --- */}
+        <Route path="/practice-arena" element={<PracticeArena />} />
+        <Route path="/practice-arena/:slug" element={<PracticeSolver />} />
+        {/* -------------------------------- */}
+
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/compiler" element={<Compiler />} />
         <Route path="/docs" element={<Documentation />} />
