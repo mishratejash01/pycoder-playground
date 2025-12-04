@@ -1,7 +1,3 @@
-{
-type: uploaded file
-fileName: mishratejash01/pycoder-playground/pycoder-playground-605e6c91abc38ad97cc337e45bbc6a57e65932d5/src/components/ProfileCompletion.tsx
-fullContent:
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Stepper, { Step } from '@/components/ui/stepper';
@@ -514,4 +510,3 @@ export const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
     </Sheet>
   );
 };
-}
