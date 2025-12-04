@@ -49,7 +49,7 @@ const NotFound = () => {
             Return Home
           </Button>
 
-          {/* VISIT UNKNOWN IITIANS BUTTON: Premium Golden Gradient */}
+          {/* VISIT CODEVO BUTTON: Premium Golden Gradient */}
           <Button 
             className={cn(
               "h-12 px-8 rounded-xl border-none text-black font-bold",
@@ -58,9 +58,9 @@ const NotFound = () => {
               "hover:opacity-90 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]",
               "transition-all duration-300"
             )}
-            onClick={() => window.open("https://unknowniitians.com", "_blank")} // Replace with actual URL
+            onClick={() => window.open("https://codevo.dev", "_blank")} 
           >
-            Visit Unknown IITians
+            Visit CodeVo
             <ExternalLink className="ml-2 h-4 w-4" />
           </Button>
 
