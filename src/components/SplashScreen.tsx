@@ -22,7 +22,7 @@ export function SplashScreen() {
           "text-[10px] md:text-xs uppercase tracking-[0.5em] font-medium",
           "animate-light-ray whitespace-nowrap"
         )}>
-          The Product of Unknown IITians
+          Where Visionaries Build the Future.
         </p>
       </div>
 
