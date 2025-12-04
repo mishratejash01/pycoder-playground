@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Slider } from '@/components/ui/slider';
 import { ArrowLeft, FileCode2, Clock, Layers, Play, BookOpen, Lock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+// Import the profile checker and sheet
+import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
 
 const QuestionSetSelection = () => {
   const { subjectId, subjectName, examType, mode } = useParams();
@@ -19,6 +21,9 @@ const QuestionSetSelection = () => {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState([10]);
   const [maxAvailable, setMaxAvailable] = useState(0);
+  
+  // Profile Sheet State
+  const [showProfileSheet, setShowProfileSheet] = useState(false);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['iitm_sets_or_topics', subjectId, examType, mode],
@@ -65,7 +70,16 @@ const QuestionSetSelection = () => {
     }
   });
 
-  const handleCardClick = (item: any) => {
+  // Intercept Card Click
+  const handleCardClick = async (item: any) => {
+    // 1. Check Profile
+    const isProfileComplete = await checkUserProfile();
+    if (!isProfileComplete) {
+      setShowProfileSheet(true);
+      return;
+    }
+
+    // 2. Proceed if valid
     if (isProctored) {
       const params = new URLSearchParams({
         iitm_subject: subjectId || '',
@@ -75,25 +89,18 @@ const QuestionSetSelection = () => {
       });
       navigate(`/exam?${params.toString()}`);
     } else {
-      // Learning Mode Configuration
       setSelectedTopic(item.id);
       const max = item.available_count || 0;
       setMaxAvailable(max);
-      
-      // Smart Default: If max available is less than 10, default to max. Otherwise 10.
       const initialCount = Math.min(10, max);
       setQuestionCount([initialCount > 0 ? initialCount : 1]);
-      
       setConfigOpen(true);
     }
   };
 
   const startPractice = () => {
     if (!selectedTopic) return;
-    
-    // Safety clamp: Ensure we never request more than available
     const finalCount = Math.min(questionCount[0], maxAvailable);
-    
     const params = new URLSearchParams({
       iitm_subject: subjectId || '',
       name: subjectName || '',
@@ -106,6 +113,10 @@ const QuestionSetSelection = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white p-6 relative overflow-hidden">
+      
+      {/* Profile Interception Sheet */}
+      <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
+
       <div className={cn("absolute top-0 right-0 w-[500px] h-[500px] blur-[120px] pointer-events-none opacity-20", isProctored ? "bg-red-600" : "bg-blue-600")} />
 
       <div className="max-w-6xl mx-auto relative z-10">
@@ -182,7 +193,7 @@ const QuestionSetSelection = () => {
               <Slider 
                 value={questionCount} 
                 onValueChange={setQuestionCount} 
-                max={maxAvailable} // Dynamically capped
+                max={maxAvailable} 
                 min={1} 
                 step={1}
                 className="py-2"
