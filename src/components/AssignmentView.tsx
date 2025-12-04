@@ -100,15 +100,22 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
-  const { data: testCases = [] } = useQuery({
+  // Consolidated Test Case Logic: Use embedded if present, otherwise fetch legacy
+  const { data: fetchedTestCases = [] } = useQuery({
     queryKey: ['testCases', assignmentId, tables.testCases],
     queryFn: async () => {
       // @ts-ignore
       const { data } = await supabase.from(tables.testCases).select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
       return data || [];
     },
-    enabled: !!assignmentId
+    // Only fetch from table if assignment is loaded AND it DOESN'T have embedded test cases
+    enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
+
+  // Merge sources: Prefer embedded, fallback to fetched
+  const testCases = (assignment?.test_cases && assignment.test_cases.length > 0) 
+    ? assignment.test_cases 
+    : fetchedTestCases;
 
   const { data: latestSubmission } = useQuery({
     queryKey: ['submission', assignmentId, tables.submissions],
