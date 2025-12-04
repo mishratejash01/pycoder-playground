@@ -142,15 +142,15 @@ const ProfileFormContent = ({ formData, setFormData, masterData, handleSubmit, o
         backButtonText="Back"
         nextButtonText="Next"
         footerClassName={mode === 'sheet' ? "pb-20" : ""}
-        // "Ask me later" button with OUTLINE styling
+        // "Ask me later" button: Unfilled (Outline) variant
         extraLeftContent={onAskLater && (
           <Button 
             variant="outline" 
             size="sm" 
-            className="text-xs h-8 border-white/10 bg-transparent text-muted-foreground hover:text-white hover:bg-white/5 hover:border-white/20"
+            className="text-xs h-9 border-white/20 bg-transparent text-muted-foreground hover:text-white hover:bg-white/5 hover:border-white/40 transition-colors"
             onClick={onAskLater}
           >
-            <Clock className="w-3 h-3 mr-1.5" /> Ask me later
+            <Clock className="w-3 h-3 mr-2" /> Ask me later
           </Button>
         )}
       >
@@ -431,7 +431,7 @@ const useProfileLogic = (onComplete: () => void) => {
   return { formData, setFormData, masterData, handleSubmit, init };
 };
 
-// --- 1. Dialog Version (For Login) ---
+// --- 1. Dialog Version (Deprecated for Login, but kept for manual triggering) ---
 export const ProfileCompletion = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { formData, setFormData, masterData, handleSubmit, init } = useProfileLogic(() => setIsOpen(false));
@@ -502,7 +502,7 @@ export const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
             setFormData={setFormData} 
             masterData={masterData} 
             handleSubmit={handleSubmit}
-            // NO "Ask me later" here because it is mandatory for exams
+            // NO "Ask me later" here because it is mandatory
             mode="sheet"
           />
         </div>
