@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { CodeEditor } from '@/components/CodeEditor';
-import { Play, Send, CheckCircle2, XCircle, ArrowLeft, Loader2, List, Code2, AlertCircle } from 'lucide-react';
+import { Play, Send, CheckCircle2, XCircle, ArrowLeft, Loader2, List, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,7 +26,7 @@ export default function PracticeSolver() {
   const [outputResult, setOutputResult] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // 1. Fetch Problem Details
+  // 1. Fetch Problem (Includes embedded test cases now)
   const { data: problem, isLoading: problemLoading } = useQuery({
     queryKey: ['practice_problem', slug],
     queryFn: async () => {
@@ -36,16 +36,8 @@ export default function PracticeSolver() {
     }
   });
 
-  // 2. Fetch Test Cases
-  const { data: testCases = [] } = useQuery({
-    queryKey: ['practice_tests', problem?.id],
-    queryFn: async () => {
-      if (!problem?.id) return [];
-      const { data } = await supabase.from('practice_test_cases').select('*').eq('problem_id', problem.id);
-      return data || [];
-    },
-    enabled: !!problem?.id
-  });
+  // Parse test cases from the JSON column
+  const testCases = (problem?.test_cases as any[]) || [];
 
   // Set initial code based on template
   useEffect(() => {
@@ -62,7 +54,7 @@ export default function PracticeSolver() {
     setOutputResult({ status: 'running' });
     
     // Quick Run: Execute against the first public test case
-    const sampleTest = testCases.find(t => t.is_public) || testCases[0];
+    const sampleTest = testCases.find((t: any) => t.is_public) || testCases[0];
     
     if (!sampleTest) {
       setOutputResult({ status: 'error', message: 'No test cases available for this problem.' });
@@ -72,17 +64,14 @@ export default function PracticeSolver() {
     // Prepare code: In python we might need to append the function call
     let codeToRun = code;
     if (activeLanguage === 'python' && sampleTest.input) {
-       // Very basic heuristic to append call for testing purposes
-       // In a real env, you would have a more robust driver code generator
-       codeToRun += `\n\n# Auto-generated driver for testing\nprint(Solution().twoSum(${sampleTest.input.replace('nums = ', '').replace(', target = ', ', ')}))`;
+       codeToRun += `\n\n# Auto-generated driver for testing\ntry:\n    if 'Solution' in locals():\n        print(Solution().twoSum(${sampleTest.input.replace('nums = ', '').replace(', target = ', ', ')}))\n    elif 'twoSum' in locals():\n        print(twoSum(${sampleTest.input.replace('nums = ', '').replace(', target = ', ', ')}))\nexcept Exception as e:\n    print(e)`;
     }
 
     const result = await executeCode(activeLanguage, codeToRun, "");
     
     const cleanOutput = result.output?.trim();
-    const cleanExpected = sampleTest.expected_output?.trim();
+    const cleanExpected = sampleTest.output?.trim(); // JSON key is "output"
     
-    // Basic string comparison (imperfect but functional for demo)
     const passed = cleanOutput === cleanExpected || (cleanOutput && cleanOutput.includes(cleanExpected));
 
     setOutputResult({
@@ -107,15 +96,14 @@ export default function PracticeSolver() {
 
     setSubmitting(true);
     
-    // Simulate submission delay
+    // Simulate submission (In real app, you'd run against all test cases here)
     setTimeout(async () => {
-      // Create submission record
       await supabase.from('practice_submissions').insert({
         problem_id: problem.id,
         user_id: user.id,
         language: activeLanguage,
         code: code,
-        status: 'Accepted', // Mocking success for demo
+        status: 'Accepted',
         passed_cases: testCases.length,
         total_cases: testCases.length,
         submitted_at: new Date().toISOString()
@@ -201,12 +189,11 @@ export default function PracticeSolver() {
                     {testCases.filter((t: any) => t.is_public).length > 0 && (
                       <div className="space-y-4 pt-4 border-t border-white/10">
                         {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
-                          <div key={t.id} className="space-y-2">
+                          <div key={i} className="space-y-2">
                             <p className="text-sm font-bold text-white">Example {i + 1}:</p>
                             <div className="bg-[#1a1a1c] rounded-lg p-3 border-l-2 border-white/20 text-sm font-mono space-y-1.5">
                               <div><span className="text-muted-foreground select-none">Input:</span> {t.input}</div>
-                              <div><span className="text-muted-foreground select-none">Output:</span> {t.expected_output}</div>
-                              {t.explanation && <div><span className="text-muted-foreground select-none">Explanation:</span> {t.explanation}</div>}
+                              <div><span className="text-muted-foreground select-none">Output:</span> {t.output}</div>
                             </div>
                           </div>
                         ))}
