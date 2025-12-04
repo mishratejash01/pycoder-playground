@@ -1,7 +1,3 @@
-{
-type: uploaded file
-fileName: mishratejash01/pycoder-playground/pycoder-playground-605e6c91abc38ad97cc337e45bbc6a57e65932d5/src/pages/QuestionSetSelection.tsx
-fullContent:
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
