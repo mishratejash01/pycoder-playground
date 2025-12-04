@@ -1,63 +1,64 @@
+/* src/components/ui/stepper.css */
+
 .outer-container {
   display: flex;
-  min-height: 100%;
-  flex: 1 1 0%;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-@media (min-width: 640px) {
-  .outer-container {
-    aspect-ratio: 4 / 3;
-  }
-}
-
-@media (min-width: 768px) {
-  .outer-container {
-    aspect-ratio: 2 / 1;
-  }
+  width: 100%;
+  height: 100%;
 }
 
 .step-circle-container {
-  margin-left: auto;
-  margin-right: auto;
   width: 100%;
-  border-radius: 2rem;
-  background-color: #0c0c0e;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  display: flex;
+  flex-direction: column;
+  /* Removed fixed aspect ratios for responsiveness */
 }
 
 .step-indicator-row {
   display: flex;
   width: 100%;
   align-items: center;
-  padding: 2rem;
+  justify-content: space-between;
+  padding: 1.5rem; /* Default padding */
+  position: relative;
+  z-index: 20;
+}
+
+@media (min-width: 640px) {
+  .step-indicator-row {
+    padding: 2rem 3rem;
+  }
 }
 
 .step-content-default {
   position: relative;
-  overflow: visible; /* Changed from hidden to visible for form tooltips */
-  padding: 0 2rem;
-  min-height: 300px;
+  width: 100%;
+  flex: 1;
+  padding: 0 1.5rem;
 }
 
-.step-default {
-  /* padding-left: 2rem; */
-  /* padding-right: 2rem; */
-  width: 100%;
+@media (min-width: 640px) {
+  .step-content-default {
+    padding: 0 3rem;
+  }
 }
 
 .footer-container {
-  padding-left: 2rem;
-  padding-right: 2rem;
-  padding-bottom: 2rem;
+  padding: 1.5rem;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (min-width: 640px) {
+  .footer-container {
+    padding: 1.5rem 3rem;
+  }
 }
 
 .footer-nav {
-  margin-top: 2.5rem;
   display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .footer-nav.spread {
@@ -68,58 +69,68 @@
   justify-content: flex-end;
 }
 
+/* Updated Buttons for Premium Look */
 .back-button {
-  transition: all 350ms;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.5rem;
-  color: #a3a3a3;
+  transition: all 0.2s ease;
+  border-radius: 0.75rem;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #9ca3af; /* text-gray-400 */
   cursor: pointer;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: transparent;
+  border: 1px solid transparent;
 }
 
 .back-button:hover {
   color: #fff;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .back-button.inactive {
+  opacity: 0;
   pointer-events: none;
-  opacity: 0.5;
-  color: #a3a3a3;
 }
 
 .next-button {
-  transition: all 350ms;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  background-color: #7c3aed; /* Primary Purple */
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, #a855f7 100%);
   color: #fff;
   font-weight: 600;
-  letter-spacing: -0.025em;
-  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  padding: 0.6rem 2rem;
   cursor: pointer;
-  border: none;
-  box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
 }
 
 .next-button:hover {
-  background-color: #6d28d9;
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+  filter: brightness(1.1);
 }
 
 .next-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background-color: #4c1d95;
+  transform: none;
+  box-shadow: none;
+  background: #27272a;
 }
 
+/* Indicators */
 .step-indicator {
   position: relative;
   cursor: pointer;
   outline: none;
+  z-index: 10;
+  border-radius: 9999px;
+  background-color: #0c0c0e; /* Match dialog bg to hide line behind */
+  padding: 0 4px; /* Space around circle to break the line */
 }
 
 .step-indicator-inner {
@@ -129,30 +140,22 @@
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  font-weight: 600;
-  font-family: monospace;
-}
-
-.active-dot {
-  height: 0.75rem;
-  width: 0.75rem;
-  border-radius: 9999px;
-  background-color: #fff;
-}
-
-.step-number {
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
   font-size: 0.875rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
+/* Connectors */
 .step-connector {
   position: relative;
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-  height: 2px;
   flex: 1;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.08);
+  margin: 0 0.5rem;
+  border-radius: 1px;
   overflow: hidden;
-  border-radius: 0.25rem;
-  background-color: rgba(255,255,255,0.1);
 }
 
 .step-connector-inner {
@@ -160,10 +163,7 @@
   left: 0;
   top: 0;
   height: 100%;
-}
-
-.check-icon {
-  height: 1.25rem;
-  width: 1.25rem;
-  color: #fff;
+  width: 0%;
+  background: linear-gradient(90deg, hsl(var(--primary)), #a855f7);
+  transition: width 0.5s ease-out;
 }
