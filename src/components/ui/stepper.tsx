@@ -32,8 +32,8 @@ export default function Stepper({
   footerClassName = '',
   backButtonProps = {},
   nextButtonProps = {},
-  backButtonText = 'BACK',
-  nextButtonText = 'NEXT_STEP',
+  backButtonText = 'Back',
+  nextButtonText = 'Next',
   disableStepIndicators = false,
   isNextDisabled = false,
   ...rest
@@ -118,7 +118,8 @@ export default function Stepper({
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              // Updated to "tween" for a more formal, less bouncy slide
+              transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
               className="w-full h-full"
             >
               {stepsArray[currentStep - 1]}
@@ -135,7 +136,6 @@ export default function Stepper({
                 className="back-button group flex items-center gap-2"
                 {...backButtonProps}
               >
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 {backButtonText}
               </button>
             )}
@@ -147,9 +147,9 @@ export default function Stepper({
               {...nextButtonProps}
             >
               {isLastStep ? (
-                <>EXECUTE <Terminal className="w-4 h-4 ml-1" /></>
+                <>Submit <Check className="w-4 h-4 ml-1" /></>
               ) : (
-                <>{nextButtonText} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                <>{nextButtonText} <ChevronRight className="w-4 h-4" /></>
               )}
             </button>
           </div>
@@ -162,21 +162,18 @@ export default function Stepper({
 // --- Animation Variants ---
 const slideVariants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 50 : -50,
+    x: direction > 0 ? 20 : -20, // Reduced distance for subtle movement
     opacity: 0,
-    filter: 'blur(4px)',
   }),
   center: {
     zIndex: 1,
     x: 0,
     opacity: 1,
-    filter: 'blur(0px)',
   },
   exit: (direction: number) => ({
     zIndex: 0,
-    x: direction < 0 ? 50 : -50,
+    x: direction < 0 ? 20 : -20,
     opacity: 0,
-    filter: 'blur(4px)',
   })
 };
 
@@ -200,37 +197,32 @@ function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators }
     <motion.div 
       onClick={() => !disableStepIndicators && onClickStep(step)} 
       className="step-indicator"
-      whileHover={status === 'complete' ? { scale: 1.1 } : {}}
-      whileTap={status === 'complete' ? { scale: 0.95 } : {}}
+      whileHover={{ opacity: 0.8 }}
     >
       <motion.div
         initial={false}
         animate={status}
         variants={{
           inactive: { 
-            backgroundColor: '#09090b', 
+            backgroundColor: '#050505', 
             borderColor: '#27272a', 
             color: '#52525b',
-            scale: 1 
           },
           active: { 
-            backgroundColor: '#09090b', 
-            borderColor: '#8b5cf6', 
-            color: '#8b5cf6',
-            scale: 1.2,
-            boxShadow: '0 0 15px rgba(139, 92, 246, 0.5)'
+            backgroundColor: '#050505', 
+            borderColor: '#ffffff', 
+            color: '#ffffff',
           },
           complete: { 
-            backgroundColor: '#8b5cf6', 
-            borderColor: '#8b5cf6', 
-            color: '#ffffff',
-            scale: 1 
+            backgroundColor: '#ffffff', 
+            borderColor: '#ffffff', 
+            color: '#000000',
           }
         }}
         className="step-indicator-inner"
       >
         {status === 'complete' ? (
-          <Check className="w-4 h-4" strokeWidth={4} />
+          <Check className="w-4 h-4" strokeWidth={3} />
         ) : (
           <span className="step-number">{step}</span>
         )}
