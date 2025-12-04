@@ -70,7 +70,7 @@ const SearchableSelect = ({
                   key={item.value}
                   value={item.label}
                   onSelect={() => {
-                    onChange(item.value === 'Other' ? '' : item.value); // If Other, clear value to force text input
+                    onChange(item.value === 'Other' ? '' : item.value); 
                     if(item.value !== 'Other') setOpen(false);
                   }}
                   className="text-white aria-selected:bg-white/10"
@@ -142,7 +142,6 @@ export const ProfileCompletion = () => {
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
       if (profile) {
-        // Check mandatory fields
         const missingFields = !profile.full_name || !profile.username || !profile.contact_no || !profile.institute_name;
         
         if (missingFields) {
@@ -151,7 +150,6 @@ export const ProfileCompletion = () => {
             id: user.id,
             full_name: profile.full_name || user.user_metadata.full_name || '',
             username: profile.username || '',
-            // Pre-fill if exists, else defaults
           }));
           setIsOpen(true);
         }
@@ -207,7 +205,6 @@ export const ProfileCompletion = () => {
     }
   };
 
-  // Validators
   const step1Valid = formData.full_name && formData.username && usernameAvailable && formData.contact_no.length >= 10;
   const step2Valid = formData.degree && formData.institute_type && formData.institute_name && formData.branch && formData.start_year && formData.end_year;
   const step3Valid = formData.country;
@@ -245,7 +242,7 @@ export const ProfileCompletion = () => {
                   <Input 
                     value={formData.full_name}
                     onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                    placeholder="John Doe"
+                    placeholder=""
                     className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
                   />
                 </div>
@@ -256,7 +253,7 @@ export const ProfileCompletion = () => {
                     <Input 
                       value={formData.username}
                       onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase().replace(/\s/g, '')})}
-                      placeholder="johndoe123"
+                      placeholder=""
                       className={cn("bg-white/5 border-white/10 text-white h-11 pr-10 focus:border-white/30", 
                         usernameAvailable === false && "border-red-500/50",
                         usernameAvailable === true && "border-green-500/50"
@@ -274,12 +271,12 @@ export const ProfileCompletion = () => {
                   <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Mobile Number</Label>
                   <div className="flex gap-2">
                     <Select value={formData.country_code} onValueChange={(v) => setFormData({...formData, country_code: v})}>
-                      <SelectTrigger className="w-[100px] bg-white/5 border-white/10 text-white h-11 focus:border-white/30">
+                      <SelectTrigger className="w-[80px] bg-white/5 border-white/10 text-white h-11 focus:border-white/30">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1a1a1c] border-white/10 text-white h-60">
                         {masterData.countries.map(c => (
-                          <SelectItem key={c.id} value={c.code || '+00'}>{c.code} {c.name}</SelectItem>
+                          <SelectItem key={c.id} value={c.code || '+00'}>{c.code}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -287,7 +284,7 @@ export const ProfileCompletion = () => {
                       type="tel"
                       value={formData.contact_no}
                       onChange={(e) => setFormData({...formData, contact_no: e.target.value})}
-                      placeholder="1234567890"
+                      placeholder=""
                       className="bg-white/5 border-white/10 text-white h-11 flex-1 focus:border-white/30"
                     />
                   </div>
@@ -307,7 +304,7 @@ export const ProfileCompletion = () => {
                   <div className="grid gap-2">
                     <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Degree Program</Label>
                     <Select value={formData.degree} onValueChange={(v) => setFormData({...formData, degree: v})}>
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="Select Degree" /></SelectTrigger>
+                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
                         {masterData.degrees.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
                       </SelectContent>
@@ -317,7 +314,7 @@ export const ProfileCompletion = () => {
                   <div className="grid gap-2">
                     <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Institute Type</Label>
                     <Select value={formData.institute_type} onValueChange={(v) => setFormData({...formData, institute_type: v})}>
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="Select Type" /></SelectTrigger>
+                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
                         {masterData.instituteTypes.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
                       </SelectContent>
@@ -331,7 +328,7 @@ export const ProfileCompletion = () => {
                     <Input 
                       value={formData.institute_name}
                       onChange={(e) => setFormData({...formData, institute_name: e.target.value})}
-                      placeholder="Type institute name"
+                      placeholder=""
                       className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
                       autoFocus
                     />
@@ -343,7 +340,7 @@ export const ProfileCompletion = () => {
                         if (!val) setIsManualInstitute(true);
                         else setFormData({...formData, institute_name: val});
                       }}
-                      placeholder="Select Institute..."
+                      placeholder="Select..."
                       customEnabled={true}
                     />
                   )}
@@ -355,7 +352,7 @@ export const ProfileCompletion = () => {
                     <Input 
                       value={formData.branch}
                       onChange={(e) => setFormData({...formData, branch: e.target.value})}
-                      placeholder="Type branch name"
+                      placeholder=""
                       className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
                     />
                   ) : (
@@ -366,7 +363,7 @@ export const ProfileCompletion = () => {
                         if (!val) setIsManualBranch(true);
                         else setFormData({...formData, branch: val});
                       }}
-                      placeholder="Select Branch..."
+                      placeholder="Select..."
                       customEnabled={true}
                     />
                   )}
@@ -376,7 +373,7 @@ export const ProfileCompletion = () => {
                   <div className="grid gap-2">
                     <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Start Year</Label>
                     <Select value={formData.start_year} onValueChange={(v) => setFormData({...formData, start_year: v})}>
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="YYYY" /></SelectTrigger>
+                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="" /></SelectTrigger>
                       <SelectContent className="bg-[#1a1a1c] border-white/10 text-white h-48">
                         {Array.from({length: 10}, (_, i) => new Date().getFullYear() - i).map(y => (
                           <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
@@ -387,7 +384,7 @@ export const ProfileCompletion = () => {
                   <div className="grid gap-2">
                     <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">End Year (Estimated)</Label>
                     <Select value={formData.end_year} onValueChange={(v) => setFormData({...formData, end_year: v})}>
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="YYYY" /></SelectTrigger>
+                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="" /></SelectTrigger>
                       <SelectContent className="bg-[#1a1a1c] border-white/10 text-white h-48">
                         {Array.from({length: 8}, (_, i) => new Date().getFullYear() + i).map(y => (
                           <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
@@ -408,7 +405,7 @@ export const ProfileCompletion = () => {
                     options={masterData.countries.map(c => ({ label: c.name, value: c.name }))}
                     value={formData.country}
                     onChange={(val) => setFormData({...formData, country: val})}
-                    placeholder="Select Country..."
+                    placeholder="Select..."
                   />
                 </div>
 
