@@ -112,6 +112,44 @@ export interface Database {
           created_at?: string
         }
       }
+      iitm_submissions: {
+        Row: {
+          id: string
+          assignment_id: string
+          user_id: string
+          code: string
+          score: number
+          public_tests_passed: number
+          public_tests_total: number
+          private_tests_passed: number
+          private_tests_total: number
+          submitted_at: string
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          user_id: string
+          code: string
+          score: number
+          public_tests_passed: number
+          public_tests_total: number
+          private_tests_passed: number
+          private_tests_total: number
+          submitted_at?: string
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          user_id?: string
+          code?: string
+          score?: number
+          public_tests_passed?: number
+          public_tests_total?: number
+          private_tests_passed?: number
+          private_tests_total?: number
+          submitted_at?: string
+        }
+      }
     }
   }
 }
