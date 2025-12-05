@@ -288,56 +288,56 @@ const DegreeSelection = () => {
             
             {/* OPTION 1: PRACTICE */}
             <div 
-              className="relative h-64 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10"
+              className="relative h-64 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e]"
               onClick={() => handleModeSelect('learning')}
             >
-              {/* Background Image: Coding Setup */}
-              <div className="absolute inset-0">
+              {/* Background Image: Graphic */}
+              <div className="absolute inset-0 flex items-center justify-center p-12">
                 <img 
-                  src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop" 
+                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Practice Coding" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60"
+                  className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-                <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-blue-900/20 transition-colors" />
               </div>
 
               {/* Content */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/80 to-transparent">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
                   <Sparkles className="w-6 h-6 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-blue-400 transition-colors">Practice Mode</h3>
-                  <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-2">Learning Environment</Badge>
-                  <p className="text-gray-300 text-sm leading-relaxed max-w-xs">
-                    Unlimited attempts, instant feedback, and custom question sets to master your skills.
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">Practice Mode</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                    A chill space to experiment. No pressure, no timers—just you improving your craft one line at a time.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* OPTION 2: PROCTORED - UPDATED */}
+            {/* OPTION 2: PROCTORED */}
             <div 
-              className="relative h-64 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e]" 
+              className="relative h-64 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e]"
               onClick={() => handleModeSelect('proctored')}
             >
-              {/* Background Image: Graphic (Updated) */}
-              <div className="absolute inset-0 flex items-center justify-center p-8 md:p-22">
+              {/* Background Image: Graphic */}
+              <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12">
                 <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
+                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image%20(9).png" 
                   alt="Proctored Exam" 
                   className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
 
-              {/* Content (Text/Tags removed, added spacing for graphic, colors reset for dark bg) */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 backdrop-blur-md flex items-center justify-center mb-2">
+              {/* Content */}
+              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/80 to-transparent">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                   <ShieldCheck className="w-6 h-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-red-400 transition-colors">Proctored Mode</h3>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-red-400 transition-colors">Proctored Mode</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                    The serious zone. Strict monitoring and time limits to officially prove your skills.
+                  </p>
                 </div>
               </div>
             </div>
