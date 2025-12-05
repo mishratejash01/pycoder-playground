@@ -84,6 +84,13 @@ export default function QuestionSetSelection() {
     }
   };
 
+  const handleManualTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    if (!isNaN(val) && val >= 0) {
+      setTimeLimit([val]);
+    }
+  };
+
   return (
     <div className="h-screen bg-[#09090b] text-white flex overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
@@ -165,7 +172,8 @@ export default function QuestionSetSelection() {
 
         {/* List */}
         <ScrollArea className="flex-1 p-8 z-10">
-          <div className="max-w-4xl mx-auto space-y-4">
+          {/* UPDATED: Increased max-width to allow better space usage */}
+          <div className="max-w-[95%] mx-auto space-y-4">
             <div className="text-xs text-muted-foreground mb-4 font-mono uppercase tracking-wider">
               Available Problems ({filteredAssignments.length})
             </div>
@@ -229,61 +237,76 @@ export default function QuestionSetSelection() {
 
                     {/* Expanded Content (Timer Config) */}
                     <CollapsibleContent>
-                      <div className="border-t border-white/5 bg-[#0f0f11] p-6 animate-in slide-in-from-top-2">
+                      {/* UPDATED: Better visual container for the expanded content */}
+                      <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
                         {isProctored ? (
                            <div className="flex items-center justify-between">
-                              <div className="text-sm text-gray-400">
-                                This is a proctored exam set. Timer is fixed.
+                              <div className="text-sm text-gray-400 flex items-center gap-2">
+                                <Lock className="w-4 h-4 text-red-400" />
+                                This is a proctored exam set. Timer is fixed by administration.
                               </div>
-                              <Button onClick={() => handleStart(assignment.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                              <Button onClick={() => handleStart(assignment.id)} className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20">
                                 Start Exam
                               </Button>
                            </div>
                         ) : (
-                          <div className="flex flex-col md:flex-row gap-8 items-stretch">
-                            {/* Controls */}
-                            <div className="flex-1 space-y-6">
-                              <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-primary" /> Session Timer
-                                </label>
-                                <div className="flex items-center gap-2 bg-black/20 p-1 rounded-lg border border-white/5">
-                                  <span className={cn("text-xs px-2 cursor-pointer", noTimeLimit ? "text-white font-bold" : "text-muted-foreground")}>Free Mode</span>
+                          <div className="flex flex-col lg:flex-row gap-8 items-center justify-between">
+                            
+                            {/* Controls Area */}
+                            <div className="flex-1 w-full space-y-6">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-primary" /> 
+                                    Set Duration
+                                  </label>
+                                  
+                                  {/* UPDATED: Manual Input Field */}
+                                  <div className={cn("relative transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
+                                    <Input 
+                                      type="number" 
+                                      value={timeLimit[0]} 
+                                      onChange={handleManualTimeInput}
+                                      className="w-24 h-9 bg-black/40 border-white/10 text-center font-mono font-bold text-white focus:border-primary/50"
+                                      placeholder="Min"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">min</span>
+                                  </div>
+                                </div>
+
+                                {/* Free Mode Toggle */}
+                                <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 hover:border-white/10 transition-colors">
+                                  <span className={cn("text-xs font-medium cursor-pointer", noTimeLimit ? "text-white" : "text-muted-foreground")}>Free Mode</span>
                                   <Switch checked={noTimeLimit} onCheckedChange={setNoTimeLimit} className="data-[state=checked]:bg-primary scale-75" />
                                 </div>
                               </div>
 
-                              <div className={cn("space-y-4 transition-opacity duration-200", noTimeLimit && "opacity-30 pointer-events-none")}>
-                                <div className="flex justify-between items-end">
-                                  <span className="text-4xl font-mono font-bold text-white tracking-tighter">
-                                    {timeLimit[0]} <span className="text-sm text-muted-foreground font-sans font-normal ml-1">min</span>
-                                  </span>
-                                  <span className="text-xs text-muted-foreground mb-1">Recommended: {assignment.expected_time || 20}m</span>
-                                </div>
+                              {/* Slider */}
+                              <div className={cn("space-y-3 transition-opacity duration-200 px-1", noTimeLimit && "opacity-30 pointer-events-none")}>
                                 <Slider 
-                                  value={timeLimit} 
-                                  onValueChange={setTimeLimit} 
-                                  min={5} 
-                                  max={60} 
-                                  step={5} 
-                                  className="[&>.relative>.absolute]:bg-primary"
+                                  value={[Math.min(timeLimit[0], 30)]} 
+                                  onValueChange={(vals) => setTimeLimit(vals)} 
+                                  min={2} 
+                                  max={30} 
+                                  step={2} 
+                                  className="[&>.relative>.absolute]:bg-primary cursor-pointer py-2"
                                 />
-                                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                                  <span>5m</span>
-                                  <span>30m</span>
-                                  <span>60m</span>
+                                <div className="flex justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+                                  <span>2 min</span>
+                                  <span>15 min</span>
+                                  <span>30 min (Max Slider)</span>
                                 </div>
                               </div>
                             </div>
 
                             {/* Action Button */}
-                            <div className="flex items-end justify-end md:w-48">
+                            <div className="w-full lg:w-auto min-w-[200px]">
                                <Button 
                                  onClick={() => handleStart(assignment.id)}
-                                 className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02]"
+                                 className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] rounded-xl"
                                >
                                  {noTimeLimit ? <InfinityIcon className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
-                                 Start
+                                 Start Practice
                                </Button>
                             </div>
                           </div>
