@@ -262,16 +262,17 @@ export default function QuestionSetSelection() {
                                     Set Duration
                                   </label>
                                   
-                                  {/* UPDATED: Native arrows retained, label moved outside */}
+                                  {/* UPDATED: Input Padding added (pr-5) for visual balance of arrows */}
                                   <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
                                     <Input 
                                       type="number" 
                                       value={timeLimit[0]} 
                                       onChange={handleManualTimeInput}
-                                      // 'pr-2' ensures text doesn't hit the spinner controls
-                                      className="w-24 h-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50 pr-2"
+                                      // Added pr-5 to prevent number overlapping with the spinner arrows
+                                      className="w-24 h-10 pr-5 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50"
                                       placeholder="Min"
                                     />
+                                    {/* Moved label outside to keep it clean */}
                                     <span className="text-sm font-medium text-muted-foreground">min</span>
                                   </div>
                                 </div>
