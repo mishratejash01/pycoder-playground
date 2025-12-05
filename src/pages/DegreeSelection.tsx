@@ -323,7 +323,7 @@ const DegreeSelection = () => {
               onClick={() => handleModeSelect('proctored')}
             >
               {/* Background Image: Graphic (Updated) */}
-              <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12">
+              <div className="absolute inset-0 flex items-center justify-center p-8 md:p-22">
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
