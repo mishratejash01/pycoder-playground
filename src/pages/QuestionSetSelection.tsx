@@ -1,216 +1,302 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, FileCode2, Clock, Layers, Play, BookOpen, Lock, AlertCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { 
+  ArrowLeft, Search, Layers, Filter, Clock, Play, 
+  Infinity as InfinityIcon, ChevronRight, FileCode2, Lock 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-// Import the profile checker and sheet
 import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
 
-const QuestionSetSelection = () => {
+export default function QuestionSetSelection() {
   const { subjectId, subjectName, examType, mode } = useParams();
   const navigate = useNavigate();
   const isProctored = mode === 'proctored';
 
-  const [configOpen, setConfigOpen] = useState(false);
+  // --- STATE ---
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [questionCount, setQuestionCount] = useState([10]);
-  const [maxAvailable, setMaxAvailable] = useState(0);
+  const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   
-  // Profile Sheet State
+  // Timer Configuration State
+  const [timeLimit, setTimeLimit] = useState([20]); // Default 20 mins
+  const [noTimeLimit, setNoTimeLimit] = useState(false);
+  
   const [showProfileSheet, setShowProfileSheet] = useState(false);
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ['iitm_sets_or_topics', subjectId, examType, mode],
+  // --- DATA FETCHING ---
+  const { data: assignments = [], isLoading } = useQuery({
+    queryKey: ['iitm_assignments_list', subjectId, examType],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('iitm_assignments')
         .select('*')
         .eq('subject_id', subjectId)
-        .eq('exam_type', decodeURIComponent(examType || ''));
-
-      const { data, error } = await query;
+        .eq('exam_type', decodeURIComponent(examType || ''))
+        .order('title');
+      
       if (error) throw error;
-
-      if (isProctored) {
-        const sets = new Map();
-        data?.forEach(q => {
-          if (q.set_name && !sets.has(q.set_name)) {
-            const qsInSet = data.filter(i => i.set_name === q.set_name);
-            sets.set(q.set_name, {
-              id: q.set_name, 
-              title: q.set_name,
-              description: `Complete exam paper containing ${qsInSet.length} questions.`,
-              question_count: qsInSet.length,
-              total_time: qsInSet.reduce((acc, curr) => acc + (curr.expected_time || 0), 0)
-            });
-          }
-        });
-        return Array.from(sets.values());
-      } else {
-        const topics = new Map();
-        data?.forEach(q => {
-          const cat = q.category || 'General Practice';
-          if (!topics.has(cat)) {
-            topics.set(cat, {
-              id: cat,
-              title: cat,
-              description: `Practice questions focused on ${cat}.`,
-              available_count: data.filter(i => (i.category || 'General Practice') === cat).length
-            });
-          }
-        });
-        return Array.from(topics.values());
-      }
+      return data || [];
     }
   });
 
-  // Intercept Card Click
-  const handleCardClick = async (item: any) => {
-    // 1. Check Profile
+  // --- DERIVED DATA ---
+  const topics = useMemo(() => {
+    const uniqueTopics = new Set(assignments.map(a => a.category || 'General'));
+    return Array.from(uniqueTopics).sort();
+  }, [assignments]);
+
+  const filteredAssignments = assignments.filter(a => {
+    const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTopic = selectedTopic ? (a.category || 'General') === selectedTopic : true;
+    return matchesSearch && matchesTopic;
+  });
+
+  // --- HANDLERS ---
+  const handleStart = async (assignmentId: string) => {
     const isProfileComplete = await checkUserProfile();
     if (!isProfileComplete) {
       setShowProfileSheet(true);
       return;
     }
 
-    // 2. Proceed if valid
-    if (isProctored) {
-      const params = new URLSearchParams({
-        iitm_subject: subjectId || '',
-        name: subjectName || '',
-        type: examType || '',
-        set_name: item.id
-      });
-      navigate(`/exam?${params.toString()}`);
-    } else {
-      setSelectedTopic(item.id);
-      const max = item.available_count || 0;
-      setMaxAvailable(max);
-      const initialCount = Math.min(10, max);
-      setQuestionCount([initialCount > 0 ? initialCount : 1]);
-      setConfigOpen(true);
-    }
-  };
-
-  const startPractice = () => {
-    if (!selectedTopic) return;
-    const finalCount = Math.min(questionCount[0], maxAvailable);
     const params = new URLSearchParams({
       iitm_subject: subjectId || '',
       name: subjectName || '',
       type: examType || '',
-      category: selectedTopic,
-      limit: finalCount.toString()
+      q: assignmentId, // Load specific question
+      timer: noTimeLimit ? '0' : timeLimit[0].toString(), // Pass timer config
+      mode: mode || 'learning'
     });
-    navigate(`/practice?${params.toString()}`);
+
+    if (isProctored) {
+        navigate(`/exam?${params.toString()}`);
+    } else {
+        navigate(`/practice?${params.toString()}`);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white p-6 relative overflow-hidden">
-      
-      {/* Profile Interception Sheet */}
+    <div className="h-screen bg-[#09090b] text-white flex overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
 
-      <div className={cn("absolute top-0 right-0 w-[500px] h-[500px] blur-[120px] pointer-events-none opacity-20", isProctored ? "bg-red-600" : "bg-blue-600")} />
-
-      <div className="max-w-6xl mx-auto relative z-10">
-        <div className="mb-12 space-y-4">
-          <Button variant="ghost" onClick={() => navigate('/degree')} className="text-muted-foreground hover:text-white pl-0">
+      {/* --- LEFT SIDEBAR (TOPICS) --- */}
+      <div className="w-64 flex-shrink-0 border-r border-white/10 bg-[#0c0c0e] flex flex-col">
+        <div className="p-6 pb-4 border-b border-white/5">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-white pl-0 mb-6 -ml-2">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className={cn("px-3 py-1 text-sm border-white/10", isProctored ? "bg-red-500/10 text-red-400" : "bg-blue-500/10 text-blue-400")}>
-              {isProctored ? "Proctored" : "Learning"}
-            </Badge>
-            <Badge variant="outline" className="px-3 py-1 text-sm border-white/10 bg-white/5 text-muted-foreground">
-              {decodeURIComponent(examType || '')}
-            </Badge>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold font-neuropol tracking-wide">
-            Select {isProctored ? "Paper Set" : "Topic"}
-          </h1>
+          
+          <h2 className="flex items-center gap-2 text-sm font-bold tracking-widest text-white/60 uppercase mb-4">
+            <Layers className="w-4 h-4 text-primary" />
+            Modules
+          </h2>
+          
+          <Button
+            variant="ghost"
+            onClick={() => setSelectedTopic(null)}
+            className={cn(
+              "w-full justify-start text-sm h-10 rounded-lg font-medium transition-all mb-2",
+              selectedTopic === null 
+                ? "bg-primary/10 text-primary border border-primary/20" 
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            )}
+          >
+            <Filter className="w-4 h-4 mr-3" />
+            All Modules
+          </Button>
         </div>
 
-        {isLoading ? (
-          <div className="grid md:grid-cols-3 gap-6">{[1,2,3].map(i => <div key={i} className="h-48 bg-white/5 rounded-2xl animate-pulse"/>)}</div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((item: any) => (
-              <Card 
-                key={item.id}
+        <ScrollArea className="flex-1 px-4 py-4">
+          <div className="space-y-1">
+            {topics.map((topic) => (
+              <Button
+                key={topic}
+                variant="ghost"
+                onClick={() => setSelectedTopic(topic)}
                 className={cn(
-                  "bg-[#0c0c0e] border-white/10 transition-all duration-300 group cursor-pointer overflow-hidden relative hover:-translate-y-1 hover:shadow-2xl",
-                  isProctored ? "hover:border-red-500/30" : "hover:border-blue-500/30"
+                  "w-full justify-start text-sm h-9 px-3 rounded-md transition-all truncate",
+                  selectedTopic === topic
+                    ? "text-white bg-white/10 font-medium" 
+                    : "text-muted-foreground hover:text-white hover:bg-white/5"
                 )}
-                onClick={() => handleCardClick(item)}
               >
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center border border-white/10", isProctored ? "bg-red-500/10 text-red-400" : "bg-blue-500/10 text-blue-400")}>
-                      {isProctored ? <FileCode2 className="w-5 h-5"/> : <BookOpen className="w-5 h-5"/>}
-                    </div>
-                    {isProctored && <Lock className="w-4 h-4 text-muted-foreground" />}
-                  </div>
-                  <CardTitle className="text-xl text-white group-hover:text-white/90">{item.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">{item.description}</CardDescription>
-                </CardHeader>
-                <CardFooter className="flex justify-between items-center text-xs text-muted-foreground border-t border-white/5 pt-4 mt-2">
-                  <div className="flex items-center gap-3">
-                    {isProctored ? <><span className="flex items-center gap-1"><Clock className="w-3 h-3"/> {item.total_time}m</span><span className="flex items-center gap-1"><Layers className="w-3 h-3"/> {item.question_count} Qs</span></> : <span className="flex items-center gap-1"><Layers className="w-3 h-3"/> {item.available_count} Available</span>}
-                  </div>
-                  <div className={cn("flex items-center gap-1 font-medium transition-colors", isProctored ? "group-hover:text-red-400" : "group-hover:text-blue-400")}>
-                    {isProctored ? "Start" : "Configure"} <Play className="w-3 h-3 ml-0.5" />
-                  </div>
-                </CardFooter>
-              </Card>
+                # {topic}
+              </Button>
             ))}
           </div>
-        )}
+        </ScrollArea>
       </div>
 
-      <Dialog open={configOpen} onOpenChange={setConfigOpen}>
-        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Configure Practice</DialogTitle>
-            <DialogDescription>Topic: <span className="text-blue-400">{selectedTopic}</span></DialogDescription>
-          </DialogHeader>
-          <div className="py-6 space-y-6">
-            <div className="flex items-start gap-3 bg-white/5 p-3 rounded-lg border border-white/10">
-              <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-white">Question Availability</p>
-                <p className="text-xs text-muted-foreground">Only <span className="text-blue-400 font-bold">{maxAvailable}</span> questions are currently available for this topic.</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Select Quantity</span><span className="font-mono font-bold text-white">{questionCount[0]}</span></div>
-              <Slider 
-                value={questionCount} 
-                onValueChange={setQuestionCount} 
-                max={maxAvailable} 
-                min={1} 
-                step={1}
-                className="py-2"
-                disabled={maxAvailable === 0}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground px-1"><span>1</span><span>{maxAvailable}</span></div>
-            </div>
+      {/* --- RIGHT CONTENT (QUESTIONS) --- */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
+        {/* Decorative Background */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] pointer-events-none" />
+
+        {/* Top Header */}
+        <div className="h-16 border-b border-white/10 flex items-center justify-between px-8 bg-[#0c0c0e]/50 backdrop-blur-sm sticky top-0 z-20">
+          <div className="flex items-center gap-4">
+             <h1 className="text-lg font-bold font-neuropol text-white tracking-wide">
+               {decodeURIComponent(subjectName || '')}
+             </h1>
+             <Badge variant="outline" className={cn("border-white/10 bg-white/5", isProctored ? "text-red-400" : "text-blue-400")}>
+               {isProctored ? 'Proctored' : 'Practice'}
+             </Badge>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfigOpen(false)}>Cancel</Button>
-            <Button className="bg-blue-600 hover:bg-blue-500 text-white" onClick={startPractice} disabled={maxAvailable === 0}>Start Practice</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search problems..." 
+              className="pl-9 bg-[#1a1a1c] border-white/10 text-white h-9 focus:ring-primary/50 rounded-full text-xs"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* List */}
+        <ScrollArea className="flex-1 p-8 z-10">
+          <div className="max-w-4xl mx-auto space-y-4">
+            <div className="text-xs text-muted-foreground mb-4 font-mono uppercase tracking-wider">
+              Available Problems ({filteredAssignments.length})
+            </div>
+
+            {isLoading ? (
+              [1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)
+            ) : filteredAssignments.length === 0 ? (
+              <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
+                No problems found in this category.
+              </div>
+            ) : (
+              filteredAssignments.map((assignment) => (
+                <div key={assignment.id} className="group">
+                  <Collapsible 
+                    open={expandedQuestion === assignment.id} 
+                    onOpenChange={(isOpen) => {
+                      setExpandedQuestion(isOpen ? assignment.id : null);
+                      if (isOpen) {
+                         // Reset timer defaults when opening a new card
+                         setTimeLimit([assignment.expected_time || 20]); 
+                         setNoTimeLimit(false);
+                      }
+                    }}
+                    className={cn(
+                      "bg-[#121212] border border-white/10 rounded-xl transition-all duration-300 overflow-hidden",
+                      expandedQuestion === assignment.id ? "border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] ring-1 ring-primary/20" : "hover:border-white/20"
+                    )}
+                  >
+                    {/* Trigger Header */}
+                    <CollapsibleTrigger className="w-full text-left">
+                      <div className="p-5 flex items-center justify-between">
+                        <div className="flex items-center gap-5">
+                          <div className={cn(
+                            "w-10 h-10 rounded-lg flex items-center justify-center border transition-colors",
+                            expandedQuestion === assignment.id ? "bg-primary/20 border-primary/50 text-primary" : "bg-white/5 border-white/10 text-muted-foreground"
+                          )}>
+                            {isProctored ? <Lock className="w-5 h-5"/> : <FileCode2 className="w-5 h-5"/>}
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-gray-200 group-hover:text-white transition-colors">
+                              {assignment.title}
+                            </h3>
+                            <div className="flex items-center gap-3 mt-1.5">
+                               <Badge variant="outline" className="text-[10px] py-0 h-4 border-white/10 text-muted-foreground bg-black/40">
+                                 {assignment.category || 'General'}
+                               </Badge>
+                               {!isProctored && (
+                                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                   <Clock className="w-3 h-3" /> ~{assignment.expected_time || 20} min
+                                 </span>
+                               )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className={cn("transition-transform duration-300", expandedQuestion === assignment.id ? "rotate-90 text-primary" : "text-muted-foreground")}>
+                          <ChevronRight className="w-5 h-5" />
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
+
+                    {/* Expanded Content (Timer Config) */}
+                    <CollapsibleContent>
+                      <div className="border-t border-white/5 bg-[#0f0f11] p-6 animate-in slide-in-from-top-2">
+                        {isProctored ? (
+                           <div className="flex items-center justify-between">
+                              <div className="text-sm text-gray-400">
+                                This is a proctored exam set. Timer is fixed.
+                              </div>
+                              <Button onClick={() => handleStart(assignment.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                                Start Exam
+                              </Button>
+                           </div>
+                        ) : (
+                          <div className="flex flex-col md:flex-row gap-8 items-stretch">
+                            {/* Controls */}
+                            <div className="flex-1 space-y-6">
+                              <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-primary" /> Session Timer
+                                </label>
+                                <div className="flex items-center gap-2 bg-black/20 p-1 rounded-lg border border-white/5">
+                                  <span className={cn("text-xs px-2 cursor-pointer", noTimeLimit ? "text-white font-bold" : "text-muted-foreground")}>Free Mode</span>
+                                  <Switch checked={noTimeLimit} onCheckedChange={setNoTimeLimit} className="data-[state=checked]:bg-primary scale-75" />
+                                </div>
+                              </div>
+
+                              <div className={cn("space-y-4 transition-opacity duration-200", noTimeLimit && "opacity-30 pointer-events-none")}>
+                                <div className="flex justify-between items-end">
+                                  <span className="text-4xl font-mono font-bold text-white tracking-tighter">
+                                    {timeLimit[0]} <span className="text-sm text-muted-foreground font-sans font-normal ml-1">min</span>
+                                  </span>
+                                  <span className="text-xs text-muted-foreground mb-1">Recommended: {assignment.expected_time || 20}m</span>
+                                </div>
+                                <Slider 
+                                  value={timeLimit} 
+                                  onValueChange={setTimeLimit} 
+                                  min={5} 
+                                  max={60} 
+                                  step={5} 
+                                  className="[&>.relative>.absolute]:bg-primary"
+                                />
+                                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                                  <span>5m</span>
+                                  <span>30m</span>
+                                  <span>60m</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <div className="flex items-end justify-end md:w-48">
+                               <Button 
+                                 onClick={() => handleStart(assignment.id)}
+                                 className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02]"
+                               >
+                                 {noTimeLimit ? <InfinityIcon className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
+                                 Start
+                               </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
-};
-
-export default QuestionSetSelection;
-
+}
