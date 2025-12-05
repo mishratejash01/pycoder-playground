@@ -1,7 +1,4 @@
-{
-type: "file_update",
-fileName: "mishratejash01/pycoder-playground/pycoder-playground-main/src/pages/Exam.tsx",
-fileContent: `import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from "@/lib/utils";
 
 // --- TABLE CONFIGURATION ---
-// Updated to reflect actual DB structure from screenshot
+// Updated to reflect actual DB structure
 const IITM_TABLES = { 
   assignments: 'iitm_exams_questions', // Questions contain embedded test_cases JSON
   testCases: 'iitm_exams_questions',   // Points to same table; Component logic will use embedded JSON
@@ -204,7 +201,7 @@ const Exam = () => {
     if (newCount >= MAX_VIOLATIONS) {
       finishExam("TERMINATED: Max Violations Reached");
     } else {
-      toast({ title: "⚠️ Violation Alert", description: \`Strike \${newCount}/\${MAX_VIOLATIONS}: \${message}\`, variant: "destructive", duration: 5000 });
+      toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
       
       // Keep obscured until the user is back in safe state
       setTimeout(() => {
@@ -533,5 +530,4 @@ const Exam = () => {
   );
 };
 
-export default Exam;`
-}
+export default Exam;
