@@ -1,7 +1,4 @@
-{
-type: "file_update",
-fileName: "mishratejash01/pycoder-playground/pycoder-playground-246de1f13327eb5028899b83aed146558b7d731b/src/integrations/supabase/types.ts",
-fileContent: `export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -234,6 +231,4 @@ export type Database = {
       }
     }
   }
-}
-`
 }
