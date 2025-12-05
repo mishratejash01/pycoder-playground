@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ExamQuestion, ExamState, TestCase } from "@/types/exam";
+import { ExamQuestion, ExamState, DBTestCase, TestCase } from "@/types/exam";
 import { useNavigate } from "react-router-dom";
 
 export const useProctoredExam = (examType: string, subjectId: string) => {
@@ -24,9 +24,9 @@ export const useProctoredExam = (examType: string, subjectId: string) => {
       try {
         setLoading(true);
         
-        // 1. Fetch Questions for this specific Exam Type and Subject
+        // Fetch from the NEW table: iitm_exam_question_bank
         const { data: questionsData, error: questionsError } = await supabase
-          .from("iitm_exams_questions")
+          .from("iitm_exam_question_bank")
           .select("*")
           .eq("exam_type", examType)
           .eq("subject_id", subjectId);
@@ -43,20 +43,38 @@ export const useProctoredExam = (examType: string, subjectId: string) => {
             return;
         }
 
-        // Parse test cases from JSON
-        const parsedQuestions: ExamQuestion[] = questionsData.map((q) => ({
-          ...q,
-          test_cases: typeof q.test_cases_config === 'string' 
-            ? JSON.parse(q.test_cases_config) 
-            : (q.test_cases_config as unknown as TestCase[]) || [],
-        }));
+        // Parse and Transform Test Cases
+        const parsedQuestions: ExamQuestion[] = questionsData.map((q) => {
+          let rawTestCases: DBTestCase[] = [];
+          
+          if (typeof q.test_cases === 'string') {
+            try {
+              rawTestCases = JSON.parse(q.test_cases);
+            } catch (e) {
+              console.error("Failed to parse test_cases JSON", e);
+            }
+          } else if (Array.isArray(q.test_cases)) {
+            rawTestCases = q.test_cases as unknown as DBTestCase[];
+          }
+
+          // Transform DB format (is_public, expected_output) to UI format (hidden, output)
+          const formattedTestCases: TestCase[] = rawTestCases.map(tc => ({
+            input: tc.input,
+            output: tc.expected_output, // Map expected_output -> output
+            hidden: !tc.is_public       // Map is_public -> hidden (inverse)
+          }));
+
+          return {
+            ...q,
+            test_cases: formattedTestCases
+          };
+        });
 
         setQuestions(parsedQuestions);
         
-        // Set initial time based on the first question's expected time or a global setting
-        // Assuming expected_time is per question, or you sum them up
+        // Calculate total time (sum of expected_time for all questions, default to 60 mins if 0)
         const totalTime = parsedQuestions.reduce((acc, q) => acc + (q.expected_time || 0), 0) * 60;
-        setExamState(prev => ({ ...prev, timeLeft: totalTime || 3600 })); // Default 1 hour if 0
+        setExamState(prev => ({ ...prev, timeLeft: totalTime || 3600 }));
 
       } catch (error: any) {
         console.error("Error fetching exam:", error);
@@ -131,7 +149,7 @@ export const useProctoredExam = (examType: string, subjectId: string) => {
     }
   }, [examType, subjectId, navigate, toast]);
 
-  // Submit Question / Exam
+  // Submit Exam
   const submitExam = async () => {
     if (!examState.sessionId) return;
 
@@ -142,10 +160,8 @@ export const useProctoredExam = (examType: string, subjectId: string) => {
       let correctCount = 0;
       let attemptedCount = Object.keys(examState.answers).length;
 
-      // Simple scoring logic: You might want to move this to an Edge Function for security
+      // Calculate score based on results
       questions.forEach(q => {
-          // In a real app, validate answers against private test cases backend-side
-          // For now, we assume if they passed the public check in frontend (mock) or if we just save status
           const result = examState.results[q.id];
           if (result?.passed) {
               totalScore += q.max_score;
@@ -171,7 +187,7 @@ export const useProctoredExam = (examType: string, subjectId: string) => {
         description: `Your score: ${totalScore}`,
       });
       
-      navigate("/dashboard"); // Or results page
+      navigate("/dashboard");
 
     } catch (error) {
       console.error("Error submitting exam:", error);
@@ -195,14 +211,13 @@ export const useProctoredExam = (examType: string, subjectId: string) => {
     }));
   };
 
-  // Mock run code (Replace with your actual Python runner logic)
+  // Mock Runner - Replace with actual execution logic
   const runCode = async (code: string) => {
-      // Use your useCodeRunner logic here or trigger it
-      // For now, this just updates the result state to simulate a pass for demo
       const currentQ = questions[examState.currentQuestionIndex];
-      // Logic to actually run against test_cases would go here
+      // Note: In a real implementation, you would send 'code' and 'currentQ.test_cases' 
+      // to your backend/execution engine here.
       
-      // Update result mock
+      // Simulating a success for UI demonstration
       setExamState(prev => ({
           ...prev,
           results: {
@@ -210,7 +225,7 @@ export const useProctoredExam = (examType: string, subjectId: string) => {
               [currentQ.id]: { passed: true, score: currentQ.max_score }
           }
       }));
-      return { success: true, output: "Passed" };
+      return { success: true, output: "Code execution simulation: Passed" };
   };
 
   return {
