@@ -16,9 +16,16 @@ interface AssignmentSidebarProps {
   onSelect: (id: string) => void;
   questionStatuses: Record<string, QuestionStatus>;
   preLoadedAssignments?: Assignment[];
+  flatList?: boolean; // New Prop to control display mode
 }
 
-export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preLoadedAssignments = [] }: AssignmentSidebarProps) => {
+export const AssignmentSidebar = ({ 
+  selectedId, 
+  onSelect, 
+  questionStatuses, 
+  preLoadedAssignments = [],
+  flatList = false
+}: AssignmentSidebarProps) => {
 
   // Group Assignments by Category
   const groupedAssignments = useMemo(() => {
@@ -35,13 +42,11 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
 
   const [openItem, setOpenItem] = useState<string>("");
 
-  // Effect: When selectedId changes or loads, find its category and open ONLY that category
   useEffect(() => {
     if (selectedId && preLoadedAssignments.length > 0) {
       const assignment = preLoadedAssignments.find(a => a.id === selectedId);
       if (assignment) {
         const category = assignment.category || "General Questions";
-        // Check if currently open item is different to avoid redundant updates
         setOpenItem(prev => (prev !== category ? category : prev));
       }
     }
@@ -82,43 +87,65 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
 
       <ScrollArea className="flex-1">
         <div className="p-2">
-          <Accordion 
-            type="single" 
-            collapsible
-            value={openItem}
-            onValueChange={setOpenItem}
-            className="w-full space-y-2"
-          >
-            {Object.entries(groupedAssignments).map(([category, items]) => (
-              <AccordionItem key={category} value={category} className="border border-white/5 rounded-lg bg-white/5 overflow-hidden">
-                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-white/5 text-sm font-medium text-white/90 data-[state=open]:text-primary">
-                  <div className="flex items-center gap-2">
-                     <span className="uppercase tracking-wider text-xs opacity-70 font-bold">{category}</span>
-                     <span className="bg-black/40 text-[10px] px-1.5 rounded-full text-muted-foreground border border-white/10">{items.length}</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="p-3 bg-black/20">
-                  <div className="grid grid-cols-4 gap-2">
-                    {items.map((assignment, idx) => (
-                      <button
-                        key={assignment.id}
-                        onClick={() => onSelect(assignment.id)}
-                        className={cn(
-                          "aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 border transition-all duration-200 relative group",
-                          getStatusColor(assignment.id),
-                          selectedId === assignment.id && "ring-1 ring-primary ring-offset-1 ring-offset-black bg-primary/10 border-primary/50 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
-                        )}
-                        title={assignment.title}
-                      >
-                        <span className="text-xs font-bold font-mono">{idx + 1}</span>
-                        {getStatusIcon(assignment.id)}
-                      </button>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          {flatList ? (
+            // --- FLAT LIST VIEW (For Practice Single Question) ---
+            <div className="grid grid-cols-4 gap-2">
+              {preLoadedAssignments.map((assignment, idx) => (
+                <button
+                  key={assignment.id}
+                  onClick={() => onSelect(assignment.id)}
+                  className={cn(
+                    "aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 border transition-all duration-200 relative group",
+                    getStatusColor(assignment.id),
+                    selectedId === assignment.id && "ring-1 ring-primary ring-offset-1 ring-offset-black bg-primary/10 border-primary/50 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
+                  )}
+                  title={assignment.title}
+                >
+                  <span className="text-xs font-bold font-mono">{idx + 1}</span>
+                  {getStatusIcon(assignment.id)}
+                </button>
+              ))}
+            </div>
+          ) : (
+            // --- ACCORDION VIEW (For Proctored Exam) ---
+            <Accordion 
+              type="single" 
+              collapsible
+              value={openItem} 
+              onValueChange={(val) => setOpenItem(val ? val : '')}
+              className="w-full space-y-2"
+            >
+              {Object.entries(groupedAssignments).map(([category, items]) => (
+                <AccordionItem key={category} value={category} className="border border-white/5 rounded-lg bg-white/5 overflow-hidden">
+                  <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-white/5 text-sm font-medium text-white/90 data-[state=open]:text-primary">
+                    <div className="flex items-center gap-2">
+                       <span className="uppercase tracking-wider text-xs opacity-70 font-bold">{category}</span>
+                       <span className="bg-black/40 text-[10px] px-1.5 rounded-full text-muted-foreground border border-white/10">{items.length}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="p-3 bg-black/20">
+                    <div className="grid grid-cols-4 gap-2">
+                      {items.map((assignment, idx) => (
+                        <button
+                          key={assignment.id}
+                          onClick={() => onSelect(assignment.id)}
+                          className={cn(
+                            "aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 border transition-all duration-200 relative group",
+                            getStatusColor(assignment.id),
+                            selectedId === assignment.id && "ring-1 ring-primary ring-offset-1 ring-offset-black bg-primary/10 border-primary/50 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
+                          )}
+                          title={assignment.title}
+                        >
+                          <span className="text-xs font-bold font-mono">{idx + 1}</span>
+                          {getStatusIcon(assignment.id)}
+                        </button>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
         </div>
       </ScrollArea>
     </div>
