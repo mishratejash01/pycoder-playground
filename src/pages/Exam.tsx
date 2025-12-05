@@ -1,4 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+{
+type: "file_update",
+fileName: "mishratejash01/pycoder-playground/pycoder-playground-246de1f13327eb5028899b83aed146558b7d731b/src/pages/Exam.tsx",
+fileContent: `import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,8 +15,12 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-// Table Maps
-const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
+// Table Maps - UPDATED to use new questions table
+const IITM_TABLES = { 
+  assignments: 'iitm_exams_questions', 
+  testCases: 'iitm_test_cases', 
+  submissions: 'iitm_submissions' 
+};
 const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
 
 interface QuestionMetrics {
@@ -185,7 +192,7 @@ const Exam = () => {
     if (newCount >= MAX_VIOLATIONS) {
       finishExam("TERMINATED: Max Violations Reached");
     } else {
-      toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
+      toast({ title: "⚠️ Violation Alert", description: \`Strike \${newCount}/\${MAX_VIOLATIONS}: \${message}\`, variant: "destructive", duration: 5000 });
       
       // Keep obscured until the user is back in safe state
       setTimeout(() => {
@@ -515,3 +522,5 @@ const Exam = () => {
 };
 
 export default Exam;
+`
+}
