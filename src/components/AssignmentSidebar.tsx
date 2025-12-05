@@ -33,8 +33,16 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
     return groups;
   }, [preLoadedAssignments]);
 
-  // Generate a key string based on categories to force re-render when data loads
-  const categoryKeys = Object.keys(groupedAssignments).join(',');
+  // Determine the default category to open based on selected assignment
+  const defaultCategory = useMemo(() => {
+    if (!selectedId || !preLoadedAssignments.length) return undefined;
+    const assignment = preLoadedAssignments.find(a => a.id === selectedId);
+    return assignment?.category || "General Questions";
+  }, [selectedId, preLoadedAssignments]);
+
+  // Generate a key string based on categories to force re-render when data/selection changes
+  // Adding defaultCategory to key ensures accordion resets if we jump to a different question externally
+  const categoryKeys = Object.keys(groupedAssignments).join(',') + (defaultCategory || '');
 
   const getStatusColor = (id: string) => {
     const status = questionStatuses[id] || 'not-visited';
@@ -74,8 +82,9 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
           {/* Key added here to force open state update */}
           <Accordion 
             key={categoryKeys} 
-            type="multiple" 
-            defaultValue={Object.keys(groupedAssignments)} 
+            type="single" // Changed from "multiple" to "single" to reduce clutter
+            collapsible
+            defaultValue={defaultCategory} // Only open the relevant category by default
             className="w-full space-y-2"
           >
             {Object.entries(groupedAssignments).map(([category, items]) => (
