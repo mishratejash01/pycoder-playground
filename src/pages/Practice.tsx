@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Timer, LogOut, LayoutGrid, Home, Infinity as InfinityIcon } from 'lucide-react';
+import { Timer, LayoutGrid, Home, Infinity as InfinityIcon, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -25,6 +25,7 @@ const Practice = () => {
   const categoryParam = searchParams.get('category');
   const limitParam = searchParams.get('limit');
   const selectedAssignmentId = searchParams.get('q');
+  const mode = searchParams.get('mode'); // Read mode from URL
   
   // Timer Params
   const timerParam = parseInt(searchParams.get('timer') || '0');
@@ -40,30 +41,21 @@ const Practice = () => {
 
   // --- QUERY ---
   const { data: assignments = [] } = useQuery({
-    // Added selectedAssignmentId to queryKey to trigger refetch if URL changes
-    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, selectedAssignmentId], 
+    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, mode], 
     queryFn: async () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('id, title, category, expected_time');
       
-      // STRICT FILTERING: 
-      // If a specific question ID is provided in the URL ('q'), 
-      // we ONLY fetch that single question. We ignore other category filters.
-      if (selectedAssignmentId) {
+      // Note: We always fetch all assignments for the subject/category 
+      // so we can support the "Next" button logic even if the sidebar hides them visually.
+      if (iitmSubjectId) {
         // @ts-ignore
-        query = query.eq('id', selectedAssignmentId);
-      } else {
-        // Only apply broad filters if no specific question is selected
-        if (iitmSubjectId) {
+        query = query.eq('subject_id', iitmSubjectId);
+        if (categoryParam) {
           // @ts-ignore
-          query = query.eq('subject_id', iitmSubjectId);
-          if (categoryParam) {
-            // @ts-ignore
-            query = query.eq('category', categoryParam);
-          }
+          query = query.eq('category', categoryParam);
         }
       }
-
       const { data, error } = await query;
       if (error) throw error;
       
@@ -72,7 +64,7 @@ const Practice = () => {
     },
   });
 
-  // Ensure 'q' param is set initially if list is loaded (fallback logic)
+  // Ensure 'q' param is set initially if list is loaded
   useEffect(() => {
     if (assignments.length > 0 && !selectedAssignmentId) {
       setSearchParams(prev => {
@@ -93,22 +85,17 @@ const Practice = () => {
 
   const formatTimer = () => {
     if (!hasTimeLimit) {
-      // Free Mode: Count Up
       const m = Math.floor(elapsedTime / 60);
       const s = elapsedTime % 60;
       return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
-
-    // Timed Mode logic
     const remaining = timeLimitSeconds - elapsedTime;
     
     if (remaining >= 0) {
-      // Normal Countdown
       const m = Math.floor(remaining / 60);
       const s = remaining % 60;
       return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     } else {
-      // Overtime: Count Up (Red)
       const overtime = Math.abs(remaining);
       const m = Math.floor(overtime / 60);
       const s = overtime % 60;
@@ -130,8 +117,26 @@ const Practice = () => {
     }
   };
 
+  const handleNextQuestion = () => {
+    if (!assignments.length) return;
+    const currentIndex = assignments.findIndex((a: any) => a.id === selectedAssignmentId);
+    if (currentIndex !== -1 && currentIndex < assignments.length - 1) {
+      const nextId = assignments[currentIndex + 1].id;
+      handleQuestionSelect(nextId);
+    } else {
+      toast({ description: "You are on the last question.", duration: 2000 });
+    }
+  };
+
   const handleExitEnvironment = () => setIsExitDialogOpen(true);
   const confirmExit = () => { sessionStorage.clear(); navigate('/'); };
+
+  // --- SIDEBAR FILTERING LOGIC ---
+  // If NOT Proctored (i.e. Practice), only show the currently selected question in the sidebar.
+  // If Proctored, show all questions in the sidebar.
+  const sidebarAssignments = (mode === 'proctored') 
+    ? assignments 
+    : assignments.filter((a: any) => a.id === selectedAssignmentId);
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden selection:bg-primary/20">
@@ -141,8 +146,7 @@ const Practice = () => {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
             <LayoutGrid className="w-4 h-4 text-primary" />
             <h1 className="text-sm font-bold tracking-tight text-primary hidden sm:block">
-              {/* Show title of the single assignment if strictly filtered, otherwise generic */}
-              {assignments.length === 1 ? 'Practice Session' : (categoryParam ? `${decodeURIComponent(categoryParam)} Practice` : 'Practice Session')}
+              {mode === 'proctored' ? 'Proctored Exam' : 'Practice Session'}
             </h1>
           </div>
         </div>
@@ -160,7 +164,15 @@ const Practice = () => {
             {isOvertime && <span className="text-[10px] uppercase font-sans tracking-wide ml-1">Overtime</span>}
           </div>
 
-          <Button variant="outline" size="sm" onClick={handleExitEnvironment} className="gap-2 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/10"><LogOut className="w-4 h-4" /> Exit</Button>
+          {/* NEXT BUTTON (Replaces Exit) */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleNextQuestion} 
+            className="gap-2 border-white/10 bg-white/5 text-white hover:bg-white/10"
+          >
+            Next <ArrowRight className="w-4 h-4" />
+          </Button>
         </div>
       </header>
 
@@ -171,7 +183,7 @@ const Practice = () => {
               selectedId={selectedAssignmentId}
               onSelect={handleQuestionSelect}
               questionStatuses={questionStatuses}
-              preLoadedAssignments={assignments as any} 
+              preLoadedAssignments={sidebarAssignments as any} // Pass filtered list based on mode
             />
           </ResizablePanel>
           <ResizableHandle withHandle className="bg-white/5 hover:bg-primary/50 transition-colors w-1" />
