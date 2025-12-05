@@ -86,6 +86,7 @@ export default function QuestionSetSelection() {
 
   const handleManualTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
+    // Allow any number input, odd or even
     if (!isNaN(val) && val >= 0) {
       setTimeLimit([val]);
     }
@@ -261,17 +262,16 @@ export default function QuestionSetSelection() {
                                     Set Duration
                                   </label>
                                   
-                                  {/* UPDATED: Input with separate "min" label to avoid overlap */}
+                                  {/* UPDATED: Native arrows retained, label moved outside */}
                                   <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
                                     <Input 
                                       type="number" 
                                       value={timeLimit[0]} 
                                       onChange={handleManualTimeInput}
-                                      // Removed no-spinner class to bring back arrows
-                                      className="w-24 h-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50"
+                                      // 'pr-2' ensures text doesn't hit the spinner controls
+                                      className="w-24 h-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50 pr-2"
                                       placeholder="Min"
                                     />
-                                    {/* Moved label outside */}
                                     <span className="text-sm font-medium text-muted-foreground">min</span>
                                   </div>
                                 </div>
