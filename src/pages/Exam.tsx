@@ -14,10 +14,9 @@ import { cn } from "@/lib/utils";
 import { useProctoredExam } from '@/hooks/useProctoredExam';
 
 // --- TABLE CONFIGURATION ---
-// UPDATED: Pointing to the new Question Bank table
 const IITM_TABLES = { 
-  assignments: 'iitm_exam_question_bank', 
-  testCases: 'iitm_exam_question_bank', // Test cases are embedded in the same table now
+  assignments: 'iitm_exam_question_bank', // NEW TABLE
+  testCases: 'iitm_exam_question_bank',   // Test cases are inside the same table now
   submissions: 'iitm_submissions' 
 };
 
@@ -92,7 +91,10 @@ const Exam = () => {
       }
       
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error("Fetch Error:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -101,7 +103,7 @@ const Exam = () => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // --- Media Logic (Unchanged) ---
+  // --- Media Logic ---
   const startMediaStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true });
@@ -186,7 +188,6 @@ const Exam = () => {
     const newCount = violationCount + 1;
     setViolationCount(newCount);
 
-    // Use Proctored Hook or Standard Logic
     if (isProctored) {
         await logProctoredViolation(type, message);
     } else if (standardSessionId) {
@@ -206,7 +207,7 @@ const Exam = () => {
     }
   };
 
-  // --- Monitoring Effects (Listeners) ---
+  // --- Monitoring Effects ---
   useEffect(() => {
     if (!isExamStarted) return;
 
@@ -330,6 +331,7 @@ const Exam = () => {
         setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', assignments[0].id); return p; });
       }
     } catch (err) {
+      console.error(err);
       toast({ title: "Error", description: "Failed to start session.", variant: "destructive" });
     }
   };
