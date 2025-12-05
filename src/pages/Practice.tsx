@@ -25,9 +25,8 @@ const Practice = () => {
   const categoryParam = searchParams.get('category');
   const limitParam = searchParams.get('limit');
   const selectedAssignmentId = searchParams.get('q');
-  const mode = searchParams.get('mode'); // Read mode from URL
+  const mode = searchParams.get('mode'); 
   
-  // Timer Params
   const timerParam = parseInt(searchParams.get('timer') || '0');
   const hasTimeLimit = timerParam > 0;
   const timeLimitSeconds = timerParam * 60;
@@ -46,8 +45,7 @@ const Practice = () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('id, title, category, expected_time');
       
-      // Note: We always fetch all assignments for the subject/category 
-      // so we can support the "Next" button logic even if the sidebar hides them visually.
+      // Note: We always fetch all assignments for the context to support navigation (Next button)
       if (iitmSubjectId) {
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
@@ -64,7 +62,7 @@ const Practice = () => {
     },
   });
 
-  // Ensure 'q' param is set initially if list is loaded
+  // Ensure 'q' param is set initially
   useEffect(() => {
     if (assignments.length > 0 && !selectedAssignmentId) {
       setSearchParams(prev => {
@@ -78,7 +76,6 @@ const Practice = () => {
 
   // --- TIMER LOGIC ---
   useEffect(() => {
-    // Timer runs continuously for the session
     const interval = setInterval(() => setElapsedTime((prev) => prev + 1), 1000);
     return () => clearInterval(interval);
   }, []);
@@ -90,7 +87,6 @@ const Practice = () => {
       return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
     const remaining = timeLimitSeconds - elapsedTime;
-    
     if (remaining >= 0) {
       const m = Math.floor(remaining / 60);
       const s = remaining % 60;
@@ -131,9 +127,10 @@ const Practice = () => {
   const handleExitEnvironment = () => setIsExitDialogOpen(true);
   const confirmExit = () => { sessionStorage.clear(); navigate('/'); };
 
-  // --- SIDEBAR FILTERING LOGIC ---
-  // If NOT Proctored (i.e. Practice), only show the currently selected question in the sidebar.
-  // If Proctored, show all questions in the sidebar.
+  // --- SIDEBAR DATA FILTERING ---
+  // If NOT Proctored (i.e. Practice), only pass the currently selected question to the sidebar.
+  // We use flatList mode for Practice to remove accordion clutter.
+  // If Proctored, we pass all questions and use accordion mode.
   const sidebarAssignments = (mode === 'proctored') 
     ? assignments 
     : assignments.filter((a: any) => a.id === selectedAssignmentId);
@@ -152,7 +149,6 @@ const Practice = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          {/* TIMER DISPLAY */}
           <div className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold transition-all duration-500",
             isOvertime 
@@ -164,7 +160,6 @@ const Practice = () => {
             {isOvertime && <span className="text-[10px] uppercase font-sans tracking-wide ml-1">Overtime</span>}
           </div>
 
-          {/* NEXT BUTTON (Replaces Exit) */}
           <Button 
             variant="outline" 
             size="sm" 
@@ -183,7 +178,8 @@ const Practice = () => {
               selectedId={selectedAssignmentId}
               onSelect={handleQuestionSelect}
               questionStatuses={questionStatuses}
-              preLoadedAssignments={sidebarAssignments as any} // Pass filtered list based on mode
+              preLoadedAssignments={sidebarAssignments as any}
+              flatList={mode !== 'proctored'} // Enable flat list for Practice mode
             />
           </ResizablePanel>
           <ResizableHandle withHandle className="bg-white/5 hover:bg-primary/50 transition-colors w-1" />
