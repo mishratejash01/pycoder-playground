@@ -317,29 +317,27 @@ const DegreeSelection = () => {
               </div>
             </div>
 
-            {/* OPTION 2: PROCTORED */}
+            {/* OPTION 2: PROCTORED - UPDATED */}
             <div 
-              className="relative h-64 md:h-full group overflow-hidden cursor-pointer"
+              className="relative h-64 md:h-full group overflow-hidden cursor-pointer bg-white"
               onClick={() => handleModeSelect('proctored')}
             >
-              {/* Background Image: Exam/Focus */}
-              <div className="absolute inset-0">
+              {/* Background Image: Graphic */}
+              <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12">
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image%20(9).png" 
                   alt="Proctored Exam" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                <div className="absolute inset-0 bg-red-900/10 group-hover:bg-red-900/20 transition-colors" />
               </div>
 
               {/* Content */}
               <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
-                  <ShieldCheck className="w-6 h-6 text-red-400" />
+                <div className="w-12 h-12 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center mb-2">
+                  <ShieldCheck className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-red-400 transition-colors">Proctored Mode</h3>
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 group-hover:text-red-600 transition-colors">Proctored Mode</h3>
                 </div>
               </div>
             </div>
