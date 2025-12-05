@@ -322,7 +322,7 @@ const DegreeSelection = () => {
               {/* Background Image: Graphic */}
               <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12">
                 <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image%20(9).png" 
+                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
                   className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
                 />
