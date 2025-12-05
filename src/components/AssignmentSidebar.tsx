@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
@@ -33,16 +33,23 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
     return groups;
   }, [preLoadedAssignments]);
 
-  // Determine the default category to open based on selected assignment
-  const defaultCategory = useMemo(() => {
-    if (!selectedId || !preLoadedAssignments.length) return undefined;
-    const assignment = preLoadedAssignments.find(a => a.id === selectedId);
-    return assignment?.category || "General Questions";
-  }, [selectedId, preLoadedAssignments]);
+  const [openItems, setOpenItems] = useState<string[]>([]);
 
-  // Generate a key string based on categories to force re-render when data/selection changes
-  // Adding defaultCategory to key ensures accordion resets if we jump to a different question externally
-  const categoryKeys = Object.keys(groupedAssignments).join(',') + (defaultCategory || '');
+  // Effect: When selectedId changes or loads, find its category and open ONLY that category
+  useEffect(() => {
+    if (selectedId && preLoadedAssignments.length > 0) {
+      const assignment = preLoadedAssignments.find(a => a.id === selectedId);
+      if (assignment) {
+        const category = assignment.category || "General Questions";
+        // Check if already open to avoid redundant state updates (though React handles this well)
+        setOpenItems(prev => {
+          if (prev.includes(category)) return prev;
+          // Set ONLY this category to be open
+          return [category];
+        });
+      }
+    }
+  }, [selectedId, preLoadedAssignments]);
 
   const getStatusColor = (id: string) => {
     const status = questionStatuses[id] || 'not-visited';
@@ -79,12 +86,11 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
 
       <ScrollArea className="flex-1">
         <div className="p-2">
-          {/* Key added here to force open state update */}
           <Accordion 
-            key={categoryKeys} 
-            type="single" // Changed from "multiple" to "single" to reduce clutter
+            type="single" 
             collapsible
-            defaultValue={defaultCategory} // Only open the relevant category by default
+            value={openItems[0]} 
+            onValueChange={(val) => setOpenItems(val ? [val] : [])}
             className="w-full space-y-2"
           >
             {Object.entries(groupedAssignments).map(([category, items]) => (
