@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 // Table Maps
 const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
 const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
+// Proctored Table
+const PROCTORED_TABLE = 'iitm_exam_question_bank';
 
 interface QuestionMetrics {
   attempts: number;
@@ -32,8 +34,16 @@ const Exam = () => {
   const iitmSubjectId = searchParams.get('iitm_subject');
   const examType = searchParams.get('type');
   const setName = searchParams.get('set_name');
+  const mode = searchParams.get('mode');
+  const isProctored = mode === 'proctored';
   
-  const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
+  // Logic to determine which table to use
+  // If Proctored Mode is ON, we use the specific iitm_exam_question_bank
+  // Otherwise we default to normal flow tables
+  const activeTables = isProctored 
+    ? { ...IITM_TABLES, assignments: PROCTORED_TABLE } // Override assignments source
+    : (iitmSubjectId ? IITM_TABLES : STANDARD_TABLES);
+
   const SESSION_TABLE = iitmSubjectId ? 'iitm_exam_sessions' : 'exam_sessions';
 
   // --- State ---
@@ -68,16 +78,23 @@ const Exam = () => {
 
   // --- Fetch Data ---
   const { data: assignments = [] } = useQuery({
-    queryKey: ['exam_assignments', iitmSubjectId, examType, setName],
+    queryKey: ['exam_assignments', iitmSubjectId, examType, setName, mode],
     queryFn: async () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('*').order('title', { ascending: true });
-      if (iitmSubjectId) {
+      
+      if (isProctored && setName) {
+        // --- PROCTORED FETCH LOGIC ---
+        // Fetch from iitm_exam_question_bank filtered by set_name and exam_type
+        // @ts-ignore
+        query = query.eq('exam_type', decodeURIComponent(examType || '')).eq('set_name', setName);
+      } else if (iitmSubjectId) {
+        // --- PRACTICE FETCH LOGIC ---
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
         if (examType) query = query.eq('exam_type', decodeURIComponent(examType));
-        if (setName) query = query.eq('set_name', setName);
       }
+      
       const { data, error } = await query;
       if (error) throw error;
       return data;
@@ -324,6 +341,8 @@ const Exam = () => {
       
       if (assignments.length > 0) {
         setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', assignments[0].id); return p; });
+      } else {
+        toast({ title: "No Questions", description: "This set contains no questions.", variant: "destructive" });
       }
     } catch (err) {
       toast({ title: "Error", description: "Failed to start session.", variant: "destructive" });
@@ -432,7 +451,10 @@ const Exam = () => {
       <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50 relative">
         <div className="flex items-center gap-3">
            <div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20"><Lock className="w-4 h-4 text-red-500" /></div>
-           <div><div className="font-bold text-red-500">{decodeURIComponent(examType || 'Proctored')} Exam</div><div className="text-[10px] text-muted-foreground">{setName}</div></div>
+           <div>
+             <div className="font-bold text-red-500">{decodeURIComponent(examType || 'Proctored')} Exam</div>
+             {setName && <div className="text-[10px] text-muted-foreground">{setName}</div>}
+           </div>
         </div>
 
         {isExamStarted && (
