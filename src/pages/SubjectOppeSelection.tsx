@@ -8,21 +8,19 @@ const SubjectOppeSelection = () => {
   const decodedSubject = decodeURIComponent(subjectName || 'Subject');
 
   const handleSelection = (type: string) => {
-    // Navigate to the Mode Selection page with the exam type included
-    navigate(`/degree/mode/${subjectId}/${encodeURIComponent(decodedSubject)}/${type}`);
+    // Navigate to the Mode Selection page passing the specific EXAM TYPE (OPPE 1 or OPPE 2)
+    navigate(`/degree/mode/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(type)}`);
   };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      
-      {/* Background Decor */}
       <div className="absolute bottom-0 right-0 w-full h-1/2 bg-blue-500/5 blur-[120px] pointer-events-none" />
 
       <div className="z-10 w-full max-w-4xl space-y-12">
         <div className="text-center space-y-4 relative">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/degree')}
             className="absolute -top-12 left-0 md:top-0 md:left-0 text-muted-foreground hover:text-white"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
