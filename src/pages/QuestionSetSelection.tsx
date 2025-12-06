@@ -37,29 +37,27 @@ export default function QuestionSetSelection() {
   const { data: fetchedData = [], isLoading } = useQuery({
     queryKey: ['selection_data', subjectId, examType, mode],
     queryFn: async () => {
-      // Decode URL param to get "OPPE 1", "OPPE 2", etc.
       const currentExamType = decodeURIComponent(examType || '');
 
       if (isProctored) {
-        // --- PROCTORED MODE: Fetch Sets for ANY Exam Type ---
-        // Queries 'iitm_exam_question_bank' for set_name based on the exam type
+        // --- PROCTORED MODE ---
         console.log(`Fetching sets for Proctored Exam: ${currentExamType}`);
         
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
           .select('set_name')
-          .eq('exam_type', currentExamType); // Dynamic filter
+          .eq('exam_type', currentExamType); // Uses current exam type from URL
         
         if (error) {
           console.error("Error fetching sets:", error);
           throw error;
         }
         
-        // Extract and sort unique set names
+        // Extract unique sets
         const sets = Array.from(new Set(data?.map(item => item.set_name).filter(Boolean)));
         return sets.sort();
       } else {
-        // --- PRACTICE MODE: Fetch Questions ---
+        // --- PRACTICE MODE ---
         const { data, error } = await supabase
           .from('iitm_assignments')
           .select('*')
@@ -114,10 +112,8 @@ export default function QuestionSetSelection() {
     });
 
     if (isSetSelection) {
-      // PROCTORED: Pass 'set_name' (e.g., "Set 1")
       params.set('set_name', targetId);
     } else {
-      // PRACTICE: Pass 'q' (Question ID)
       params.set('q', targetId);
     }
 
@@ -189,7 +185,6 @@ export default function QuestionSetSelection() {
       <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] pointer-events-none" />
 
-        {/* Top Header */}
         <div className="h-16 border-b border-white/10 flex items-center justify-between px-8 bg-[#0c0c0e]/50 backdrop-blur-sm sticky top-0 z-20">
           <div className="flex items-center gap-4">
             {isProctored && (
@@ -216,7 +211,6 @@ export default function QuestionSetSelection() {
           </div>
         </div>
 
-        {/* List Content */}
         <ScrollArea className="flex-1 p-8 z-10">
           <div className="max-w-[95%] mx-auto space-y-4">
             <div className="text-xs text-muted-foreground mb-4 font-mono uppercase tracking-wider">
@@ -228,11 +222,10 @@ export default function QuestionSetSelection() {
             ) : filteredData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
                 {isProctored 
-                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Check DB exam_type)` 
+                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Check DB)` 
                   : "No problems found."}
               </div>
             ) : isProctored ? (
-              /* --- PROCTORED VIEW (SETS) --- */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {(filteredData as string[]).map((setName) => (
                   <Card 
@@ -258,7 +251,6 @@ export default function QuestionSetSelection() {
                 ))}
               </div>
             ) : (
-              /* --- PRACTICE VIEW (QUESTIONS) --- */
               (filteredData as any[]).map((assignment) => (
                 <div key={assignment.id} className="group">
                   <Collapsible 
@@ -298,13 +290,11 @@ export default function QuestionSetSelection() {
                             </div>
                           </div>
                         </div>
-                        
                         <div className={cn("transition-transform duration-300", expandedQuestion === assignment.id ? "rotate-90 text-primary" : "text-muted-foreground")}>
                           <ChevronRight className="w-5 h-5" />
                         </div>
                       </div>
                     </CollapsibleTrigger>
-
                     <CollapsibleContent>
                       <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
                           <div className="flex flex-col lg:flex-row gap-8 items-center justify-between">
