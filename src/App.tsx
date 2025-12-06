@@ -11,10 +11,6 @@ import ExamResult from "./pages/ExamResult";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import DegreeSelection from "./pages/DegreeSelection";
-// --- ADDED MISSING IMPORTS ---
-import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
-import SubjectModeSelection from "./pages/SubjectModeSelection";
-// -----------------------------
 import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
 import Compiler from "./pages/Compiler";
@@ -25,6 +21,10 @@ import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
+
+// --- IMPORT THE SELECTION PAGES ---
+import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
+import SubjectModeSelection from "./pages/SubjectModeSelection";
 
 const queryClient = new QueryClient();
 
@@ -76,7 +76,7 @@ const AppContent = () => {
         {/* 1. Select OPPE 1 or OPPE 2 */}
         <Route path="/degree/oppe/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
         
-        {/* 2. Select Mode (Proctored/Practice) - NEEDS :examType */}
+        {/* 2. Select Mode (Proctored/Practice) - NOTE THE :examType param */}
         <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
         
         {/* 3. Select Set (Proctored) or Questions (Practice) */}
