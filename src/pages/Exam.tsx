@@ -79,9 +79,11 @@ const Exam = () => {
 
       if (isProctored && setName) {
         // --- PROCTORED FETCH LOGIC ---
-        // Fetch from iitm_exam_question_bank filtered by set_name and exam_type
+        // Fetch from iitm_exam_question_bank filtered by set_name and exam_type AND subject_id
         // @ts-ignore
-        query = query.eq('exam_type', currentExamType).eq('set_name', setName);
+        query = query.eq('subject_id', iitmSubjectId)
+                     .eq('exam_type', currentExamType)
+                     .eq('set_name', setName);
       } else if (iitmSubjectId) {
         // --- PRACTICE FETCH LOGIC ---
         // @ts-ignore
