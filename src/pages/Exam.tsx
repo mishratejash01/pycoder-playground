@@ -47,9 +47,11 @@ const Exam = () => {
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
+  
   const [isContentObscured, setIsContentObscured] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0); 
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
