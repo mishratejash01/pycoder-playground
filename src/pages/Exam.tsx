@@ -83,16 +83,18 @@ const Exam = () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('*').order('title', { ascending: true });
       
+      const currentExamType = decodeURIComponent(examType || '');
+
       if (isProctored && setName) {
         // --- PROCTORED FETCH LOGIC ---
         // Fetch from iitm_exam_question_bank filtered by set_name and exam_type
         // @ts-ignore
-        query = query.eq('exam_type', decodeURIComponent(examType || '')).eq('set_name', setName);
+        query = query.eq('exam_type', currentExamType).eq('set_name', setName);
       } else if (iitmSubjectId) {
         // --- PRACTICE FETCH LOGIC ---
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
-        if (examType) query = query.eq('exam_type', decodeURIComponent(examType));
+        if (examType) query = query.eq('exam_type', currentExamType);
       }
       
       const { data, error } = await query;
