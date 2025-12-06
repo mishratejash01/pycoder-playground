@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Timer, LayoutGrid, Home, Infinity as InfinityIcon, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Timer, LogOut, LayoutGrid, Home, Infinity as InfinityIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -25,8 +25,8 @@ const Practice = () => {
   const categoryParam = searchParams.get('category');
   const limitParam = searchParams.get('limit');
   const selectedAssignmentId = searchParams.get('q');
-  const mode = searchParams.get('mode'); 
   
+  // Timer Params
   const timerParam = parseInt(searchParams.get('timer') || '0');
   const hasTimeLimit = timerParam > 0;
   const timeLimitSeconds = timerParam * 60;
@@ -40,20 +40,30 @@ const Practice = () => {
 
   // --- QUERY ---
   const { data: assignments = [] } = useQuery({
-    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, mode], 
+    // Added selectedAssignmentId to queryKey to trigger refetch if URL changes
+    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, selectedAssignmentId], 
     queryFn: async () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('id, title, category, expected_time');
       
-      // Note: We always fetch all assignments for the context to support navigation (Next button)
-      if (iitmSubjectId) {
+      // STRICT FILTERING: 
+      // If a specific question ID is provided in the URL ('q'), 
+      // we ONLY fetch that single question. We ignore other category filters.
+      if (selectedAssignmentId) {
         // @ts-ignore
-        query = query.eq('subject_id', iitmSubjectId);
-        if (categoryParam) {
+        query = query.eq('id', selectedAssignmentId);
+      } else {
+        // Only apply broad filters if no specific question is selected
+        if (iitmSubjectId) {
           // @ts-ignore
-          query = query.eq('category', categoryParam);
+          query = query.eq('subject_id', iitmSubjectId);
+          if (categoryParam) {
+            // @ts-ignore
+            query = query.eq('category', categoryParam);
+          }
         }
       }
+
       const { data, error } = await query;
       if (error) throw error;
       
@@ -62,7 +72,7 @@ const Practice = () => {
     },
   });
 
-  // Ensure 'q' param is set initially
+  // Ensure 'q' param is set initially if list is loaded (fallback logic)
   useEffect(() => {
     if (assignments.length > 0 && !selectedAssignmentId) {
       setSearchParams(prev => {
@@ -76,22 +86,29 @@ const Practice = () => {
 
   // --- TIMER LOGIC ---
   useEffect(() => {
+    // Timer runs continuously for the session
     const interval = setInterval(() => setElapsedTime((prev) => prev + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
   const formatTimer = () => {
     if (!hasTimeLimit) {
+      // Free Mode: Count Up
       const m = Math.floor(elapsedTime / 60);
       const s = elapsedTime % 60;
       return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
+
+    // Timed Mode logic
     const remaining = timeLimitSeconds - elapsedTime;
+    
     if (remaining >= 0) {
+      // Normal Countdown
       const m = Math.floor(remaining / 60);
       const s = remaining % 60;
       return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     } else {
+      // Overtime: Count Up (Red)
       const overtime = Math.abs(remaining);
       const m = Math.floor(overtime / 60);
       const s = overtime % 60;
@@ -113,27 +130,8 @@ const Practice = () => {
     }
   };
 
-  const handleNextQuestion = () => {
-    if (!assignments.length) return;
-    const currentIndex = assignments.findIndex((a: any) => a.id === selectedAssignmentId);
-    if (currentIndex !== -1 && currentIndex < assignments.length - 1) {
-      const nextId = assignments[currentIndex + 1].id;
-      handleQuestionSelect(nextId);
-    } else {
-      toast({ description: "You are on the last question.", duration: 2000 });
-    }
-  };
-
   const handleExitEnvironment = () => setIsExitDialogOpen(true);
   const confirmExit = () => { sessionStorage.clear(); navigate('/'); };
-
-  // --- SIDEBAR DATA FILTERING ---
-  // If NOT Proctored (i.e. Practice), only pass the currently selected question to the sidebar.
-  // We use flatList mode for Practice to remove accordion clutter.
-  // If Proctored, we pass all questions and use accordion mode.
-  const sidebarAssignments = (mode === 'proctored') 
-    ? assignments 
-    : assignments.filter((a: any) => a.id === selectedAssignmentId);
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden selection:bg-primary/20">
@@ -143,12 +141,14 @@ const Practice = () => {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
             <LayoutGrid className="w-4 h-4 text-primary" />
             <h1 className="text-sm font-bold tracking-tight text-primary hidden sm:block">
-              {mode === 'proctored' ? 'Proctored Exam' : 'Practice Session'}
+              {/* Show title of the single assignment if strictly filtered, otherwise generic */}
+              {assignments.length === 1 ? 'Practice Session' : (categoryParam ? `${decodeURIComponent(categoryParam)} Practice` : 'Practice Session')}
             </h1>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
+          {/* TIMER DISPLAY */}
           <div className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold transition-all duration-500",
             isOvertime 
@@ -160,14 +160,7 @@ const Practice = () => {
             {isOvertime && <span className="text-[10px] uppercase font-sans tracking-wide ml-1">Overtime</span>}
           </div>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleNextQuestion} 
-            className="gap-2 border-white/10 bg-white/5 text-white hover:bg-white/10"
-          >
-            Next <ArrowRight className="w-4 h-4" />
-          </Button>
+          <Button variant="outline" size="sm" onClick={handleExitEnvironment} className="gap-2 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/10"><LogOut className="w-4 h-4" /> Exit</Button>
         </div>
       </header>
 
@@ -178,8 +171,7 @@ const Practice = () => {
               selectedId={selectedAssignmentId}
               onSelect={handleQuestionSelect}
               questionStatuses={questionStatuses}
-              preLoadedAssignments={sidebarAssignments as any}
-              flatList={mode !== 'proctored'} // Enable flat list for Practice mode
+              preLoadedAssignments={assignments as any} 
             />
           </ResizablePanel>
           <ResizableHandle withHandle className="bg-white/5 hover:bg-primary/50 transition-colors w-1" />

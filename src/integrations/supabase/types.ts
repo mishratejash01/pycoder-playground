@@ -6,150 +6,140 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      iitm_exam_question_bank: {
+      assignments: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          instructions: string | null
+          deadline: string | null
+          max_score: number | null
+          category: string | null
+          created_at: string | null
+          updated_at: string | null
+          starter_code: string | null
+          expected_time: number | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          category?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          starter_code?: string | null
+          expected_time?: number | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          category?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          starter_code?: string | null
+          expected_time?: number | null
+        }
+      }
+      iitm_assignments: {
         Row: {
           id: string
           subject_id: string | null
           title: string
-          description: string | null
+          description: string
           instructions: string | null
-          exam_type: string
+          deadline: string | null
+          max_score: number | null
+          expected_time: number | null
+          starter_code: string | null
+          created_at: string | null
+          exam_type: string | null
           set_name: string | null
           category: string | null
-          max_score: number
-          expected_time: number | null
-          deadline: string | null
-          starter_code: string | null
-          test_cases: Json | null
-          created_at: string
+          test_cases: Json | null // <--- NEW COLUMN
         }
         Insert: {
           id?: string
           subject_id?: string | null
           title: string
-          description?: string | null
+          description: string
           instructions?: string | null
-          exam_type: string
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+          exam_type?: string | null
           set_name?: string | null
           category?: string | null
-          max_score?: number
-          expected_time?: number | null
-          deadline?: string | null
-          starter_code?: string | null
-          test_cases?: Json | null
-          created_at?: string
+          test_cases?: Json | null // <--- NEW COLUMN
         }
         Update: {
           id?: string
           subject_id?: string | null
           title?: string
-          description?: string | null
+          description?: string
           instructions?: string | null
-          exam_type?: string
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+          exam_type?: string | null
           set_name?: string | null
           category?: string | null
-          max_score?: number
-          expected_time?: number | null
-          deadline?: string | null
-          starter_code?: string | null
-          test_cases?: Json | null
-          created_at?: string
+          test_cases?: Json | null // <--- NEW COLUMN
         }
       }
-      iitm_exam_sessions: {
-        Row: {
-          id: string
-          user_id: string | null
-          subject_id: string | null
-          exam_type: string
-          set_name: string | null
-          status: string
-          total_score: number
-          questions_attempted: number
-          questions_correct: number
-          start_time: string | null
-          end_time: string | null
-          duration_seconds: number | null
-          violation_count: number
-          violation_logs: Json | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          subject_id?: string | null
-          exam_type: string
-          set_name?: string | null
-          status?: string
-          total_score?: number
-          questions_attempted?: number
-          questions_correct?: number
-          start_time?: string | null
-          end_time?: string | null
-          duration_seconds?: number | null
-          violation_count?: number
-          violation_logs?: Json | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          subject_id?: string | null
-          exam_type?: string
-          set_name?: string | null
-          status?: string
-          total_score?: number
-          questions_attempted?: number
-          questions_correct?: number
-          start_time?: string | null
-          end_time?: string | null
-          duration_seconds?: number | null
-          violation_count?: number
-          violation_logs?: Json | null
-          created_at?: string
-        }
-      }
-      iitm_submissions: {
+      // ... keep your other tables (submissions, exam_sessions, etc.) as they were ...
+      submissions: {
         Row: {
           id: string
           assignment_id: string
           user_id: string
           code: string
-          score: number
-          public_tests_passed: number
-          public_tests_total: number
-          private_tests_passed: number
-          private_tests_total: number
-          submitted_at: string
+          score: number | null
+          public_tests_passed: number | null
+          public_tests_total: number | null
+          private_tests_passed: number | null
+          private_tests_total: number | null
+          submitted_at: string | null
         }
         Insert: {
           id?: string
           assignment_id: string
           user_id: string
           code: string
-          score: number
-          public_tests_passed: number
-          public_tests_total: number
-          private_tests_passed: number
-          private_tests_total: number
-          submitted_at?: string
+          score?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          submitted_at?: string | null
         }
         Update: {
           id?: string
           assignment_id?: string
           user_id?: string
           code?: string
-          score?: number
-          public_tests_passed?: number
-          public_tests_total?: number
-          private_tests_passed?: number
-          private_tests_total?: number
-          submitted_at?: string
+          score?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          submitted_at?: string | null
         }
       }
+      // ... Add iitm_submissions and other tables here as needed
     }
   }
 }

@@ -6,25 +6,15 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Lock, Timer, Video, Maximize, MonitorX, EyeOff } from 'lucide-react';
+import { ShieldAlert, Lock, Timer, Video, Maximize, Mic, MonitorX, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useProctoredExam } from '@/hooks/useProctoredExam';
 
-// --- TABLE CONFIGURATION ---
-const IITM_TABLES = { 
-  assignments: 'iitm_exam_question_bank', // NEW TABLE
-  testCases: 'iitm_exam_question_bank',   // Test cases are inside the same table now
-  submissions: 'iitm_submissions' 
-};
-
-const STANDARD_TABLES = { 
-  assignments: 'assignments', 
-  testCases: 'test_cases', 
-  submissions: 'submissions' 
-};
+// Table Maps
+const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
+const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
 
 interface QuestionMetrics {
   attempts: number;
@@ -38,27 +28,27 @@ const Exam = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   
-  // URL Params
   const selectedAssignmentId = searchParams.get('q');
   const iitmSubjectId = searchParams.get('iitm_subject');
   const examType = searchParams.get('type');
   const setName = searchParams.get('set_name');
   
-  // Logic Switch: Proctored vs Standard
-  const isProctored = !!iitmSubjectId;
-  const activeTables = isProctored ? IITM_TABLES : STANDARD_TABLES;
-
-  // Hooks
-  const { startProctoredSession, logProctoredViolation, endProctoredSession, session: iitmSession } = useProctoredExam();
+  const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
+  const SESSION_TABLE = iitmSubjectId ? 'iitm_exam_sessions' : 'exam_sessions';
 
   // --- State ---
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
+  
+  // Security State
   const [isContentObscured, setIsContentObscured] = useState(false);
+  
+  // Timer & Metrics
   const [elapsedTime, setElapsedTime] = useState(0); 
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
-  const [standardSessionId, setStandardSessionId] = useState<string | null>(null); // For non-proctored
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   
@@ -82,19 +72,14 @@ const Exam = () => {
     queryFn: async () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('*').order('title', { ascending: true });
-      
-      if (isProctored) {
+      if (iitmSubjectId) {
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
         if (examType) query = query.eq('exam_type', decodeURIComponent(examType));
         if (setName) query = query.eq('set_name', setName);
       }
-      
       const { data, error } = await query;
-      if (error) {
-        console.error("Fetch Error:", error);
-        throw error;
-      }
+      if (error) throw error;
       return data;
     },
   });
@@ -112,7 +97,9 @@ const Exam = () => {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioContext = new AudioContextClass();
       
-      if (audioContext.state === 'suspended') await audioContext.resume();
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
 
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
@@ -150,10 +137,10 @@ const Exam = () => {
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   };
 
-  // --- Security Checks ---
+  // --- Strict Security Checks ---
   const checkMultipleScreens = async () => {
     try {
-      // @ts-ignore
+      // @ts-ignore - Experimental Window Management API
       if (window.getScreenDetails) {
         // @ts-ignore
         const details = await window.getScreenDetails();
@@ -166,7 +153,7 @@ const Exam = () => {
          return false;
       }
     } catch (e) {
-      console.warn("Screen detection skipped.");
+      console.warn("Screen detection skipped (permission denied or unsupported).");
     }
     return true;
   };
@@ -184,21 +171,23 @@ const Exam = () => {
   const handleViolation = async (type: string, message: string) => {
     if (!isExamStarted || isSubmitting) return;
     
+    // INSTANT BLACKOUT - Prevent Remote Viewer from seeing content
     setIsContentObscured(true);
+    
     const newCount = violationCount + 1;
     setViolationCount(newCount);
 
-    if (isProctored) {
-        await logProctoredViolation(type, message);
-    } else if (standardSessionId) {
-        // @ts-ignore
-        supabase.from('exam_sessions').update({ violation_count: newCount }).eq('id', standardSessionId).then();
+    if (sessionId) {
+      // @ts-ignore
+      supabase.from(SESSION_TABLE).update({ violation_count: newCount }).eq('id', sessionId).then();
     }
 
     if (newCount >= MAX_VIOLATIONS) {
       finishExam("TERMINATED: Max Violations Reached");
     } else {
       toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
+      
+      // Keep obscured until the user is back in safe state
       setTimeout(() => {
         if (document.fullscreenElement && document.hasFocus()) {
            setIsContentObscured(false);
@@ -214,18 +203,27 @@ const Exam = () => {
     const handleVisibility = () => { 
       if (document.hidden) handleViolation("Tab Switch", "Tab switching detected."); 
     };
+    
     const handleFullScreen = () => { 
       if (!document.fullscreenElement && !isSubmitting) finishExam("TERMINATED: Fullscreen Exited"); 
     };
+    
+    // Critical for Remote Desktop: RDP interaction often steals focus
     const handleBlur = () => {
-      handleViolation("Focus Lost", "Window lost focus.");
+      handleViolation("Focus Lost", "Window lost focus. Possible remote interaction.");
     };
+
+    // Detect "Screen Sharing" banners (which resize viewport in fullscreen)
     const handleResize = () => {
       if (document.fullscreenElement) {
         const heightDiff = window.screen.height - window.innerHeight;
-        if (heightDiff > 50) handleViolation("External Overlay", "Screen sharing or recording overlay detected.");
+        // If viewport is significantly smaller than screen height in fullscreen mode
+        if (heightDiff > 50) { 
+           handleViolation("External Overlay", "Screen sharing or recording overlay detected.");
+        }
       }
     };
+
     const handleKeys = (e: KeyboardEvent) => {
       if (e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS' || (e.altKey && e.key === 'Tab') || e.key === 'PrintScreen') {
          e.preventDefault();
@@ -254,7 +252,7 @@ const Exam = () => {
       window.removeEventListener("paste", prevent);
       window.removeEventListener("contextmenu", prevent);
     };
-  }, [isExamStarted, isSubmitting, violationCount, isProctored, standardSessionId, iitmSession?.id]);
+  }, [isExamStarted, isSubmitting, violationCount]);
 
   useEffect(() => {
     if (videoNode && mediaStream) {
@@ -287,7 +285,7 @@ const Exam = () => {
     return () => clearInterval(interval);
   }, [isExamStarted, isSubmitting]);
 
-  // --- Main Handlers ---
+  // --- Handlers ---
   const handleStartExamRequest = async () => {
     const isSingleScreen = await checkMultipleScreens();
     if (!isSingleScreen) return;
@@ -298,40 +296,36 @@ const Exam = () => {
     const fs = await enterFullScreen();
     if (!fs) { toast({ title: "Full Screen Required", variant: "destructive" }); return; }
     
-    if (audioContextRef.current?.state === 'suspended') {
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       await audioContextRef.current.resume();
     }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
+      
+      const sessionData: any = {
+        user_id: user.id,
+        status: 'in_progress',
+        start_time: new Date().toISOString()
+      };
 
-      if (isProctored && iitmSubjectId) {
-        // --- START PROCTORED SESSION ---
-        const session = await startProctoredSession(
-          user.id,
-          iitmSubjectId,
-          decodeURIComponent(examType || ''),
-          setName || 'Set 1'
-        );
-        if (!session) throw new Error("Proctored session init failed");
-      } else {
-        // --- START STANDARD SESSION ---
-        // @ts-ignore
-        const { data: session } = await supabase.from('exam_sessions').insert({
-          user_id: user.id,
-          status: 'in_progress',
-          start_time: new Date().toISOString()
-        }).select().single();
-        if (session) setStandardSessionId(session.id);
+      if (iitmSubjectId) {
+        sessionData.subject_id = iitmSubjectId;
+        sessionData.exam_type = decodeURIComponent(examType || '');
+        sessionData.set_name = setName;
       }
       
+      // @ts-ignore
+      const { data: session } = await supabase.from(SESSION_TABLE).insert(sessionData).select().single();
+      
+      if (session) setSessionId(session.id);
       setIsExamStarted(true);
+      
       if (assignments.length > 0) {
         setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', assignments[0].id); return p; });
       }
     } catch (err) {
-      console.error(err);
       toast({ title: "Error", description: "Failed to start session.", variant: "destructive" });
     }
   };
@@ -348,7 +342,7 @@ const Exam = () => {
     }));
   };
 
-  const finishExam = async (statusReason?: string) => {
+  const finishExam = (statusReason?: string) => {
     setIsSubmitting(true);
     setFinishDialogOpen(false);
     
@@ -377,43 +371,38 @@ const Exam = () => {
     const isTermination = statusReason?.includes("TERMINATED");
     const displayReason = isTermination ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null);
 
-    const stats = {
+    const resultsPayload = {
+      stats: {
         score: totalScore,
         totalScore: totalMaxScore || (assignments.length * 100),
         accuracy: accuracy,
         correct: correctCount,
         totalQuestions: assignments.length,
         attempted: qIds.length
-    };
-
-    // --- SAVE TO BACKEND ---
-    if (isProctored) {
-        await endProctoredSession(
-            isTermination ? 'terminated' : 'completed',
-            stats,
-            elapsedTime
-        );
-    } else if (standardSessionId) {
-        // @ts-ignore
-        supabase.from('exam_sessions').update({
-            status: isTermination ? 'terminated' : 'completed',
-            end_time: new Date().toISOString(),
-            duration_seconds: elapsedTime,
-            questions_attempted: qIds.length,
-            questions_correct: correctCount,
-            total_score: totalScore
-        }).eq('id', standardSessionId).then();
-    }
-    
-    const resultsPayload = {
-      stats,
+      },
       questionDetails,
       terminationReason: displayReason,
       isError: isTermination,
       totalTime: elapsedTime,
-      examMetadata: { subjectId: iitmSubjectId, examType, setName }
+      examMetadata: { 
+        subjectId: iitmSubjectId,
+        examType,
+        setName
+      }
     };
 
+    if (sessionId) {
+      // @ts-ignore
+      supabase.from(SESSION_TABLE).update({
+        status: isTermination ? 'terminated' : 'completed',
+        end_time: new Date().toISOString(),
+        duration_seconds: elapsedTime,
+        questions_attempted: qIds.length,
+        questions_correct: correctCount,
+        total_score: totalScore
+      }).eq('id', sessionId).then();
+    }
+    
     navigate('/exam/result', { state: resultsPayload });
   };
 
@@ -422,7 +411,8 @@ const Exam = () => {
   return (
     <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden relative" onContextMenu={e => e.preventDefault()}>
       
-      {/* OBSCURING OVERLAY */}
+      {/* --- CONTENT OBSCURING OVERLAY (Anti-Cheat) --- */}
+      {/* This ensures remote viewers only see THIS layer if focus is lost or sharing detected */}
       {isContentObscured && (
         <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-200 cursor-none">
           <div className="relative mb-6">
@@ -431,7 +421,7 @@ const Exam = () => {
           </div>
           <h2 className="text-4xl font-bold text-red-500 font-neuropol mb-4 tracking-widest">SECURITY LOCKOUT</h2>
           <p className="text-xl text-gray-400 max-w-lg mb-8">
-            Suspicious activity detected. The exam environment has been obscured.
+            Suspicious activity detected. The exam environment has been obscured to prevent unauthorized access, recording, or remote viewing.
           </p>
           <div className="px-6 py-3 border border-red-500/30 rounded-full bg-red-950/30 text-red-400 font-mono text-sm animate-pulse">
             RETURN FOCUS TO BROWSER TO RESUME
@@ -442,7 +432,7 @@ const Exam = () => {
       <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50 relative">
         <div className="flex items-center gap-3">
            <div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20"><Lock className="w-4 h-4 text-red-500" /></div>
-           <div><div className="font-bold text-red-500">{decodeURIComponent(examType || 'Proctored')} Exam</div><div className="text-[10px] text-muted-foreground">{setName || 'Standard'}</div></div>
+           <div><div className="font-bold text-red-500">{decodeURIComponent(examType || 'Proctored')} Exam</div><div className="text-[10px] text-muted-foreground">{setName}</div></div>
         </div>
 
         {isExamStarted && (
