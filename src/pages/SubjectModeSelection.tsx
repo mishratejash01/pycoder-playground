@@ -33,17 +33,17 @@ const SubjectModeSelection = () => {
 
   // --- FIXED NAVIGATION HANDLERS ---
   const handleProctoredClick = () => {
-    // Correctly navigate to the SET SELECTION page first
+    // Navigate to Set Selection (Proctored)
     navigate(`/degree/sets/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(decodedExamType)}/proctored`);
   };
 
   const handlePracticeClick = () => {
+    // Navigate to Question Selection (Practice)
     navigate(`/degree/sets/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(decodedExamType)}/practice`);
   };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      
       <div className="absolute top-0 left-0 w-full h-1/2 bg-primary/5 blur-[120px] pointer-events-none" />
 
       <div className="z-10 w-full max-w-5xl space-y-12">
@@ -109,7 +109,6 @@ const SubjectModeSelection = () => {
               </Button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
