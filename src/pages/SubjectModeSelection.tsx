@@ -5,14 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const SubjectModeSelection = () => {
-  // Capture examType from URL
   const { subjectId, subjectName, examType } = useParams();
   const navigate = useNavigate();
   
   const decodedSubject = decodeURIComponent(subjectName || 'Subject');
   const decodedExamType = decodeURIComponent(examType || 'OPPE 1');
 
-  // Fetch Subject Level details (Cosmetic)
+  // Fetch Subject Level details
   const { data: subjectData, isLoading } = useQuery({
     queryKey: ['subject_level_details', subjectId],
     queryFn: async () => {
@@ -31,19 +30,19 @@ const SubjectModeSelection = () => {
   // @ts-ignore
   const levelName = subjectData?.iitm_levels?.name || '...';
 
+  // --- FIXED NAVIGATION ---
   const handleProctoredClick = () => {
-    // Navigate to Set Selection with 'proctored' mode
+    // Navigate to Set Selection (Proctored)
     navigate(`/degree/sets/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(decodedExamType)}/proctored`);
   };
 
   const handlePracticeClick = () => {
-    // Navigate to Set/Question Selection with 'practice' mode
+    // Navigate to Question Selection (Practice)
     navigate(`/degree/sets/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(decodedExamType)}/practice`);
   };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      
       <div className="absolute top-0 left-0 w-full h-1/2 bg-primary/5 blur-[120px] pointer-events-none" />
 
       <div className="z-10 w-full max-w-5xl space-y-12">
@@ -69,7 +68,6 @@ const SubjectModeSelection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto">
-          
           {/* Practice Mode */}
           <div 
             className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col cursor-pointer overflow-hidden"
@@ -109,7 +107,6 @@ const SubjectModeSelection = () => {
               </Button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
