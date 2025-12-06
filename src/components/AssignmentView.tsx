@@ -110,25 +110,27 @@ export const AssignmentView = ({
     enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
 
-  // --- STABLE TEST CASES LOGIC (Fixes Fluctuation Issue) ---
   const testCases = useMemo(() => {
-    // Helper to ensure stable ID based on index if missing
+    const generateId = () => {
+      try {
+        return crypto.randomUUID();
+      } catch (e) {
+        return Math.random().toString(36).substring(2) + Date.now().toString(36);
+      }
+    };
+
     const normalizeTestCase = (tc: any, index: number, prefix: string, isPublicOverride?: boolean) => ({
       ...tc,
-      // Use existing ID or generate a stable one based on index to prevent re-renders breaking keys
       id: tc.id || `stable-${prefix}-${index}`,
       is_public: isPublicOverride !== undefined ? isPublicOverride : tc.is_public,
-      // Normalize input/output keys (handles 'stdin' vs 'input' and 'output' vs 'expected_output')
       input: tc.input ?? tc.stdin ?? '',
       expected_output: tc.expected_output ?? tc.output ?? ''
     });
 
-    // 1. Prefer embedded (mixed) from 'test_cases' column, fallback to fetched legacy table
     const existingMixed = (assignment?.test_cases && assignment.test_cases.length > 0) 
       ? assignment.test_cases.map((tc: any, i: number) => normalizeTestCase(tc, i, 'emb'))
       : fetchedTestCases.map((tc: any, i: number) => normalizeTestCase(tc, i, 'db'));
 
-    // 2. Process the new dedicated 'private_testcases' column
     const extraPrivate = (assignment?.private_testcases && Array.isArray(assignment.private_testcases))
       ? assignment.private_testcases.map((tc: any, i: number) => normalizeTestCase(tc, i, 'priv', false))
       : [];
@@ -298,12 +300,13 @@ export const AssignmentView = ({
   
   const hasRunTests = Object.keys(testResults).length > 0;
   
+  // FIXED LOGIC: Count passed tests by directly filtering test case lists against results map
   const currentPubPassed = hasRunTests 
-    ? Object.values(testResults).filter((r:any, i) => testCases.find((t:any) => t.id === Object.keys(testResults)[i])?.is_public && r.passed).length 
+    ? publicTests.filter(t => testResults[t.id]?.passed).length
     : (latestSubmission?.public_tests_passed || 0);
     
   const currentPrivPassed = hasRunTests
-    ? Object.values(testResults).filter((r:any, i) => !testCases.find((t:any) => t.id === Object.keys(testResults)[i])?.is_public && r.passed).length
+    ? privateTests.filter(t => testResults[t.id]?.passed).length
     : (latestSubmission?.private_tests_passed || 0);
 
   if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-white"/></div>;
