@@ -32,8 +32,8 @@ const getTargetName = (code: string) => {
 };
 
 const normalizeOutput = (str: string) => {
-  if (!str) return '';
-  return str.trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
+  if (str === undefined || str === null) return ''; // Handle null/undefined explicitly
+  return String(str).trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
 const detectInitialLanguage = (title: string, category: string): Language => {
@@ -112,15 +112,22 @@ export const AssignmentView = ({
     enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
 
-  // Merge sources: 
-  // 1. Prefer embedded (mixed) from 'test_cases' column, fallback to fetched legacy table
-  const existingMixed = (assignment?.test_cases && assignment.test_cases.length > 0) 
-    ? assignment.test_cases 
-    : fetchedTestCases;
+  // HELPER: Normalize Test Case Keys (output vs expected_output)
+  const normalizeTestCase = (tc: any, isPublicOverride?: boolean) => ({
+    ...tc,
+    id: tc.id || crypto.randomUUID(), // Ensure ID exists
+    is_public: isPublicOverride !== undefined ? isPublicOverride : tc.is_public,
+    input: tc.input || tc.stdin || '',
+    expected_output: tc.expected_output ?? tc.output ?? '' // Fallback to 'output' if expected_output missing
+  });
 
-  // 2. Process the new dedicated 'private_testcases' column (Force is_public = false)
+  // Merge sources: 
+  const existingMixed = (assignment?.test_cases && assignment.test_cases.length > 0) 
+    ? assignment.test_cases.map((tc: any) => normalizeTestCase(tc))
+    : fetchedTestCases.map((tc: any) => normalizeTestCase(tc));
+
   const extraPrivate = (assignment?.private_testcases && Array.isArray(assignment.private_testcases))
-    ? assignment.private_testcases.map((tc: any) => ({ ...tc, is_public: false }))
+    ? assignment.private_testcases.map((tc: any) => normalizeTestCase(tc, false))
     : [];
 
   // 3. Combine them into the final testCases array
