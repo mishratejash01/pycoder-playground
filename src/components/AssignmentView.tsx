@@ -111,14 +111,7 @@ export const AssignmentView = ({
   });
 
   const testCases = useMemo(() => {
-    const generateId = () => {
-      try {
-        return crypto.randomUUID();
-      } catch (e) {
-        return Math.random().toString(36).substring(2) + Date.now().toString(36);
-      }
-    };
-
+    // Deterministic ID generation to prevent fluctuation on re-renders
     const normalizeTestCase = (tc: any, index: number, prefix: string, isPublicOverride?: boolean) => ({
       ...tc,
       id: tc.id || `stable-${prefix}-${index}`,
@@ -198,7 +191,15 @@ export const AssignmentView = ({
     let firstError = "";
 
     try {
-      for (const test of testCases) {
+      // FIX: Only run PUBLIC test cases when user clicks "Run"
+      const publicOnlyTests = testCases.filter(t => t.is_public);
+
+      if (publicOnlyTests.length === 0) {
+        setConsoleOutput("No public test cases available to run.");
+        return;
+      }
+
+      for (const test of publicOnlyTests) {
         const codeToRun = prepareExecutionCode(code, test.input);
         const result = await executeCode(activeLanguage, codeToRun, test.input);
         
@@ -223,7 +224,7 @@ export const AssignmentView = ({
       }
       setTestResults(newTestResults);
       if (firstError) setConsoleOutput(firstError);
-      else setConsoleOutput("Execution complete. Check Test Cases tab.");
+      else setConsoleOutput("Public execution complete. Check Test Cases tab.");
 
     } catch (err: any) {
       setConsoleOutput(err.message);
@@ -300,12 +301,19 @@ export const AssignmentView = ({
   
   const hasRunTests = Object.keys(testResults).length > 0;
   
-  // FIXED LOGIC: Count passed tests by directly filtering test case lists against results map
+  // LOGIC:
+  // 1. If we have active results (hasRunTests), calculate based on CURRENT execution
+  // 2. If NO active results, show stats from LATEST submission
   const currentPubPassed = hasRunTests 
     ? publicTests.filter(t => testResults[t.id]?.passed).length
     : (latestSubmission?.public_tests_passed || 0);
     
-  const currentPrivPassed = hasRunTests
+  // FIXED: Private tests ONLY show from latestSubmission unless we just ran a SUBMIT (which runs all)
+  // If we just clicked "Run" (which only runs public), private passed should fallback to latestSubmission or 0.
+  // We check if ANY private test key exists in testResults to determine if a full submit happened.
+  const hasRunPrivate = hasRunTests && privateTests.some(t => testResults.hasOwnProperty(t.id));
+
+  const currentPrivPassed = hasRunPrivate
     ? privateTests.filter(t => testResults[t.id]?.passed).length
     : (latestSubmission?.private_tests_passed || 0);
 
