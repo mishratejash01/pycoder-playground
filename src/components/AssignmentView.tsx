@@ -31,9 +31,16 @@ const getTargetName = (code: string) => {
   return null;
 };
 
-const normalizeOutput = (str: string) => {
+const normalizeOutput = (str: any) => {
   if (str === undefined || str === null) return '';
-  return String(str).trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
+  // Convert to string and normalize whitespace/quotes for comparison
+  return String(str).trim()
+    .replace(/'/g, '"')
+    .replace(/\s+/g, ' ')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .replace(/\[\s+/g, '[')
+    .replace(/\s+\]/g, ']');
 };
 
 const detectInitialLanguage = (title: string, category: string): Language => {
@@ -89,7 +96,7 @@ export const AssignmentView = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Track initialization to prevent re-renders wiping state
+  // Ref to track if we've already loaded the initial code for this assignmentId
   const codeInitialized = useRef<string | null>(null);
 
   const { data: assignment, isLoading, error, refetch } = useQuery({
@@ -113,15 +120,25 @@ export const AssignmentView = ({
     enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
 
+  // --- STABLE TEST CASES LOGIC ---
   const testCases = useMemo(() => {
-    // Deterministic ID generation to prevent fluctuation on re-renders
-    const normalizeTestCase = (tc: any, index: number, prefix: string, isPublicOverride?: boolean) => ({
-      ...tc,
-      id: tc.id || `stable-${prefix}-${index}`,
-      is_public: isPublicOverride !== undefined ? isPublicOverride : tc.is_public,
-      input: tc.input ?? tc.stdin ?? '',
-      expected_output: tc.expected_output ?? tc.output ?? ''
-    });
+    // Normalization with safe Input handling (stringify if object)
+    const normalizeTestCase = (tc: any, index: number, prefix: string, isPublicOverride?: boolean) => {
+      const rawInput = tc.input ?? tc.stdin ?? '';
+      const safeInput = typeof rawInput === 'object' ? JSON.stringify(rawInput) : String(rawInput);
+      
+      const rawOutput = tc.expected_output ?? tc.output ?? '';
+      const safeOutput = typeof rawOutput === 'object' ? JSON.stringify(rawOutput) : String(rawOutput);
+
+      return {
+        ...tc,
+        id: tc.id || `stable-${prefix}-${index}`,
+        // Default to TRUE if undefined, unless explicitly overridden
+        is_public: isPublicOverride !== undefined ? isPublicOverride : (tc.is_public ?? true),
+        input: safeInput,
+        expected_output: safeOutput
+      };
+    };
 
     const existingMixed = (assignment?.test_cases && assignment.test_cases.length > 0) 
       ? assignment.test_cases.map((tc: any, i: number) => normalizeTestCase(tc, i, 'emb'))
@@ -146,7 +163,7 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
-  // 1. Reset State on Assignment Change
+  // 1. Reset state when assignment changes
   useEffect(() => {
     if (codeInitialized.current !== assignmentId) {
       setTestResults({});
@@ -155,9 +172,8 @@ export const AssignmentView = ({
     }
   }, [assignmentId]);
 
-  // 2. Initialize Code (Only Once per Assignment)
+  // 2. Initialize Code (Only once per assignment to avoid overwriting user progress)
   useEffect(() => {
-    // Wait for assignment and submission load status to resolve
     if (assignment && !isSubmissionLoading && codeInitialized.current !== assignmentId) {
       const detected = detectInitialLanguage(assignment.title, assignment.category || '');
       setActiveLanguage(detected);
@@ -193,8 +209,9 @@ export const AssignmentView = ({
   const prepareExecutionCode = (rawCode: string, input: string) => {
     if (activeLanguage === 'python') {
       const targetName = getTargetName(rawCode);
+      // Only wrap if we found a function AND there is input to pass
       if (targetName && input) {
-        return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(e)`;
+        return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(f"Error: {e}")`;
       }
     }
     return rawCode;
@@ -203,13 +220,15 @@ export const AssignmentView = ({
   const handleRun = async () => {
     if (runnerLoading) return;
     setBottomTab('testcases');
-    setTestResults({}); // Clear previous results before run
+    
+    // We do NOT clear testResults entirely here, to preserve "Private" results if they exist from a previous submit.
+    // Instead, we will merge new public results into the existing state.
     
     const newTestResults: Record<string, any> = {};
     let firstError = "";
 
     try {
-      // Filter ONLY public tests for Run button
+      // Filter ONLY public tests
       const publicOnlyTests = testCases.filter(t => t.is_public);
 
       if (publicOnlyTests.length === 0) {
@@ -241,13 +260,17 @@ export const AssignmentView = ({
         };
       }
       
-      setTestResults(newTestResults); // Update state to trigger meter refresh
+      // MERGE: Keep existing results (private), overwrite public
+      setTestResults(prev => ({
+        ...prev,
+        ...newTestResults
+      }));
       
-      if (firstError) setConsoleOutput(firstError);
-      else setConsoleOutput("Public tests execution complete.");
+      if (firstError) setConsoleOutput(`Run finished with errors.\n${firstError}`);
+      else setConsoleOutput("Public tests executed successfully.");
 
     } catch (err: any) {
-      setConsoleOutput(err.message);
+      setConsoleOutput(`System Error: ${err.message}`);
       setBottomTab('console');
     }
   };
@@ -285,7 +308,9 @@ export const AssignmentView = ({
         };
       }
       
+      // SUBMIT: Replace all results
       setTestResults(newTestResults);
+      
       const total = allTests.length;
       const score = total > 0 ? (passedCount / total) * (assignment.max_score || 100) : 0;
       
@@ -321,13 +346,15 @@ export const AssignmentView = ({
   
   const hasRunTests = Object.keys(testResults).length > 0;
   
-  // Logic: 
-  // - Public meter: Updated immediately after "Run" using testResults
-  // - Private meter: Updated only if private tests exist in testResults (i.e., after Submit), otherwise fallback to last submission
+  // --- METER LOGIC ---
+  
+  // Public: Prefer current live results. Fallback to latest submission DB value.
   const currentPubPassed = hasRunTests 
     ? publicTests.filter(t => testResults[t.id]?.passed).length
     : (latestSubmission?.public_tests_passed || 0);
     
+  // Private: Prefer current live results ONLY if we just ran a Submit (checked via key existence).
+  // Otherwise, fallback to latest submission.
   const hasRunPrivate = hasRunTests && privateTests.some(t => testResults.hasOwnProperty(t.id));
 
   const currentPrivPassed = hasRunPrivate
