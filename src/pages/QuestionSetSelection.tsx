@@ -28,39 +28,43 @@ export default function QuestionSetSelection() {
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   
   // Timer Configuration State
-  const [timeLimit, setTimeLimit] = useState([20]); // Default 20 mins
+  const [timeLimit, setTimeLimit] = useState([20]); 
   const [noTimeLimit, setNoTimeLimit] = useState(false);
   
   const [showProfileSheet, setShowProfileSheet] = useState(false);
 
   // --- DATA FETCHING ---
-  // If Proctored: Fetch distinct sets from iitm_exam_question_bank
-  // If Practice: Fetch individual assignments from iitm_assignments
   const { data: fetchedData = [], isLoading } = useQuery({
     queryKey: ['selection_data', subjectId, examType, mode],
     queryFn: async () => {
+      // Decode exam type (e.g., "OPPE%201" -> "OPPE 1")
+      const currentExamType = decodeURIComponent(examType || '');
+
       if (isProctored) {
-        // --- PROCTORED MODE: Fetch Sets ---
+        // --- PROCTORED MODE (ALL EXAM TYPES) ---
+        // Fetch Sets from iitm_exam_question_bank for the SPECIFIC exam type (OPPE 1, OPPE 2, etc.)
+        console.log(`Fetching sets for Proctored ${currentExamType}...`);
+        
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
           .select('set_name')
-          .eq('exam_type', decodeURIComponent(examType || ''))
-          // Note: Supabase doesn't support .distinct() directly in all client versions easily on specific columns 
-          // without select param modification, but we can process in JS or use rpc. 
-          // For simplicity and standard usage, we fetch all and dedup in JS.
+          .eq('exam_type', currentExamType); // Dynamic filter
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching sets:", error);
+          throw error;
+        }
         
         // Extract unique sets
         const sets = Array.from(new Set(data?.map(item => item.set_name).filter(Boolean)));
         return sets.sort();
       } else {
-        // --- PRACTICE MODE: Fetch Questions ---
+        // --- PRACTICE MODE ---
         const { data, error } = await supabase
           .from('iitm_assignments')
           .select('*')
           .eq('subject_id', subjectId)
-          .eq('exam_type', decodeURIComponent(examType || ''))
+          .eq('exam_type', currentExamType)
           .order('title');
         
         if (error) throw error;
@@ -110,7 +114,7 @@ export default function QuestionSetSelection() {
     });
 
     if (isSetSelection) {
-      // For Proctored Mode: Pass set_name
+      // For Proctored Mode: Pass set_name (e.g., "Set 1")
       params.set('set_name', targetId);
     } else {
       // For Practice Mode: Pass specific question ID
@@ -131,7 +135,7 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#09090b] text-white flex overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
 
-      {/* --- LEFT SIDEBAR (TOPICS - Hidden in Proctored) --- */}
+      {/* --- LEFT SIDEBAR (Hidden in Proctored) --- */}
       {!isProctored && (
         <div className="w-64 flex-shrink-0 border-r border-white/10 bg-[#0c0c0e] flex flex-col">
           <div className="p-6 pb-4 border-b border-white/5">
@@ -197,7 +201,7 @@ export default function QuestionSetSelection() {
                {decodeURIComponent(subjectName || '')}
              </h1>
              <Badge variant="outline" className={cn("border-white/10 bg-white/5", isProctored ? "text-red-400" : "text-blue-400")}>
-               {isProctored ? 'Proctored' : 'Practice'}
+               {isProctored ? decodeURIComponent(examType || 'Proctored') : 'Practice'}
              </Badge>
           </div>
 
@@ -216,14 +220,14 @@ export default function QuestionSetSelection() {
         <ScrollArea className="flex-1 p-8 z-10">
           <div className="max-w-[95%] mx-auto space-y-4">
             <div className="text-xs text-muted-foreground mb-4 font-mono uppercase tracking-wider">
-              {isProctored ? "Available Exam Sets" : "Available Problems"} ({filteredData.length})
+              {isProctored ? `Available Sets for ${decodeURIComponent(examType || '')}` : "Available Problems"} ({filteredData.length})
             </div>
 
             {isLoading ? (
               [1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)
             ) : filteredData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
-                {isProctored ? "No exam sets found." : "No problems found in this category."}
+                {isProctored ? `No sets found for ${decodeURIComponent(examType || '')}.` : "No problems found."}
               </div>
             ) : isProctored ? (
               /* --- PROCTORED VIEW (SETS) --- */
@@ -242,7 +246,7 @@ export default function QuestionSetSelection() {
                     </CardHeader>
                     <div className="p-6 pt-0 mt-4">
                        <div className="text-sm text-muted-foreground">
-                         Click to start the {decodeURIComponent(examType || '')} exam for {setName}.
+                         Click to start {setName} for {decodeURIComponent(examType || '')}.
                        </div>
                        <Button className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20">
                          Start Exam
@@ -269,6 +273,7 @@ export default function QuestionSetSelection() {
                       expandedQuestion === assignment.id ? "border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] ring-1 ring-primary/20" : "hover:border-white/20"
                     )}
                   >
+                    {/* ... Existing Practice Mode UI ... */}
                     <CollapsibleTrigger className="w-full text-left">
                       <div className="p-5 flex items-center justify-between">
                         <div className="flex items-center gap-5">
