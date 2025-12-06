@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap } from 'lucide-react';
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap, LockKeyhole } from 'lucide-react'; // Added LockKeyhole
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils'; // Make sure to import cn
 
 const getSubjectIcon = (name: string) => {
   const n = name.toLowerCase();
@@ -231,11 +232,36 @@ const DegreeSelection = () => {
             filteredSubjects.map((subject: any) => {
               const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
               const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
+              
+              // --- LOCK LOGIC: Default to true if column is missing, otherwise use value ---
+              const isLocked = subject.is_unlocked === false; 
 
               return (
-                <div key={subject.id} className="group relative bg-[#0c0c0e] rounded-xl border border-white/10 hover:border-white/20 transition-all duration-300 flex flex-col overflow-hidden hover:shadow-[0_0_30px_rgba(0,0,0,0.6)]">
-                  {/* Premium Hover Glow */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-500" />
+                <div 
+                  key={subject.id} 
+                  className={cn(
+                    "group relative bg-[#0c0c0e] rounded-xl border border-white/10 transition-all duration-300 flex flex-col overflow-hidden",
+                    // Apply visual disabled state if locked
+                    isLocked 
+                      ? "opacity-60 pointer-events-none grayscale-[0.8]" 
+                      : "hover:border-white/20 hover:shadow-[0_0_30px_rgba(0,0,0,0.6)]"
+                  )}
+                >
+                  
+                  {/* --- LOCK OVERLAY --- */}
+                  {isLocked && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[2px] pointer-events-auto cursor-not-allowed">
+                      <div className="p-4 bg-black/80 rounded-full border border-white/10 mb-2">
+                        <LockKeyhole className="w-8 h-8 text-white/50" />
+                      </div>
+                      <span className="text-xs font-mono font-bold text-white/50 uppercase tracking-widest">Locked</span>
+                    </div>
+                  )}
+
+                  {/* Premium Hover Glow (Only for Unlocked) */}
+                  {!isLocked && (
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-500" />
+                  )}
                   
                   {/* Tech Corners - Wireframe Style */}
                   <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-white/20 rounded-tl-sm opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -280,7 +306,8 @@ const DegreeSelection = () => {
                                         size="sm"
                                         variant="outline"
                                         className="w-full border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-xs h-9 font-normal transition-all"
-                                        onClick={() => handleExamClick(subject.id, subject.name, examType)}
+                                        onClick={() => !isLocked && handleExamClick(subject.id, subject.name, examType)}
+                                        disabled={isLocked}
                                     >
                                         {examType}
                                     </Button>
@@ -296,7 +323,8 @@ const DegreeSelection = () => {
                             variant="ghost" 
                             size="sm"
                             className="w-full h-8 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-white hover:bg-transparent group/share"
-                            onClick={() => handleShare(subject.name)}
+                            onClick={() => !isLocked && handleShare(subject.name)}
+                            disabled={isLocked}
                         >
                             <Share2 className="w-3 h-3 mr-2 group-hover/share:text-primary transition-colors" /> Share Resource
                         </Button>
