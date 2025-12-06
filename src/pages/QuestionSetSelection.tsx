@@ -28,7 +28,6 @@ export default function QuestionSetSelection() {
   
   const [timeLimit, setTimeLimit] = useState([20]); 
   const [noTimeLimit, setNoTimeLimit] = useState(false);
-  
   const [showProfileSheet, setShowProfileSheet] = useState(false);
 
   // --- DATA FETCHING ---
@@ -39,13 +38,12 @@ export default function QuestionSetSelection() {
 
       if (isProctored) {
         // --- PROCTORED MODE ---
-        // Fetch Sets from iitm_exam_question_bank for the SPECIFIC exam type (OPPE 1, OPPE 2...)
         console.log(`Fetching sets for Proctored Exam: ${currentExamType}`);
         
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
           .select('set_name')
-          .eq('exam_type', currentExamType); // Dynamic filter based on URL selection
+          .eq('exam_type', currentExamType); // Dynamic filter (OPPE 1 or OPPE 2)
         
         if (error) {
           console.error("Error fetching sets:", error);
@@ -111,10 +109,8 @@ export default function QuestionSetSelection() {
     });
 
     if (isSetSelection) {
-      // PROCTORED: Pass 'set_name' (e.g., "Set 1")
       params.set('set_name', targetId);
     } else {
-      // PRACTICE: Pass 'q' (Question ID)
       params.set('q', targetId);
     }
 
@@ -225,7 +221,7 @@ export default function QuestionSetSelection() {
             ) : filteredData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
                 {isProctored 
-                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Ensure DB has 'exam_type' match)` 
+                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Check DB)` 
                   : "No problems found."}
               </div>
             ) : isProctored ? (
