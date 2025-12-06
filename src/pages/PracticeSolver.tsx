@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,9 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { CodeEditor } from '@/components/CodeEditor';
-import { Play, Send, CheckCircle2, XCircle, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Settings } from 'lucide-react';
+import { Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, Home, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ScoreDisplay } from '@/components/ScoreDisplay';
 
 export default function PracticeSolver() {
   const { slug } = useParams();
@@ -25,43 +27,75 @@ export default function PracticeSolver() {
   const [consoleTab, setConsoleTab] = useState('testcases');
   const [outputResult, setOutputResult] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Timer State
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Result State
+  const [showResult, setShowResult] = useState(false);
+  const [submissionStats, setSubmissionStats] = useState<{ passed: number; total: number; time: number } | null>(null);
 
-  // 1. Fetch Problem Data with Debugging
+  // 1. Fetch Problem Data
   const { data: problem, isLoading: problemLoading, error } = useQuery({
     queryKey: ['practice_problem', slug],
     queryFn: async () => {
-      console.log("Fetching problem for slug:", slug);
       const { data, error } = await supabase
         .from('practice_problems')
         .select('*')
         .eq('slug', slug)
-        .maybeSingle(); // Prevents crashing on 0 rows
+        .maybeSingle();
       
-      if (error) {
-        console.error("Supabase Error:", error);
-        throw error;
-      }
+      if (error) throw error;
       return data;
     },
-    enabled: !!slug, // Only run if slug exists
+    enabled: !!slug,
     retry: false
   });
 
   // 2. Safe Data Extraction
   const testCases = Array.isArray(problem?.test_cases) ? problem.test_cases : [];
   
-  // 3. Initialize Editor
+  // 3. Initialize Editor & Timer
   useEffect(() => {
     if (problem) {
-      // @ts-ignore - Supabase types might imply JSON, but we cast to object
+      // @ts-ignore
       const templates = problem.starter_templates || {};
       // @ts-ignore
       const template = templates[activeLanguage] || `# Write your ${activeLanguage} code here\n`;
       setCode(template);
+      
+      // Start Timer
+      setElapsedTime(0);
+      timerRef.current = setInterval(() => {
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
     }
+    
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [problem, activeLanguage]);
 
-  // 4. Run Logic
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const prepareCode = (userCode: string, input: any) => {
+    let codeToRun = userCode;
+    // Auto-inject driver code for Python class-based solutions
+    if (activeLanguage === 'python' && input) {
+       const inputStr = String(input);
+       const cleanInput = inputStr.replace(/[a-zA-Z0-9_]+\s=\s/g, '');
+       
+       codeToRun += `\n\n# --- Driver Code (Auto-Injected) ---\ntry:\n    if 'Solution' in locals():\n        sol = Solution()\n        methods = [m for m in dir(sol) if not m.startswith('__')]\n        if methods:\n            print(getattr(sol, methods[0])(${cleanInput}))\n        else:\n            print("No method found in Solution class.")\n    elif 'twoSum' in locals():\n         print(twoSum(${cleanInput}))\n    else:\n        print("Error: Function definition not found.")\nexcept Exception as e:\n    print(f"Runtime Error: {e}")`;
+    }
+    return codeToRun;
+  };
+
+  // 4. Run Logic (Single Case)
   const handleRun = async () => {
     if (!problem) return;
     setConsoleTab('output');
@@ -74,14 +108,7 @@ export default function PracticeSolver() {
       return;
     }
 
-    let codeToRun = code;
-    // Auto-inject driver code for Python class-based solutions
-    if (activeLanguage === 'python' && sampleTest.input) {
-       const cleanInput = typeof sampleTest.input === 'string' ? sampleTest.input.replace(/[a-zA-Z0-9_]+\s=\s/g, '') : '';
-       
-       codeToRun += `\n\n# --- Driver Code (Auto-Injected) ---\ntry:\n    if 'Solution' in locals():\n        sol = Solution()\n        methods = [m for m in dir(sol) if not m.startswith('__')]\n        if methods:\n            print(getattr(sol, methods[0])(${cleanInput}))\n        else:\n            print("No method found in Solution class.")\n    elif 'twoSum' in locals():\n         print(twoSum(${cleanInput}))\n    else:\n        print("Error: Function definition not found.")\nexcept Exception as e:\n    print(f"Runtime Error: {e}")`;
-    }
-
+    const codeToRun = prepareCode(code, sampleTest.input);
     const result = await executeCode(activeLanguage, codeToRun, "");
     
     const cleanOutput = result.output?.trim();
@@ -98,6 +125,7 @@ export default function PracticeSolver() {
     });
   };
 
+  // 5. Submit Logic (All Cases)
   const handleSubmit = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -105,12 +133,35 @@ export default function PracticeSolver() {
       navigate('/auth');
       return;
     }
+
     setSubmitting(true);
-    // Simulate submission
-    setTimeout(() => {
-      setSubmitting(false);
-      toast({ title: "Submitted", description: "Solution accepted!", className: "bg-green-600 text-white border-none" });
-    }, 1500);
+    
+    let passedCount = 0;
+    const totalCount = testCases.length;
+
+    // Run all test cases sequentially
+    for (const test of testCases) {
+      const codeToRun = prepareCode(code, test.input);
+      const result = await executeCode(activeLanguage, codeToRun, "");
+      
+      const cleanOutput = result.output?.trim();
+      const expectedStr = String(test.output || '').trim();
+      const isPass = cleanOutput === expectedStr || (cleanOutput && cleanOutput.includes(expectedStr));
+      
+      if (isPass) passedCount++;
+    }
+
+    // Stop Timer
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    setSubmissionStats({
+      passed: passedCount,
+      total: totalCount,
+      time: elapsedTime
+    });
+    
+    setSubmitting(false);
+    setShowResult(true);
   };
 
   // --- LOADING STATE ---
@@ -149,13 +200,19 @@ export default function PracticeSolver() {
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-3">
-            <h1 className="font-bold text-sm tracking-wide text-gray-100">{problem.title}</h1>
+            <h1 className="font-bold text-sm tracking-wide text-gray-100 hidden md:block">{problem.title}</h1>
             <Badge variant="outline" className={cn("text-[10px] py-0 h-5 border-white/10 bg-white/5", 
               problem.difficulty === 'Easy' ? "text-green-400" : 
               problem.difficulty === 'Medium' ? "text-yellow-400" : "text-red-400")}>
               {problem.difficulty}
             </Badge>
           </div>
+        </div>
+
+        {/* Timer Display */}
+        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 font-mono text-xs text-muted-foreground">
+          <Timer className="w-3.5 h-3.5" />
+          <span>{formatTime(elapsedTime)}</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -171,13 +228,13 @@ export default function PracticeSolver() {
             </SelectContent>
           </Select>
 
-          <div className="h-5 w-px bg-white/10 mx-1" />
+          <div className="h-5 w-px bg-white/10 mx-1 hidden sm:block" />
 
           <Button 
             variant="secondary" 
             size="sm" 
             onClick={handleRun} 
-            disabled={loading} 
+            disabled={loading || submitting} 
             className="h-8 text-xs bg-white/5 hover:bg-white/10 text-white border border-white/5"
           >
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Play className="w-3.5 h-3.5 mr-2 fill-current"/>}
@@ -187,7 +244,7 @@ export default function PracticeSolver() {
           <Button 
             size="sm" 
             onClick={handleSubmit} 
-            disabled={submitting} 
+            disabled={submitting || loading} 
             className="h-8 text-xs bg-green-600 hover:bg-green-500 text-white font-semibold border-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Send className="w-3.5 h-3.5 mr-2"/>}
@@ -226,7 +283,7 @@ export default function PracticeSolver() {
                       <div key={i} className="bg-[#151515] border border-white/5 rounded-lg overflow-hidden">
                         <div className="px-3 py-2 bg-white/5 border-b border-white/5 text-[10px] text-gray-400 font-mono">Case {i + 1}</div>
                         <div className="p-3 space-y-2 font-mono text-xs">
-                          <div><span className="text-blue-400">Input:</span> <span className="text-gray-300 ml-2">{t.input}</span></div>
+                          <div><span className="text-blue-400">Input:</span> <span className="text-gray-300 ml-2">{String(t.input)}</span></div>
                           <div><span className="text-green-400">Output:</span> <span className="text-gray-300 ml-2">{t.output}</span></div>
                         </div>
                       </div>
@@ -279,9 +336,9 @@ export default function PracticeSolver() {
                     <div className="space-y-3">
                       {testCases.length > 0 ? testCases.map((tc: any, i: number) => (
                         <div key={i} className="flex flex-col gap-1.5">
-                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Case {i + 1}</div>
+                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Case {i + 1} {tc.is_public ? '' : '(Hidden)'}</div>
                           <div className="bg-white/5 p-2 rounded border border-white/10 text-gray-300 font-mono text-xs truncate">
-                            {typeof tc.input === 'object' ? JSON.stringify(tc.input) : tc.input}
+                            {typeof tc.input === 'object' ? JSON.stringify(tc.input) : String(tc.input)}
                           </div>
                         </div>
                       )) : (
@@ -343,6 +400,51 @@ export default function PracticeSolver() {
 
         </ResizablePanelGroup>
       </div>
+
+      {/* 3. RESULT DIALOG */}
+      <Dialog open={showResult} onOpenChange={setShowResult}>
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-neuropol">Result</DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              Performance Summary
+            </DialogDescription>
+          </DialogHeader>
+          
+          {submissionStats && (
+            <div className="flex flex-col items-center py-6 gap-6">
+              <ScoreDisplay 
+                score={submissionStats.passed} 
+                maxScore={submissionStats.total} 
+              />
+              
+              <div className="flex flex-col items-center gap-1">
+                <div className="text-sm text-muted-foreground uppercase tracking-widest font-mono">Time Taken</div>
+                <div className="text-2xl font-bold font-mono text-white flex items-center gap-2">
+                  <Timer className="w-5 h-5 text-primary" />
+                  {formatTime(submissionStats.time)}
+                </div>
+              </div>
+
+              {submissionStats.passed === submissionStats.total && (
+                <div className="text-green-400 font-bold flex items-center gap-2 animate-bounce mt-2">
+                  All Test Cases Passed! 🎉
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowResult(false)} className="w-full sm:w-auto border-white/10">
+              <RefreshCw className="w-4 h-4 mr-2" /> Retry
+            </Button>
+            <Button onClick={() => navigate('/practice-arena')} className="w-full sm:w-auto bg-primary text-white hover:bg-primary/90">
+              <Home className="w-4 h-4 mr-2" /> Back to Arena
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
