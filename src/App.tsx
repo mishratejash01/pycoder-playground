@@ -11,14 +11,16 @@ import ExamResult from "./pages/ExamResult";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import DegreeSelection from "./pages/DegreeSelection";
+// --- ADDED MISSING IMPORTS ---
+import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
+import SubjectModeSelection from "./pages/SubjectModeSelection";
+// -----------------------------
 import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
 import Compiler from "./pages/Compiler";
 import Documentation from "./pages/Documentation";
-// --- NEW IMPORTS ---
 import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
-// -------------------
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
@@ -26,7 +28,6 @@ import { Home, Code2, Trophy, Terminal } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-// Wrapper to handle Dock/Footer Visibility and Navigation Logic
 const AppContent = () => {
   const [showSplash, setShowSplash] = useState(true);
   const location = useLocation();
@@ -45,44 +46,17 @@ const AppContent = () => {
 
   if (showSplash) return <SplashScreen />;
 
-  // Define routes where Dock should NOT appear
-  // Note: /practice-arena starts with /practice, so it might hide the dock depending on desired behavior.
-  // If you want the dock visible on the Arena lobby but hidden in the Solver, you might need to adjust specific checks.
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
   const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam') || location.pathname.startsWith('/compiler'));
-
-  // Define routes where Footer should NOT appear
   const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
-    { 
-      icon: <Home size={20} />, 
-      label: 'Home', 
-      onClick: () => navigate('/') 
-    },
-    { 
-      icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
-      label: 'IITM BS', 
-      onClick: () => navigate('/degree') 
-    },
-    // --- UPDATED PRACTICE ITEM ---
-    { 
-      icon: <Code2 size={20} />, 
-      label: 'Practice', 
-      onClick: () => navigate('/practice-arena') 
-    },
-    // -----------------------------
-    { 
-      icon: <Terminal size={20} />, 
-      label: 'Compiler', 
-      onClick: () => navigate('/compiler') 
-    },
-    { 
-      icon: <Trophy size={20} />, 
-      label: 'Ranks', 
-      onClick: () => navigate('/leaderboard') 
-    },
+    { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
+    { icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, label: 'IITM BS', onClick: () => navigate('/degree') },
+    { icon: <Code2 size={20} />, label: 'Practice', onClick: () => navigate('/practice-arena') },
+    { icon: <Terminal size={20} />, label: 'Compiler', onClick: () => navigate('/compiler') },
+    { icon: <Trophy size={20} />, label: 'Ranks', onClick: () => navigate('/leaderboard') },
   ];
 
   return (
@@ -91,19 +65,26 @@ const AppContent = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
         
-        {/* Existing Routes */}
+        {/* Basic Routes */}
         <Route path="/practice" element={<Practice />} />
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result" element={<ExamResult />} />
         
-        {/* Degree & IITM Specific */}
+        {/* --- DEGREE & EXAM FLOW ROUTES --- */}
         <Route path="/degree" element={<DegreeSelection />} />
+        
+        {/* 1. Select OPPE 1 or OPPE 2 */}
+        <Route path="/degree/oppe/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
+        
+        {/* 2. Select Mode (Proctored/Practice) - NEEDS :examType */}
+        <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
+        
+        {/* 3. Select Set (Proctored) or Questions (Practice) */}
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
         
-        {/* --- NEW PRACTICE ARENA ROUTES --- */}
+        {/* Practice Arena */}
         <Route path="/practice-arena" element={<PracticeArena />} />
         <Route path="/practice-arena/:slug" element={<PracticeSolver />} />
-        {/* -------------------------------- */}
 
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/compiler" element={<Compiler />} />
@@ -111,19 +92,8 @@ const AppContent = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* Global Footer */}
       {showFooter && <Footer />}
-
-      {/* Dock */}
-      {showDock && (
-        <div>
-          <Dock 
-            items={dockItems} 
-            baseItemSize={45}
-            magnification={60}
-          />
-        </div>
-      )}
+      {showDock && <Dock items={dockItems} baseItemSize={45} magnification={60} />}
     </>
   );
 };
