@@ -39,7 +39,7 @@ export default function QuestionSetSelection() {
       if (isProctored) {
         // --- PROCTORED MODE ---
         // Fetches sets from 'iitm_exam_question_bank'
-        // FIX: Added .eq('subject_id', subjectId) to ensure we get sets for THIS subject
+        // Ensures we only get sets for the specific subject and exam type (e.g., OPPE 1 or OPPE 2)
         
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
@@ -52,7 +52,7 @@ export default function QuestionSetSelection() {
           throw error;
         }
         
-        // Extract unique sets
+        // Extract unique sets and filter out nulls
         const sets = Array.from(new Set(data?.map(item => item.set_name).filter(Boolean)));
         return sets.sort();
       } else {
@@ -224,7 +224,7 @@ export default function QuestionSetSelection() {
             ) : filteredData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
                 {isProctored 
-                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Check that your database has rows for this Subject + Exam Type)` 
+                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Ensure your database has rows in 'iitm_exam_question_bank' with subject_id matching the current subject)` 
                   : "No problems found."}
               </div>
             ) : isProctored ? (
@@ -349,19 +349,3 @@ export default function QuestionSetSelection() {
                                  className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] rounded-xl"
                                >
                                  {noTimeLimit ? <InfinityIcon className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
-                                 Start Practice
-                               </Button>
-                            </div>
-                          </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
-      </div>
-    </div>
-  );
-}
