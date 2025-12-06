@@ -22,14 +22,17 @@ interface TestCaseViewProps {
 }
 
 export const TestCaseView = ({ testCases, testResults }: TestCaseViewProps) => {
-  if (testCases.length === 0) {
-    return <div className="text-muted-foreground text-center p-4">No test cases available.</div>;
+  // Filter to show only public test cases
+  const visibleTestCases = testCases.filter((tc) => tc.is_public);
+
+  if (visibleTestCases.length === 0) {
+    return <div className="text-muted-foreground text-center p-4">No public test cases available.</div>;
   }
 
   return (
     <ScrollArea className="h-full">
       <div className="space-y-3 p-4">
-        {testCases.map((test, index) => {
+        {visibleTestCases.map((test, index) => {
           const result = testResults[test.id];
           const hasRun = !!result;
           
@@ -49,7 +52,6 @@ export const TestCaseView = ({ testCases, testResults }: TestCaseViewProps) => {
                     )}
                     <span className="font-mono text-sm font-medium text-white">
                       Test Case {index + 1}
-                      {test.is_public ? "" : " (Hidden)"}
                     </span>
                   </div>
                   {hasRun && (
@@ -60,18 +62,16 @@ export const TestCaseView = ({ testCases, testResults }: TestCaseViewProps) => {
                 </div>
 
                 {/* --- ALWAYS VISIBLE SECTION (Input & Expected) --- */}
-                {test.is_public && (
-                   <div className="space-y-2 mb-2">
-                     <div className="grid grid-cols-[70px_1fr] gap-2 text-xs font-mono">
-                       <span className="text-muted-foreground font-semibold">Input:</span>
-                       <span className="text-white bg-black/40 px-2 py-1 rounded font-medium break-all">{test.input}</span>
-                     </div>
-                     <div className="grid grid-cols-[70px_1fr] gap-2 text-xs font-mono">
-                        <span className="text-muted-foreground font-semibold">Expected:</span>
-                        <span className="text-green-400 bg-green-950/20 px-2 py-1 rounded font-medium break-all">{test.expected_output}</span>
-                      </div>
-                   </div>
-                )}
+                <div className="space-y-2 mb-2">
+                  <div className="grid grid-cols-[70px_1fr] gap-2 text-xs font-mono">
+                    <span className="text-muted-foreground font-semibold">Input:</span>
+                    <span className="text-white bg-black/40 px-2 py-1 rounded font-medium break-all">{test.input}</span>
+                  </div>
+                  <div className="grid grid-cols-[70px_1fr] gap-2 text-xs font-mono">
+                    <span className="text-muted-foreground font-semibold">Expected:</span>
+                    <span className="text-green-400 bg-green-950/20 px-2 py-1 rounded font-medium break-all">{test.expected_output}</span>
+                  </div>
+                </div>
 
                 {/* --- RESULTS SECTION (Only after Run) --- */}
                 {hasRun && (
