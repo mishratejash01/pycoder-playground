@@ -5,14 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const SubjectModeSelection = () => {
-  // Capture URL parameters
+  // Capture examType from URL
   const { subjectId, subjectName, examType } = useParams();
   const navigate = useNavigate();
   
   const decodedSubject = decodeURIComponent(subjectName || 'Subject');
   const decodedExamType = decodeURIComponent(examType || 'OPPE 1');
 
-  // Fetch Subject Level details
+  // Fetch Subject Level details (Cosmetic)
   const { data: subjectData, isLoading } = useQuery({
     queryKey: ['subject_level_details', subjectId],
     queryFn: async () => {
@@ -31,19 +31,19 @@ const SubjectModeSelection = () => {
   // @ts-ignore
   const levelName = subjectData?.iitm_levels?.name || '...';
 
-  // Navigation Handlers
   const handleProctoredClick = () => {
-    // Navigate to Set Selection with 'proctored' mode and specific exam type
+    // Navigate to Set Selection with 'proctored' mode
     navigate(`/degree/sets/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(decodedExamType)}/proctored`);
   };
 
   const handlePracticeClick = () => {
-    // Navigate to Question Selection with 'practice' mode (Normal behavior)
+    // Navigate to Set/Question Selection with 'practice' mode
     navigate(`/degree/sets/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(decodedExamType)}/practice`);
   };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      
       <div className="absolute top-0 left-0 w-full h-1/2 bg-primary/5 blur-[120px] pointer-events-none" />
 
       <div className="z-10 w-full max-w-5xl space-y-12">
@@ -82,7 +82,7 @@ const SubjectModeSelection = () => {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Practice Mode</h2>
               <p className="text-muted-foreground mb-8 flex-1 leading-relaxed">
-                Practice <strong>{decodedExamType}</strong> assignments. Instant grading, hints, and unlimited attempts.
+                Practice <strong>{decodedExamType}</strong> assignments. Instant grading and unlimited attempts.
               </p>
               <Button size="lg" className="w-full bg-primary hover:bg-primary/90 pointer-events-none">
                 Enter Practice
@@ -102,7 +102,7 @@ const SubjectModeSelection = () => {
               </div>
               <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Proctored Mode</h2>
               <p className="text-muted-foreground mb-8 flex-1 leading-relaxed">
-                Take the <strong>{decodedExamType}</strong> exam. Specific sets, strict timer, and fullscreen enforcement.
+                Take the <strong>{decodedExamType}</strong> exam. Specific sets, strict timer.
               </p>
               <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 pointer-events-none">
                 Enter Exam Hall
