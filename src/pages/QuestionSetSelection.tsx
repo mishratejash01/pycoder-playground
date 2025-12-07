@@ -40,9 +40,10 @@ export default function QuestionSetSelection() {
       if (isProctored) {
         // --- PROCTORED MODE ---
         // Fetch sets from 'iitm_exam_question_bank'
+        // UPDATED: Selecting 'title' as well
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
-          .select('set_name, expected_time')
+          .select('set_name, expected_time, title')
           .eq('subject_id', subjectId) 
           .ilike('exam_type', currentExamType); 
         
@@ -51,21 +52,33 @@ export default function QuestionSetSelection() {
           throw error;
         }
         
-        // Aggregate: Sum expected_time for each set
-        const setMap: Record<string, number> = {};
+        // Aggregate: Sum expected_time for each set and capture Title
+        const setMap: Record<string, { totalTime: number; title: string }> = {};
+        
         data?.forEach(item => {
            if (item.set_name) {
-             setMap[item.set_name] = (setMap[item.set_name] || 0) + (item.expected_time || 0);
+             if (!setMap[item.set_name]) {
+               // Initialize with the first title found for this set, fallback to set_name if title is missing
+               setMap[item.set_name] = { 
+                 totalTime: 0, 
+                 title: item.title || item.set_name 
+               };
+             }
+             setMap[item.set_name].totalTime += (item.expected_time || 0);
            }
         });
 
         // Convert to array of objects
-        const sets = Object.entries(setMap).map(([name, totalTime]) => ({ name, totalTime }));
+        const sets = Object.entries(setMap).map(([name, val]) => ({ 
+          name, 
+          totalTime: val.totalTime,
+          title: val.title 
+        }));
+        
         return sets.sort((a, b) => a.name.localeCompare(b.name));
       } else {
         // --- PRACTICE MODE ---
         // Fetch assignments from 'iitm_assignments'
-        // Also fetch 'is_unlocked'
         const { data, error } = await supabase
           .from('iitm_assignments')
           .select('*')
@@ -89,9 +102,9 @@ export default function QuestionSetSelection() {
 
   const filteredData = useMemo(() => {
     if (isProctored) {
-      // Filter Sets based on search
-      return (fetchedData as { name: string, totalTime: number }[]).filter(set => 
-        set.name.toLowerCase().includes(searchTerm.toLowerCase())
+      // Filter Sets based on search (checking both Title and Set Name)
+      return (fetchedData as { name: string, title: string, totalTime: number }[]).filter(set => 
+        (set.title || set.name).toLowerCase().includes(searchTerm.toLowerCase())
       );
     } else {
       // Filter Assignments based on search & topic
@@ -125,12 +138,9 @@ export default function QuestionSetSelection() {
       params.set('q', targetId);
     }
 
-    // --- FIX: Conditional Navigation based on Mode ---
     if (isProctored) {
-      // Proctored mode must go to the Exam interface (camera, strict security)
       navigate(`/exam?${params.toString()}`);
     } else {
-      // Practice mode must go to the Practice Arena (learning features, instant feedback)
       navigate(`/practice?${params.toString()}`);
     }
   };
@@ -245,21 +255,22 @@ export default function QuestionSetSelection() {
             ) : isProctored ? (
               /* --- PROCTORED VIEW (SETS) --- */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(filteredData as { name: string, totalTime: number }[]).map((set) => (
+                {(filteredData as { name: string, title: string, totalTime: number }[]).map((set) => (
                   <Card 
                     key={set.name} 
                     className="bg-[#121212] border border-white/10 hover:border-red-500/50 hover:bg-red-950/10 cursor-pointer transition-all duration-300 group"
                     onClick={() => handleStart(set.name, true)}
                   >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-xl font-bold text-gray-200 group-hover:text-white">
-                        {set.name}
+                      {/* UPDATED: Showing the Title instead of just the Set ID */}
+                      <CardTitle className="text-xl font-bold text-gray-200 group-hover:text-white line-clamp-1">
+                        {set.title}
                       </CardTitle>
                       <Lock className="w-5 h-5 text-red-500/70" />
                     </CardHeader>
                     <div className="p-6 pt-0 mt-4">
                        <div className="text-sm text-muted-foreground">
-                         Click to start {set.name} for {decodeURIComponent(examType || '')}.
+                         Click to start <strong>{set.name}</strong> for {decodeURIComponent(examType || '')}.
                        </div>
 
                        <div className="flex items-center gap-2 mt-4 text-xs font-mono text-red-400 bg-red-950/20 px-3 py-2 rounded border border-red-500/20 w-fit">
