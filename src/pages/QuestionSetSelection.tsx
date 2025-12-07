@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
+import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 
 export default function QuestionSetSelection() {
   const { subjectId, subjectName, examType, mode } = useParams();
@@ -41,7 +42,7 @@ export default function QuestionSetSelection() {
         // Fetch sets from 'iitm_exam_question_bank'
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
-          .select('set_name')
+          .select('set_name, expected_time')
           .eq('subject_id', subjectId) 
           .ilike('exam_type', currentExamType); 
         
@@ -50,9 +51,17 @@ export default function QuestionSetSelection() {
           throw error;
         }
         
-        // Extract unique sets
-        const sets = Array.from(new Set(data?.map(item => item.set_name).filter(Boolean)));
-        return sets.sort();
+        // Aggregate: Sum expected_time for each set
+        const setMap: Record<string, number> = {};
+        data?.forEach(item => {
+           if (item.set_name) {
+             setMap[item.set_name] = (setMap[item.set_name] || 0) + (item.expected_time || 0);
+           }
+        });
+
+        // Convert to array of objects
+        const sets = Object.entries(setMap).map(([name, totalTime]) => ({ name, totalTime }));
+        return sets.sort((a, b) => a.name.localeCompare(b.name));
       } else {
         // --- PRACTICE MODE ---
         // Fetch assignments from 'iitm_assignments'
@@ -81,8 +90,8 @@ export default function QuestionSetSelection() {
   const filteredData = useMemo(() => {
     if (isProctored) {
       // Filter Sets based on search
-      return (fetchedData as string[]).filter(set => 
-        set.toLowerCase().includes(searchTerm.toLowerCase())
+      return (fetchedData as { name: string, totalTime: number }[]).filter(set => 
+        set.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     } else {
       // Filter Assignments based on search & topic
@@ -236,23 +245,29 @@ export default function QuestionSetSelection() {
             ) : isProctored ? (
               /* --- PROCTORED VIEW (SETS) --- */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(filteredData as string[]).map((setName) => (
+                {(filteredData as { name: string, totalTime: number }[]).map((set) => (
                   <Card 
-                    key={setName} 
+                    key={set.name} 
                     className="bg-[#121212] border border-white/10 hover:border-red-500/50 hover:bg-red-950/10 cursor-pointer transition-all duration-300 group"
-                    onClick={() => handleStart(setName, true)}
+                    onClick={() => handleStart(set.name, true)}
                   >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-xl font-bold text-gray-200 group-hover:text-white">
-                        {setName}
+                        {set.name}
                       </CardTitle>
                       <Lock className="w-5 h-5 text-red-500/70" />
                     </CardHeader>
                     <div className="p-6 pt-0 mt-4">
                        <div className="text-sm text-muted-foreground">
-                         Click to start {setName} for {decodeURIComponent(examType || '')}.
+                         Click to start {set.name} for {decodeURIComponent(examType || '')}.
                        </div>
-                       <Button className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20">
+
+                       <div className="flex items-center gap-2 mt-4 text-xs font-mono text-red-400 bg-red-950/20 px-3 py-2 rounded border border-red-500/20 w-fit">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Total Time: {set.totalTime} min</span>
+                       </div>
+
+                       <Button className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20">
                          Start Exam
                        </Button>
                     </div>
@@ -265,7 +280,16 @@ export default function QuestionSetSelection() {
                 const isLocked = assignment.is_unlocked === false;
 
                 return (
-                  <div key={assignment.id} className={cn("group", isLocked && "opacity-60 grayscale")}>
+                  <div 
+                    key={assignment.id} 
+                    className={cn(
+                      "group relative rounded-xl", 
+                      isLocked ? "" : "hover:shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+                    )}
+                  >
+                    {/* --- PREMIUM LOCK OVERLAY --- */}
+                    {isLocked && <PremiumLockOverlay />}
+
                     <Collapsible 
                       disabled={isLocked}
                       open={!isLocked && expandedQuestion === assignment.id} 
@@ -290,10 +314,10 @@ export default function QuestionSetSelection() {
                               isLocked ? "bg-white/5 border-white/10 text-muted-foreground" : 
                               (expandedQuestion === assignment.id ? "bg-primary/20 border-primary/50 text-primary" : "bg-white/5 border-white/10 text-muted-foreground")
                             )}>
-                              {isLocked ? <Lock className="w-5 h-5" /> : <FileCode2 className="w-5 h-5"/>}
+                              {isLocked ? <Lock className="w-5 h-5 text-red-500" /> : <FileCode2 className="w-5 h-5"/>}
                             </div>
                             <div>
-                              <h3 className="text-base font-bold text-gray-200 group-hover:text-white transition-colors">
+                              <h3 className={cn("text-base font-bold transition-colors", isLocked ? "text-gray-500" : "text-gray-200 group-hover:text-white")}>
                                 {assignment.title}
                               </h3>
                               <div className="flex items-center gap-3 mt-1.5">
