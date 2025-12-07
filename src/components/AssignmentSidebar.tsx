@@ -2,13 +2,15 @@ import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle, Clock, Eye } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Eye, LockKeyhole } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
+import { useToast } from '@/hooks/use-toast';
 
 interface Assignment {
   id: string;
   title: string;
   category: string | null;
+  is_unlocked?: boolean;
 }
 
 interface AssignmentSidebarProps {
@@ -19,6 +21,7 @@ interface AssignmentSidebarProps {
 }
 
 export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preLoadedAssignments = [] }: AssignmentSidebarProps) => {
+  const { toast } = useToast();
 
   // Group Assignments by Category
   const groupedAssignments = useMemo(() => {
@@ -47,7 +50,9 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
     }
   }, [selectedId, preLoadedAssignments]);
 
-  const getStatusColor = (id: string) => {
+  const getStatusColor = (id: string, isLocked: boolean) => {
+    if (isLocked) return 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed';
+
     const status = questionStatuses[id] || 'not-visited';
     switch (status) {
       case 'attempted': return 'bg-green-500/20 text-green-500 border-green-500/50';
@@ -57,7 +62,9 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
     }
   };
 
-  const getStatusIcon = (id: string) => {
+  const getStatusIcon = (id: string, isLocked: boolean) => {
+    if (isLocked) return <LockKeyhole className="w-3 h-3" />;
+
     const status = questionStatuses[id] || 'not-visited';
     switch (status) {
       case 'attempted': return <CheckCircle2 className="w-3 h-3" />;
@@ -65,6 +72,22 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
       case 'visited': return <Eye className="w-3 h-3" />;
       default: return <Circle className="w-3 h-3" />;
     }
+  };
+
+  const handleItemClick = (assignment: Assignment) => {
+    // Check if locked (default to true/unlocked if undefined)
+    const isLocked = assignment.is_unlocked === false;
+    
+    if (isLocked) {
+      toast({
+        title: "Locked Question",
+        description: "This question is currently locked.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    onSelect(assignment.id);
   };
 
   return (
@@ -76,7 +99,7 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
           <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /> Answered</div>
           <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /> Review</div>
           <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-white/50" /> Visited</div>
-          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full border border-white/30" /> Pending</div>
+          <div className="flex items-center gap-1.5"><LockKeyhole className="w-2 h-2 text-muted-foreground" /> Locked</div>
         </div>
       </div>
 
@@ -99,21 +122,25 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
                 </AccordionTrigger>
                 <AccordionContent className="p-3 bg-black/20">
                   <div className="grid grid-cols-4 gap-2">
-                    {items.map((assignment, idx) => (
-                      <button
-                        key={assignment.id}
-                        onClick={() => onSelect(assignment.id)}
-                        className={cn(
-                          "aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 border transition-all duration-200 relative group",
-                          getStatusColor(assignment.id),
-                          selectedId === assignment.id && "ring-1 ring-primary ring-offset-1 ring-offset-black bg-primary/10 border-primary/50 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
-                        )}
-                        title={assignment.title}
-                      >
-                        <span className="text-xs font-bold font-mono">{idx + 1}</span>
-                        {getStatusIcon(assignment.id)}
-                      </button>
-                    ))}
+                    {items.map((assignment, idx) => {
+                      const isLocked = assignment.is_unlocked === false;
+                      
+                      return (
+                        <button
+                          key={assignment.id}
+                          onClick={() => handleItemClick(assignment)}
+                          className={cn(
+                            "aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 border transition-all duration-200 relative group",
+                            getStatusColor(assignment.id, isLocked),
+                            selectedId === assignment.id && !isLocked && "ring-1 ring-primary ring-offset-1 ring-offset-black bg-primary/10 border-primary/50 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
+                          )}
+                          title={isLocked ? "Locked" : assignment.title}
+                        >
+                          <span className="text-xs font-bold font-mono">{idx + 1}</span>
+                          {getStatusIcon(assignment.id, isLocked)}
+                        </button>
+                      );
+                    })}
                   </div>
                 </AccordionContent>
               </AccordionItem>
