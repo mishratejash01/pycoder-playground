@@ -18,9 +18,16 @@ interface AssignmentSidebarProps {
   onSelect: (id: string) => void;
   questionStatuses: Record<string, QuestionStatus>;
   preLoadedAssignments?: Assignment[];
+  isProctored?: boolean; // New prop to control grouping behavior
 }
 
-export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preLoadedAssignments = [] }: AssignmentSidebarProps) => {
+export const AssignmentSidebar = ({ 
+  selectedId, 
+  onSelect, 
+  questionStatuses, 
+  preLoadedAssignments = [], 
+  isProctored = false 
+}: AssignmentSidebarProps) => {
   const { toast } = useToast();
 
   // Group Assignments by Category
@@ -29,12 +36,13 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
     if (!preLoadedAssignments) return groups;
     
     preLoadedAssignments.forEach(a => {
-      const cat = a.category || "General Questions";
+      // If proctored, flatten everything into one "Questions" group to avoid fragmentation
+      const cat = isProctored ? "Questions" : (a.category || "General Questions");
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(a);
     });
     return groups;
-  }, [preLoadedAssignments]);
+  }, [preLoadedAssignments, isProctored]);
 
   const [openItem, setOpenItem] = useState<string>("");
 
@@ -43,12 +51,13 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
     if (selectedId && preLoadedAssignments.length > 0) {
       const assignment = preLoadedAssignments.find(a => a.id === selectedId);
       if (assignment) {
-        const category = assignment.category || "General Questions";
+        // Match the logic above for category determination
+        const category = isProctored ? "Questions" : (assignment.category || "General Questions");
         // Check if currently open item is different to avoid redundant updates
         setOpenItem(prev => (prev !== category ? category : prev));
       }
     }
-  }, [selectedId, preLoadedAssignments]);
+  }, [selectedId, preLoadedAssignments, isProctored]);
 
   const getStatusColor = (id: string, isLocked: boolean) => {
     if (isLocked) return 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed';
