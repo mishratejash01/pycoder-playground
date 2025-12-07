@@ -35,58 +35,40 @@ const DegreeSelection = () => {
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [selectedExamData, setSelectedExamData] = useState<{id: string, name: string, type: string} | null>(null);
 
-  // 1. Fetch Degrees (Root Parent)
+  // 1. Fetch Degrees
   const { data: degrees = [] } = useQuery({
     queryKey: ['iitm_degrees'],
     queryFn: async () => {
       // @ts-ignore
       const { data, error } = await supabase.from('iitm_degrees').select('*').order('name');
-      if (error) {
-        console.error('Error fetching degrees:', error);
-        return [];
-      }
+      if (error) return [];
       return data;
     }
   });
 
-  // Set default degree on load
+  // Set default degree
   useEffect(() => {
-    if (degrees.length > 0 && !selectedDegree) {
-      setSelectedDegree(degrees[0].id);
-    }
+    if (degrees.length > 0 && !selectedDegree) setSelectedDegree(degrees[0].id);
   }, [degrees, selectedDegree]);
 
-  // 2. Fetch Levels (Filtered by Selected Degree)
+  // 2. Fetch Levels
   const { data: levels = [] } = useQuery({
     queryKey: ['iitm_levels', selectedDegree],
     queryFn: async () => {
       if (!selectedDegree) return [];
-      
-      const { data, error } = await supabase
-        .from('iitm_levels')
-        .select('*')
-        .eq('degree_id', selectedDegree)
-        .order('sequence');
-      
+      const { data, error } = await supabase.from('iitm_levels').select('*').eq('degree_id', selectedDegree).order('sequence');
       if (error) throw error;
       return data;
     },
     enabled: !!selectedDegree
   });
 
-  // 3. Fetch Subjects (Filtered by Selected Degree via Levels)
+  // 3. Fetch Subjects
   const { data: subjects = [] } = useQuery({
     queryKey: ['iitm_subjects', selectedDegree],
     queryFn: async () => {
       if (!selectedDegree) return [];
-
-      const { data, error } = await supabase
-        .from('iitm_subjects')
-        .select('*, iitm_levels!inner(degree_id)')
-        // @ts-ignore
-        .eq('iitm_levels.degree_id', selectedDegree)
-        .order('name');
-
+      const { data, error } = await supabase.from('iitm_subjects').select('*, iitm_levels!inner(degree_id)').eq('iitm_levels.degree_id', selectedDegree).order('name');
       if (error) throw error;
       return data;
     },
@@ -124,20 +106,13 @@ const DegreeSelection = () => {
 
   const handleModeSelect = (mode: 'learning' | 'proctored') => {
     if (!selectedExamData) return;
-
     if (mode === 'proctored') {
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       if (window.innerWidth < 1024 || isMobileDevice) {
-        toast({
-          title: "Access Denied 🚫",
-          description: "Proctored exams require a Laptop or Desktop PC. Please switch devices.",
-          variant: "destructive",
-          duration: 5000,
-        });
+        toast({ title: "Access Denied 🚫", description: "Proctored exams require a Laptop or Desktop PC.", variant: "destructive", duration: 5000 });
         return;
       }
     }
-
     setIsModeOpen(false);
     navigate(`/degree/sets/${selectedExamData.id}/${encodeURIComponent(selectedExamData.name)}/${encodeURIComponent(selectedExamData.type)}/${mode}`);
   };
@@ -153,30 +128,18 @@ const DegreeSelection = () => {
       {/* Header Section */}
       <div className="relative z-40 bg-[#09090b] border-b border-white/5 pt-16 md:pt-24 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          
           <div className="text-center space-y-3">
-            <Badge variant="outline" className="border-white/10 bg-white/5 text-muted-foreground uppercase tracking-widest px-3 py-1 text-[10px]">
-              Academic Portal
-            </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold font-neuropol tracking-wide text-white">
-              Explore Curriculum
-            </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-              Discover a premium learning platform that delivers curated content, real-time exam simulations, and a robust library of practice sets to support excellence.
-            </p>
+            <Badge variant="outline" className="border-white/10 bg-white/5 text-muted-foreground uppercase tracking-widest px-3 py-1 text-[10px]">Academic Portal</Badge>
+            <h1 className="text-4xl md:text-5xl font-bold font-neuropol tracking-wide text-white">Explore Curriculum</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-base leading-relaxed">Discover a premium learning platform that delivers curated content, real-time exam simulations, and a robust library of practice sets.</p>
           </div>
 
-          {/* Degree Selector (Tabs) */}
           <div className="flex justify-center">
             {degrees.length > 0 && (
               <Tabs value={selectedDegree} onValueChange={setSelectedDegree} className="w-full max-w-md">
                 <TabsList className="grid w-full grid-cols-2 bg-black/40 border border-white/10 h-11 p-1 rounded-lg">
                   {degrees.map((degree: any) => (
-                    <TabsTrigger 
-                      key={degree.id} 
-                      value={degree.id}
-                      className="data-[state=active]:bg-white/10 data-[state=active]:text-white h-full text-xs font-medium uppercase tracking-wide rounded-md transition-all"
-                    >
+                    <TabsTrigger key={degree.id} value={degree.id} className="data-[state=active]:bg-white/10 data-[state=active]:text-white h-full text-xs font-medium uppercase tracking-wide rounded-md transition-all">
                       <GraduationCap className="w-3.5 h-3.5 mr-2 opacity-70" />
                       {degree.name.replace('BS in ', '')}
                     </TabsTrigger>
@@ -186,29 +149,19 @@ const DegreeSelection = () => {
             )}
           </div>
 
-          {/* Filters Bar */}
           <div className="bg-[#0c0c0e] border border-white/10 p-2 md:p-3 rounded-xl flex flex-col md:flex-row gap-3 items-center justify-between shadow-lg">
             <div className="w-full md:w-1/3">
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger className="bg-white/5 border-white/5 text-white h-10 text-sm focus:ring-0 focus:border-white/20">
-                  <SelectValue placeholder="Filter by Level" />
-                </SelectTrigger>
+                <SelectTrigger className="bg-white/5 border-white/5 text-white h-10 text-sm focus:ring-0 focus:border-white/20"><SelectValue placeholder="Filter by Level" /></SelectTrigger>
                 <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
                   <SelectItem value="all">All Levels</SelectItem>
-                  {levels.map((level: any) => (
-                    <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>
-                  ))}
+                  {levels.map((level: any) => <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="w-full md:w-1/3 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search subjects..." 
-                className="pl-9 bg-white/5 border-white/5 text-white h-10 text-sm focus-visible:ring-0 focus-visible:border-white/20 placeholder:text-muted-foreground/50"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <Input placeholder="Search subjects..." className="pl-9 bg-white/5 border-white/5 text-white h-10 text-sm focus-visible:ring-0 focus-visible:border-white/20 placeholder:text-muted-foreground/50" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
             <div className="w-full md:w-auto text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap px-4 font-mono">
               <span className="text-white font-bold mr-1">{filteredSubjects.length}</span> Subjects Found
@@ -222,13 +175,9 @@ const DegreeSelection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSubjects.length === 0 ? (
             <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
-              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-6 h-6 text-muted-foreground" />
-              </div>
+              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4"><Search className="w-6 h-6 text-muted-foreground" /></div>
               <p className="text-muted-foreground">No subjects found matching your criteria.</p>
-              <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedLevel('all'); }} className="text-primary mt-2">
-                Clear Filters
-              </Button>
+              <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedLevel('all'); }} className="text-primary mt-2">Clear Filters</Button>
             </div>
           ) : (
             filteredSubjects.map((subject: any) => {
@@ -243,37 +192,34 @@ const DegreeSelection = () => {
                   key={subject.id} 
                   className={cn(
                     "group relative bg-[#0c0c0e] rounded-xl border border-white/10 transition-all duration-300 flex flex-col overflow-hidden",
-                    // NOTE: Removed opacity reduction for locked state so the overlay shines through
                     isLocked 
-                      ? "pointer-events-none" 
+                      ? "pointer-events-none opacity-80" 
                       : "hover:border-white/20 hover:shadow-[0_0_30px_rgba(0,0,0,0.6)]"
                   )}
                 >
                   
-                  {/* --- PREMIUM LOCK OVERLAY --- */}
-                  {isLocked && <PremiumLockOverlay />}
-
                   {/* Premium Hover Glow (Only for Unlocked) */}
                   {!isLocked && (
                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-500" />
                   )}
                   
-                  {/* Tech Corners - Wireframe Style */}
-                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-white/20 rounded-tl-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-white/20 rounded-tr-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-white/20 rounded-bl-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-white/20 rounded-br-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-
                   <div className="p-6 flex flex-col h-full relative z-10">
                     
-                    {/* Header */}
+                    {/* Header: Icon + (Lock & Level Badge) */}
                     <div className="flex items-start justify-between mb-5">
                         <div className="p-2.5 rounded-lg bg-[#151515] border border-white/10 group-hover:border-primary/30 group-hover:bg-primary/10 transition-all duration-300 shadow-lg">
                             {getSubjectIcon(subject.name)}
                         </div>
-                        <Badge variant="outline" className="border-white/10 bg-white/5 text-[10px] uppercase tracking-wider font-mono text-muted-foreground group-hover:text-white transition-colors">
-                            {levelName}
-                        </Badge>
+                        
+                        {/* RIGHT SIDE BADGES CONTAINER */}
+                        <div className="flex items-center gap-3">
+                           {/* Render Lock beside Badge if locked */}
+                           {isLocked && <PremiumLockOverlay />}
+                           
+                           <Badge variant="outline" className="border-white/10 bg-white/5 text-[10px] uppercase tracking-wider font-mono text-muted-foreground group-hover:text-white transition-colors">
+                               {levelName}
+                           </Badge>
+                        </div>
                     </div>
 
                     {/* Title & Desc */}
@@ -332,65 +278,30 @@ const DegreeSelection = () => {
         </div>
       </div>
 
-      {/* --- MODE SELECTION DIALOG --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
           <div className="flex flex-col md:grid md:grid-cols-2 md:h-[550px] relative">
-            
-            {/* OPTION 1: PRACTICE */}
-            <div 
-              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col"
-              onClick={() => handleModeSelect('learning')}
-            >
+            <div className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col" onClick={() => handleModeSelect('learning')}>
               <div className="flex-1 flex items-center justify-center p-12 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
-                 <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
-                  alt="Practice Coding" 
-                  className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105"
-                />
+                 <img src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" alt="Practice Coding" className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105" />
               </div>
               <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3>
-                </div>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                  Experiment freely. No pressure, no timers—just you improving your craft.
-                </p>
+                <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.1)]"><Sparkles className="w-5 h-5 text-blue-400" /></div><h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3></div>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">Experiment freely. No pressure, no timers—just you improving your craft.</p>
               </div>
             </div>
-
-            {/* OPTION 2: PROCTORED */}
-            <div 
-              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col"
-              onClick={() => handleModeSelect('proctored')}
-            >
+            <div className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col" onClick={() => handleModeSelect('proctored')}>
               <div className="flex-1 flex items-center justify-center p-12 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
-                <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
-                  alt="Proctored Exam" 
-                  className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105"
-                />
+                <img src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" alt="Proctored Exam" className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105" />
               </div>
               <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]">
-                    <ShieldCheck className="w-5 h-5 text-red-400" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3>
-                </div>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                  Strict monitoring and time limits to officially validate your skills.
-                </p>
+                <div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]"><ShieldCheck className="w-5 h-5 text-red-400" /></div><h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3></div>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">Strict monitoring and time limits to officially validate your skills.</p>
               </div>
             </div>
-
           </div>
-
           <div className="bg-[#050505] p-3 text-center text-xs text-muted-foreground border-t border-white/5 flex justify-between items-center px-6">
             <span>Selected: <span className="text-white font-medium">{selectedExamData?.name}</span></span>
             <span className="bg-white/5 px-2 py-1 rounded text-[10px] uppercase tracking-wider">{selectedExamData?.type}</span>
