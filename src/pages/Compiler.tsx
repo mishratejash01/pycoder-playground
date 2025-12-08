@@ -50,7 +50,7 @@ const Compiler = () => {
   const [inputData, setInputData] = useState<string>(""); 
   const [output, setOutput] = useState<string>('// Output will appear here...');
   const [activeTab, setActiveTab] = useState("output");
-  const [isError, setIsError] = useState(false); // New state to explicitly track error status
+  const [isError, setIsError] = useState(false); 
   
   const { executeCode, loading } = useCodeRunner();
 
@@ -70,33 +70,26 @@ const Compiler = () => {
   const handleRun = async () => {
     if (loading) return;
     
+    // 1. Reset UI
     setActiveTab("output"); 
     setOutput(""); 
-    setIsError(false); // Reset error state before run
+    setIsError(false); 
     
+    // 2. Stream Handler (Updates state as text arrives)
     const handleStreamOutput = (text: string) => {
         setOutput((prev) => prev + text);
     };
 
+    // 3. Run Code
     const result = await executeCode(activeLanguage, code, inputData, handleStreamOutput);
     
-    // Explicitly set error state based on result.success
+    // 4. Final Error Check
     if (!result.success) {
         setIsError(true);
-    }
-
-    if (activeLanguage !== 'python') {
-        // For Piston, we just dump the output (which contains errors)
-        if (result.success) {
-            setOutput(result.output);
-        } else {
-            // If failed, show the error (which is also in output, but we ensure we grab it)
-            setOutput(result.error || result.output || "Unknown Error");
-        }
-    } else {
-        // Python (Streaming)
-        if (!result.success) {
-            setOutput((prev) => prev + "\n" + (result.error || ""));
+        // If it's NOT python, we manually set output because Piston doesn't stream.
+        // For Python, the error was already 'printed' via handleStreamOutput.
+        if (activeLanguage !== 'python') {
+            setOutput(result.output || result.error || "Unknown Error");
         }
     }
   };
