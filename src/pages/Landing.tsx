@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
+import { 
+  Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, 
+  MessageSquareText, Github, Linkedin, Globe, Phone, Mail, Check, Share2, ExternalLink 
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -10,6 +13,18 @@ import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+
+// --- NEW IMPORTS FOR HIT ME UP ---
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetDescription
+} from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// ---------------------------------
 
 // --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
@@ -78,6 +93,11 @@ const Landing = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
+  // --- HIT ME UP STATES ---
+  const [ownerProfile, setOwnerProfile] = useState<any>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  // ------------------------
+
   // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
   const helloWorldText = useTypewriter("Hello World", 150, 1500);
@@ -92,7 +112,6 @@ const Landing = () => {
   
   // Animate scale from 1 down to 0.90 over the first 500px of scroll
   const rawScale = useTransform(scrollY, [0, 500], [1, 0.90]);
-  // Use spring physics for smooth, non-snappy animation
   const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.2 });
 
   // Animate border radius from 0 to 32px over the first 500px
@@ -154,6 +173,21 @@ const Landing = () => {
     return () => subscription.unsubscribe();
   }, [toast]);
 
+  // --- FETCH OWNER PROFILE FOR HIT ME UP ---
+  useEffect(() => {
+    const fetchOwner = async () => {
+      // REPLACE 'mishratejash01' WITH YOUR ACTUAL USERNAME IF DIFFERENT
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("username", "mishratejash01") 
+        .single();
+      if (data) setOwnerProfile(data);
+    };
+    fetchOwner();
+  }, []);
+  // ----------------------------------------
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -174,6 +208,14 @@ const Landing = () => {
     setTimeout(() => {
       session ? navigate('/practice') : navigate('/auth');
     }, 800);
+  };
+
+  const copyProfileLink = () => {
+    const url = `${window.location.origin}/u/${ownerProfile?.username || 'mishratejash01'}`;
+    navigator.clipboard.writeText(url);
+    setIsCopied(true);
+    toast({ title: "Profile link copied!" });
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
@@ -209,6 +251,106 @@ const Landing = () => {
           margin-left: 2px;
         }
       `}</style>
+
+      {/* --- HIT ME UP WIDGET (DESKTOP ONLY) --- */}
+      {ownerProfile && (
+        <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[100] font-sans">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                className="h-auto py-8 pl-1 pr-1 rounded-l-2xl rounded-r-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(37,99,235,0.4)] border-y border-l border-white/20 transition-all hover:pr-3"
+                style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+              >
+                <div className="flex items-center justify-center gap-3 py-2 rotate-180">
+                  <MessageSquareText className="w-5 h-5 -rotate-90" />
+                  <span className="text-sm font-bold tracking-[0.15em] whitespace-nowrap">HIT ME UP</span>
+                </div>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="bg-[#0c0c0e] border-l border-white/10 text-white w-[400px] p-0 z-[101]">
+                <div className="h-full flex flex-col">
+                  {/* Header */}
+                  <div className="p-6 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
+                    <SheetHeader className="text-left space-y-4">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="w-16 h-16 border-2 border-white/10 shadow-lg">
+                          <AvatarImage src={ownerProfile.avatar_url || `https://ui-avatars.com/api/?name=${ownerProfile.full_name}&background=random`} />
+                          <AvatarFallback className="bg-primary">{ownerProfile.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <SheetTitle className="text-xl text-white">Connect</SheetTitle>
+                          <SheetDescription className="text-gray-400">
+                            Get in touch with {ownerProfile.full_name?.split(' ')[0]}
+                          </SheetDescription>
+                        </div>
+                      </div>
+                    </SheetHeader>
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Social Profiles</h4>
+                      <div className="grid gap-3">
+                        {ownerProfile.github_handle && (
+                          <a href={`https://github.com/${ownerProfile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Github className="w-5 h-5" /></div>
+                            <div className="flex-1 text-sm font-medium text-white">GitHub</div>
+                            <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                          </a>
+                        )}
+                        {ownerProfile.linkedin_url && (
+                          <a href={ownerProfile.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Linkedin className="w-5 h-5" /></div>
+                            <div className="flex-1 text-sm font-medium text-white">LinkedIn</div>
+                            <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                          </a>
+                        )}
+                        {ownerProfile.portfolio_url && (
+                          <a href={ownerProfile.portfolio_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Globe className="w-5 h-5" /></div>
+                            <div className="flex-1 text-sm font-medium text-white">Portfolio</div>
+                            <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Contact</h4>
+                        {ownerProfile.contact_no ? (
+                          <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary"><Phone className="w-5 h-5" /></div>
+                            <div>
+                              <div className="text-xs text-primary/80 font-medium uppercase">Mobile</div>
+                              <div className="text-sm font-bold text-white tracking-wide">{ownerProfile.contact_no}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4 opacity-70">
+                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-400"><Mail className="w-5 h-5" /></div>
+                            <div>
+                              <div className="text-xs text-muted-foreground uppercase">Email</div>
+                              <div className="text-sm font-medium text-white italic">Hidden</div>
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-6 border-t border-white/10 bg-black/20">
+                    <Button onClick={copyProfileLink} className="w-full bg-white text-black hover:bg-gray-200 font-bold">
+                      {isCopied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+                      {isCopied ? "LINK COPIED" : "SHARE PROFILE"}
+                    </Button>
+                  </div>
+                </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
+      {/* ------------------------------------- */}
 
       {/* Page Transition Overlay */}
       <AnimatePresence>
@@ -535,7 +677,6 @@ const Landing = () => {
 
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
             <div className="text-left mb-12">
-              {/* UPDATED: Added mask-image to fade text from bottom */}
               <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-sans [mask-image:linear-gradient(to_bottom,white_40%,transparent_100%)]">
                 Play n Codé
               </h2>
@@ -552,4 +693,4 @@ const Landing = () => {
   );
 };
 
-export default Landing
+export default Landing;
