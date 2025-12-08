@@ -1,8 +1,7 @@
-// public/pyodide.worker.js
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 
 let pyodide = null;
-let pythonInputBuffer = null; // Shared buffer for stdin
+let pythonInputBuffer = null;
 
 async function loadPyodideAndPackages() {
   pyodide = await loadPyodide();
@@ -16,23 +15,20 @@ self.onmessage = async (event) => {
 
   if (type === 'INIT') {
     await loadPyodideAndPackages();
-    // Store the shared buffer
     pythonInputBuffer = new Int32Array(inputBuffer);
     
-    // Register the custom stdin handler
     pyodide.setStdin({
       stdin: () => {
         // 1. Notify Main thread we are waiting for input
         self.postMessage({ type: 'INPUT_REQUEST' });
         
-        // 2. BLOCK here using Atomics.wait until Main thread wakes us
-        // Index 0: 0 = waiting, 1 = ready
+        // 2. BLOCK here until Main thread gives us a character
         Atomics.wait(pythonInputBuffer, 0, 0); 
         
-        // 3. Read the character code put in index 1
+        // 3. Read the character code
         const charCode = pythonInputBuffer[1];
         
-        // 4. Reset wait flag for next char
+        // 4. Reset wait flag
         Atomics.store(pythonInputBuffer, 0, 0); 
         
         return String.fromCharCode(charCode);
@@ -44,9 +40,9 @@ self.onmessage = async (event) => {
   if (type === 'RUN') {
     try {
       await pyodide.runPythonAsync(code);
-      self.postMessage({ type: 'FINISHED' });
     } catch (err) {
       self.postMessage({ type: 'OUTPUT', text: err.toString() });
+    } finally {
       self.postMessage({ type: 'FINISHED' });
     }
   }
