@@ -14,7 +14,6 @@ import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 
-// --- NEW IMPORTS FOR HIT ME UP ---
 import {
   Sheet,
   SheetContent,
@@ -24,7 +23,6 @@ import {
   SheetDescription
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// ---------------------------------
 
 // --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
@@ -96,6 +94,7 @@ const Landing = () => {
   // --- HIT ME UP STATES ---
   const [ownerProfile, setOwnerProfile] = useState<any>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [showHitMeUp, setShowHitMeUp] = useState(false); // NEW: Controls visibility
   // ------------------------
 
   // Typewriter states
@@ -173,14 +172,30 @@ const Landing = () => {
     return () => subscription.unsubscribe();
   }, [toast]);
 
+  // --- SCROLL LISTENER FOR HIT ME UP ---
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show when scrolled past 80% of the viewport height (Hero section exit)
+      if (window.scrollY > window.innerHeight * 0.8) {
+        setShowHitMeUp(true);
+      } else {
+        setShowHitMeUp(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initially
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  // -------------------------------------
+
   // --- FETCH OWNER PROFILE FOR HIT ME UP ---
   useEffect(() => {
     const fetchOwner = async () => {
-      // REPLACE 'mishratejash01' WITH YOUR ACTUAL USERNAME IF DIFFERENT
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .eq("username", "mishratejash01") 
+        .eq("username", "mishratejash01") // Replace with your admin username
         .single();
       if (data) setOwnerProfile(data);
     };
@@ -252,9 +267,14 @@ const Landing = () => {
         }
       `}</style>
 
-      {/* --- HIT ME UP WIDGET (DESKTOP ONLY) --- */}
+      {/* --- HIT ME UP WIDGET (DESKTOP ONLY + SCROLL TRIGGERED) --- */}
       {ownerProfile && (
-        <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[100] font-sans">
+        <div 
+          className={cn(
+            "hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[100] font-sans transition-all duration-500 ease-in-out transform",
+            showHitMeUp ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+          )}
+        >
           <Sheet>
             <SheetTrigger asChild>
               <Button
