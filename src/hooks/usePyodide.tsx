@@ -7,7 +7,6 @@ import traceback
 import io
 import js
 
-# Class to redirect stdout to Javascript callback
 class JSWriter:
     def write(self, string):
         try:
@@ -18,24 +17,19 @@ class JSWriter:
         pass
 
 def _run_code_with_streams(user_code, input_str):
-    # 1. Setup Stdin (Reset every run)
     sys.stdin = io.StringIO(input_str)
-    
-    # 2. Setup Stdout (Streaming)
     old_stdout = sys.stdout
     sys.stdout = JSWriter()
     
     try:
-        # Execute User Code with FRESH globals ({} as second arg) 
-        # to ensure no variables persist from previous runs.
+        # Execute with clean globals to prevent state persistence
         exec(user_code, {})
         return {"success": True}
     except Exception:
-        # Capture the FULL traceback (including SyntaxErrors)
+        # FIX: Capture the full traceback for SyntaxErrors and RuntimeErrors
         error_msg = traceback.format_exc()
         return {"success": False, "error": error_msg}
     finally:
-        # Restore stdout so the browser console still works
         sys.stdout = old_stdout
 `;
 
@@ -69,7 +63,6 @@ export const usePyodide = () => {
   const runCode = async (code: string, stdin: string = "", onOutput?: (text: string) => void) => {
     if (!pyodideRef.current) throw new Error('Pyodide not loaded');
     
-    // Mount the callback
     // @ts-ignore
     window.handlePythonOutput = (text: string) => {
       if (onOutput) onOutput(text);
@@ -87,7 +80,7 @@ export const usePyodide = () => {
       if (!result.success) {
         return { success: false, error: result.error };
       }
-      return { success: true, output: "" }; 
+      return { success: true, output: "" };
     } catch (err: any) {
       // @ts-ignore
       delete window.handlePythonOutput;
