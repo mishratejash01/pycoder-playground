@@ -60,7 +60,7 @@ const getLinkedInUsername = (url?: string) => {
   return match ? match[1] : null;
 };
 
-// --- Shared Component: Profile Card (New Design) ---
+// --- Shared Component: Profile Card ---
 
 const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData, isOwner: boolean, onEdit?: () => void }) => {
   const [isCopied, setIsCopied] = useState(false);
@@ -83,126 +83,143 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
   ].filter(Boolean) as string[];
 
   return (
-    <div className="h-full w-full bg-[#0c0c0e] text-white rounded-2xl shadow-2xl overflow-hidden flex flex-col font-sans border border-white/10 relative">
+    <div className="h-full flex flex-col bg-[#0c0c0e] text-white overflow-hidden rounded-xl border border-white/10 shadow-2xl relative font-sans">
       
-      {/* Scrollable Area */}
-      <div className="flex-1 overflow-y-auto relative">
+      {/* Scrollable Container */}
+      <div className="flex-1 overflow-y-auto relative no-scrollbar">
         
         {/* --- BANNER --- */}
-        <div className="relative h-48 bg-cover bg-center shrink-0" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop')" }}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        <div className="relative h-48 bg-gradient-to-tr from-[#0f172a] via-[#1e1b4b] to-black shrink-0">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           
-          {/* Header Actions (Inside Banner) */}
-          <div className="absolute inset-x-0 top-0 p-6 flex justify-between items-center text-white z-10">
-            <div className="flex items-center">
-              <span className="font-neuropol font-bold text-lg tracking-widest text-white/80">CODÉVO</span>
-            </div>
-            <div className="flex gap-2">
-              {isOwner && onEdit && (
-                <button onClick={onEdit} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md">
-                  <Edit2 className="w-5 h-5 text-white" />
-                </button>
-              )}
-              <button onClick={copyProfileLink} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md">
-                {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5 text-white" />}
+          {/* BRANDING: CODéVO (Top Left) */}
+          <div className="absolute top-5 left-6 z-10 pointer-events-none select-none">
+            <span className="font-neuropol text-lg font-bold tracking-widest text-white/90 drop-shadow-md">
+              COD
+              <span className="text-[1.2em] lowercase relative -top-[1px] mx-[1px] inline-block text-primary">é</span>
+              VO
+            </span>
+          </div>
+
+          {/* SHARE BUTTON (Top Right - Redmi Style) */}
+          <div className="absolute top-4 right-4 z-20 flex gap-2">
+            {isOwner && onEdit && (
+              <button 
+                onClick={onEdit}
+                className="p-2 rounded-full bg-black/20 backdrop-blur-md hover:bg-white/20 text-white transition-all duration-300 border border-white/5"
+              >
+                <Edit2 className="w-5 h-5" />
               </button>
-            </div>
+            )}
+            <button 
+              onClick={copyProfileLink}
+              className="p-2 rounded-full bg-black/20 backdrop-blur-md hover:bg-white/20 text-white transition-all duration-300 border border-white/5"
+            >
+              {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5" />}
+            </button>
           </div>
         </div>
 
-        {/* --- AVATAR (Overlapping) --- */}
-        <div className="absolute top-28 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full border-4 border-[#0c0c0e] bg-[#1a1a1c] flex items-center justify-center z-20 shadow-xl">
-           <Avatar className="w-full h-full rounded-full">
+        {/* --- CONTENT CONTAINER --- */}
+        <div className="px-6 pb-8 relative">
+          
+          {/* --- AVATAR --- */}
+          <div className="-mt-16 mb-4 relative z-20 flex justify-center">
+            <Avatar className="w-32 h-32 border-[4px] border-[#0c0c0e] shadow-2xl ring-1 ring-white/10 bg-[#1a1a1c]">
               {avatarSources.map((src) => (
                 <AvatarImage key={src} src={src} className="object-cover" />
               ))}
-              <AvatarFallback className="bg-[#1a1a1c] text-4xl font-bold text-white/50">
+              <AvatarFallback className="bg-[#1a1a1c] text-4xl font-bold text-white/40">
                 {profile.full_name?.charAt(0).toUpperCase()}
               </AvatarFallback>
-           </Avatar>
-        </div>
-
-        {/* --- MAIN CONTENT --- */}
-        <div className="pt-20 pb-6 px-6 text-center">
-          
-          {/* Name & Handle */}
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">{profile.full_name}</h1>
-          <div className="mt-2 flex items-center justify-center gap-2">
-            <LinkIcon className="w-4 h-4 text-primary" />
-            <a className="text-primary font-semibold text-lg hover:underline" href={`/u/${profile.username}`}>@{profile.username}</a>
+            </Avatar>
           </div>
 
-          {/* Location */}
-          {profile.country && (
-            <div className="mt-2 flex items-center justify-center gap-2 text-gray-400">
-              <MapPin className="w-4 h-4" />
-              <span className="text-base">{profile.country}</span>
+          {/* --- CENTERED INFO --- */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">{profile.full_name}</h1>
+            
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <LinkIcon className="w-4 h-4 text-primary" />
+              <a href={`/u/${profile.username}`} className="text-primary font-semibold text-lg hover:underline decoration-primary/50 underline-offset-4 transition-all">
+                @{profile.username}
+              </a>
             </div>
-          )}
 
-          {/* Bio */}
-          {profile.bio && (
-            <div className="mt-4 text-gray-400 text-sm leading-relaxed text-center px-2">
-              <p>{profile.bio}</p>
-            </div>
-          )}
+            {profile.country && (
+              <div className="mt-2 flex items-center justify-center gap-1.5 text-gray-400">
+                <MapPin className="w-4 h-4" />
+                <span className="text-sm font-medium">{profile.country}</span>
+              </div>
+            )}
 
-          {/* Social Icons Row */}
-          <div className="mt-6 flex justify-center gap-4">
+            {profile.bio && (
+              <div className="mt-6 px-4">
+                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+              </div>
+            )}
+          </div>
+
+          {/* --- SOCIALS --- */}
+          <div className="flex justify-center gap-4 mb-8">
             {profile.github_handle && (
-              <a href={`https://github.com/${profile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-gray-800 hover:text-white hover:border-gray-500 transition-all">
-                <Github className="w-6 h-6" />
+              <a href={`https://github.com/${profile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="group">
+                <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-[#24292e] group-hover:text-white group-hover:border-transparent transition-all duration-300 shadow-lg">
+                  <Github className="w-6 h-6" />
+                </div>
               </a>
             )}
             {profile.linkedin_url && (
-              <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-[#0077b5] hover:text-white hover:border-transparent transition-all">
-                <Linkedin className="w-6 h-6" />
+              <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="group">
+                <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-[#0077b5] group-hover:text-white group-hover:border-transparent transition-all duration-300 shadow-lg">
+                  <Linkedin className="w-6 h-6" />
+                </div>
               </a>
             )}
             {profile.portfolio_url && (
-              <a href={profile.portfolio_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-emerald-600 hover:text-white hover:border-transparent transition-all">
-                <Globe className="w-6 h-6" />
+              <a href={profile.portfolio_url} target="_blank" rel="noreferrer" className="group">
+                <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-transparent transition-all duration-300 shadow-lg">
+                  <Globe className="w-6 h-6" />
+                </div>
               </a>
             )}
             {profile.contact_no && (
-              <div className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-primary hover:text-white hover:border-transparent transition-all cursor-default" title={profile.contact_no}>
+              <div className="w-12 h-12 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 hover:bg-primary hover:text-white hover:border-transparent transition-all duration-300 shadow-lg cursor-default" title={profile.contact_no}>
                 <Phone className="w-6 h-6" />
               </div>
             )}
           </div>
-        </div>
 
-        {/* Divider */}
-        <div className="px-6">
-          <hr className="border-gray-800" />
-        </div>
+          {/* --- DIVIDER --- */}
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8" />
 
-        {/* Education Section */}
-        {profile.institute_name && (
-          <div className="p-6 text-center md:text-left">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 text-center">Education</h2>
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-              <p className="font-bold text-white text-lg leading-tight">{profile.institute_name}</p>
-              <p className="text-sm text-gray-400 mt-1">{profile.degree} • {profile.branch}</p>
-              <p className="text-xs text-gray-500 mt-2">{profile.start_year} - {profile.end_year}</p>
+          {/* --- EDUCATION --- */}
+          {profile.institute_name && (
+            <div className="text-center px-4">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-4">Education</h2>
+              <div className="bg-white/5 rounded-2xl p-5 border border-white/5 hover:border-white/10 transition-colors">
+                <p className="font-bold text-white text-lg leading-tight mb-1">{profile.institute_name}</p>
+                <p className="text-sm text-primary/80 font-medium mb-2">{profile.degree} • {profile.branch}</p>
+                <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-gray-300">
+                  {profile.start_year} - {profile.end_year}
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
+        </div>
       </div>
 
       {/* --- FOOTER ACTION --- */}
-      {/* Only show if we are NOT on the main profile page (i.e., we are in the widget/popup) */}
       {window.location.pathname !== `/u/${profile.username}` && window.location.pathname !== `/profile` && (
         <div className="p-6 pt-0 mt-auto bg-[#0c0c0e]">
           <SheetClose asChild>
-            <button 
+            <Button 
               onClick={() => navigate(`/u/${profile.username}`)}
-              className="w-full h-14 flex items-center justify-center gap-3 bg-white text-black font-bold rounded-xl hover:opacity-90 transition-opacity"
+              className="w-full h-14 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-base shadow-lg hover:shadow-xl transition-all"
             >
-              <span>View Full Profile</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
+              View Full Profile <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
           </SheetClose>
         </div>
       )}
@@ -222,17 +239,15 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
   }, []);
 
-  // 2. Fetch User (Logged In User OR Default Admin)
+  // 2. Fetch User
   useEffect(() => {
     const fetchProfile = async () => {
       let query = supabase.from("profiles").select("*");
-      
       if (session?.user?.id) {
         query = query.eq("id", session.user.id);
       } else {
         query = query.eq("username", defaultUsername);
       }
-
       const { data } = await query.single();
       if (data) setProfile(data as ProfileData);
     };
@@ -274,7 +289,6 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
           side="right" 
           className="bg-transparent border-none shadow-none w-[400px] p-0 z-[10000] flex items-center h-full mr-2 [&>button]:hidden focus:outline-none" 
         >
-           {/* Height constrained to match the design card look */}
            <div className="w-full h-[85vh]"> 
              <ProfileCardContent profile={profile} isOwner={false} /> 
            </div>
