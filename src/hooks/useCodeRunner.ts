@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { toast } from "sonner"; // Assuming you use sonner for toasts
+import { toast } from "sonner"; 
 
-// Map your internal language names to Piston API versions/names
+// Mapping internal language names to Piston API versions
+// You can add more languages here if needed
 const LANGUAGE_MAP: Record<string, { language: string; version: string }> = {
   javascript: { language: "javascript", version: "18.15.0" },
   typescript: { language: "typescript", version: "5.0.3" },
@@ -19,6 +20,11 @@ export const useCodeRunner = () => {
   const [error, setError] = useState<string | null>(null);
 
   const runCode = async (language: string, sourceCode: string, stdin: string = "") => {
+    if (!sourceCode.trim()) {
+      toast.error("Please write some code first.");
+      return;
+    }
+
     setIsRunning(true);
     setOutput("");
     setError(null);
@@ -26,7 +32,7 @@ export const useCodeRunner = () => {
     const config = LANGUAGE_MAP[language.toLowerCase()];
 
     if (!config) {
-      setError(`Language ${language} is not supported yet.`);
+      setError(`Language "${language}" is not supported yet.`);
       setIsRunning(false);
       return;
     }
@@ -40,36 +46,35 @@ export const useCodeRunner = () => {
         body: JSON.stringify({
           language: config.language,
           version: config.version,
-          files: [
-            {
-              content: sourceCode,
-            },
-          ],
-          stdin: stdin, // Pass user input here
+          files: [{ content: sourceCode }],
+          stdin: stdin, 
         }),
       });
 
       const data = await response.json();
 
       if (data.message) {
-        // API Error
         throw new Error(data.message);
       }
 
-      // Piston returns { run: { stdout, stderr, code, ... } }
       const { stdout, stderr, code } = data.run;
 
+      // Handle output
       if (stderr) {
         setError(stderr);
-        // Sometimes stderr is just warnings, so we can still show stdout
+        // If there is also stdout (e.g. partial run), append it
         if (stdout) setOutput(stdout);
       } else {
         setOutput(stdout);
       }
 
+      // Handle non-zero exit codes that might not have stderr
       if (code !== 0 && !stderr) {
-         // Process exited with error code but no stderr
-         setError(`Process exited with code ${code}`);
+        setError(`Process exited with status code ${code}`);
+      }
+
+      if (code === 0 && !stdout && !stderr) {
+        setOutput("Program finished with no output.");
       }
 
     } catch (err: any) {
