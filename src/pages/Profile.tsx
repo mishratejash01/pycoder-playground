@@ -111,7 +111,7 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
             {/* Branding */}
             <div className="flex items-center mt-1">
               <span className="font-neuropol font-bold text-lg tracking-widest text-white/90 drop-shadow-md">
-                CODÉVO
+                CODéVO
               </span>
             </div>
 
