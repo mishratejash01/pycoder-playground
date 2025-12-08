@@ -25,16 +25,18 @@ export const useCodeRunner = () => {
           language,
           version,
           files: [{ content: code }],
-          stdin, // Piston handles stdin here
+          stdin,
         }),
       });
       const data = await response.json();
       
       if (data.run) {
+        // FIX: Piston v2 often puts compilation errors in 'output' not just 'stderr'
+        // So we use 'output' as the source of truth for the error message too.
         return {
           success: data.run.code === 0,
           output: data.run.output,
-          error: data.run.code !== 0 ? data.run.stderr : undefined
+          error: data.run.code !== 0 ? data.run.output : undefined 
         };
       }
       return { success: false, output: "", error: "Execution failed to start." };
@@ -43,7 +45,6 @@ export const useCodeRunner = () => {
     }
   };
 
-  // Added onOutput callback for streaming support
   const executeCode = async (
     language: Language, 
     code: string, 
@@ -56,9 +57,7 @@ export const useCodeRunner = () => {
     try {
       switch (language) {
         case 'python':
-          // Pass input and the streaming callback
           const pyResult = await runPython(code, input, onOutput); 
-          // Python output is handled via streaming, so we return empty string here unless error
           result = { success: pyResult.success, output: "", error: pyResult.error };
           break;
 
