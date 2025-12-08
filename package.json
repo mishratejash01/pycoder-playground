@@ -71,7 +71,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.164.1",
     "vaul": "^0.9.9",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
     "xterm": "^5.3.0",
     "xterm-addon-fit": "^0.8.0"
   },
