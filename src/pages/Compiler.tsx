@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // ShadCN Tabs
+import { Textarea } from "@/components/ui/textarea"; // ShadCN Textarea
 import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
-import { Loader2, Play, RefreshCw, Code2, FileCode, Home, Terminal, Download } from 'lucide-react';
+import { Loader2, Play, RefreshCw, Code2, FileCode, Home, Terminal, Download, Keyboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-// --- Helper Functions (Reused from AssignmentView) ---
+// ... (Helper Functions getStarterTemplate and getFileName remain the same) ...
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
     case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
@@ -18,12 +20,13 @@ const getStarterTemplate = (lang: Language) => {
     case 'javascript': return 'console.log("Hello, World!");';
     case 'sql': return '-- Write your SQL Query here\nCREATE TABLE demo (id INTEGER, message TEXT);\nINSERT INTO demo VALUES (1, "Hello World");\nSELECT * FROM demo;';
     case 'bash': return '#!/bin/bash\necho "Hello, World!"';
-    default: return '# Python 3\nprint("Hello, World!")';
+    default: return '# Python 3\n# Inputs are read from the Input tab\nname = input("Enter your name: ")\nprint(f"Hello, {name}!")';
   }
 };
 
 const getFileName = (lang: Language) => {
-  switch(lang) {
+    // ... (Keep existing)
+    switch(lang) {
     case 'java': return 'Main.java';
     case 'cpp': return 'main.cpp';
     case 'c': return 'main.c';
@@ -37,35 +40,70 @@ const getFileName = (lang: Language) => {
 const Compiler = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeLanguage, setActiveLanguage] = useState<Language>('python');
-  const [code, setCode] = useState<string>(getStarterTemplate('python'));
+  
+  // -- FEATURE 5: PERSISTENCE --
+  const [activeLanguage, setActiveLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('codevo-lang') as Language) || 'python';
+  });
+  
+  const [code, setCode] = useState<string>(() => {
+    return localStorage.getItem('codevo-code') || getStarterTemplate('python');
+  });
+
+  const [inputData, setInputData] = useState<string>(""); // FEATURE 1: Input Data State
   const [output, setOutput] = useState<string>('// Output will appear here...');
+  const [activeTab, setActiveTab] = useState("output"); // To switch tabs automatically
+  
   const { executeCode, loading } = useCodeRunner();
+
+  // Save to LocalStorage whenever code or language changes
+  useEffect(() => {
+    localStorage.setItem('codevo-code', code);
+    localStorage.setItem('codevo-lang', activeLanguage);
+  }, [code, activeLanguage]);
 
   const handleLanguageChange = (val: string) => {
     const newLang = val as Language;
     setActiveLanguage(newLang);
+    // Only reset code if it's the default template or empty, otherwise preserve user work? 
+    // For now, let's reset to template to avoid syntax mismatch, but user can Undo (Ctrl+Z) in editor usually.
+    // Better UX: Ask confirmation or just reset. sticking to reset for now.
     setCode(getStarterTemplate(newLang));
     setOutput('// Language changed. Output cleared.');
   };
 
   const handleRun = async () => {
     if (loading) return;
-    setOutput('Running...');
     
-    // For standard compiler, we don't need hidden input logic
-    const result = await executeCode(activeLanguage, code, "");
+    setActiveTab("output"); // Switch to output tab
+    setOutput(''); // Clear previous output
     
-    if (result.success) {
-      setOutput(result.output);
+    // FEATURE 2: STREAMING HANDLER
+    const handleStreamOutput = (text: string) => {
+        setOutput((prev) => prev + text);
+    };
+
+    // Pass inputData to executeCode
+    const result = await executeCode(activeLanguage, code, inputData, handleStreamOutput);
+    
+    // Handle non-streaming results (Piston languages) or Errors
+    if (activeLanguage !== 'python') {
+        if (result.success) {
+            setOutput(result.output);
+        } else {
+            setOutput(result.error || "An unknown error occurred.");
+        }
     } else {
-      setOutput(result.error || "An unknown error occurred.");
+        // For Python, if there was an error, append it
+        if (!result.success) {
+            setOutput((prev) => prev + "\n" + (result.error || ""));
+        }
     }
   };
 
-  // --- NEW: Client-Side Download Logic ---
   const handleDownload = () => {
-    try {
+      // ... (Keep existing download logic)
+      try {
       const filename = getFileName(activeLanguage);
       const blob = new Blob([code], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -98,7 +136,8 @@ const Compiler = () => {
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
       {/* Header Bar */}
       <header className="border-b border-white/10 bg-[#0c0c0e] px-4 py-3 flex items-center justify-between shrink-0 h-16">
-        <div className="flex items-center gap-4">
+         {/* ... (Keep existing Header content) ... */}
+         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white hover:bg-white/10">
             <Home className="w-5 h-5" />
           </Button>
@@ -110,7 +149,6 @@ const Compiler = () => {
           </div>
         </div>
 
-        {/* Toolbar */}
         <div className="flex items-center gap-3">
           <Select value={activeLanguage} onValueChange={handleLanguageChange}>
             <SelectTrigger className="h-9 w-[140px] bg-white/5 border-white/10 text-xs font-medium">
@@ -129,14 +167,9 @@ const Compiler = () => {
               <SelectItem value="bash">Bash</SelectItem>
             </SelectContent>
           </Select>
-
-          <div className="hidden sm:flex items-center text-xs text-muted-foreground bg-white/5 px-3 py-2 rounded border border-white/10">
-            <FileCode className="w-3 h-3 mr-2" /> 
-            {getFileName(activeLanguage)}
-          </div>
-
-          {/* Download Button */}
-          <Button 
+          
+           {/* Download & Run Buttons ... */}
+           <Button 
             onClick={handleDownload} 
             variant="outline"
             size="sm" 
@@ -173,21 +206,49 @@ const Compiler = () => {
 
           <ResizableHandle withHandle className="bg-black border-t border-b border-white/10 h-2 hover:bg-purple-500/20 transition-colors" />
 
-          {/* Bottom Panel: Output */}
+          {/* Bottom Panel: Output & Input */}
           <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col min-h-[100px] relative">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/20 shrink-0">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Terminal className="w-3 h-3" /> Console Output
-              </span>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setOutput('// Output cleared.')}>
-                <RefreshCw className="w-3 h-3"/>
-              </Button>
-            </div>
-            <div className="flex-1 p-4 font-mono text-sm overflow-auto custom-scrollbar">
-              <pre className={cn("whitespace-pre-wrap", output.includes('Error') ? "text-red-400" : "text-blue-300")}>
-                {output}
-              </pre>
-            </div>
+            
+            {/* FEATURE 1 & 2: TABS FOR INPUT/OUTPUT */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between px-4 border-b border-white/10 bg-black/20 shrink-0">
+                    <TabsList className="bg-transparent h-10 p-0 gap-4">
+                        <TabsTrigger 
+                            value="output" 
+                            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-purple-500 data-[state=active]:text-purple-400 rounded-none h-10 px-2 text-xs uppercase tracking-wider font-bold text-muted-foreground"
+                        >
+                            <Terminal className="w-3 h-3 mr-2" /> Console Output
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="input" 
+                            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-400 rounded-none h-10 px-2 text-xs uppercase tracking-wider font-bold text-muted-foreground"
+                        >
+                            <Keyboard className="w-3 h-3 mr-2" /> Standard Input (Stdin)
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setOutput('// Output cleared.')}>
+                        <RefreshCw className="w-3 h-3"/>
+                    </Button>
+                </div>
+
+                <TabsContent value="output" className="flex-1 p-0 m-0 overflow-hidden relative group">
+                     <div className="absolute inset-0 p-4 font-mono text-sm overflow-auto custom-scrollbar">
+                        <pre className={cn("whitespace-pre-wrap font-mono", output.includes('Error') ? "text-red-400" : "text-blue-300")}>
+                            {output || <span className="text-white/20 italic">Run code to see output...</span>}
+                        </pre>
+                     </div>
+                </TabsContent>
+
+                <TabsContent value="input" className="flex-1 p-0 m-0 overflow-hidden">
+                    <Textarea 
+                        value={inputData}
+                        onChange={(e) => setInputData(e.target.value)}
+                        placeholder="Enter input here (e.g., numbers for scanf, or text for input()). The code will read this when it runs."
+                        className="w-full h-full bg-[#1e1e20] text-white border-none resize-none rounded-none p-4 font-mono focus-visible:ring-0"
+                    />
+                </TabsContent>
+            </Tabs>
 
             {/* WATERMARK */}
             <div className="absolute bottom-2 right-3 pointer-events-none select-none z-50 flex items-center justify-end opacity-40">
