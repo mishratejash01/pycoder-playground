@@ -7,13 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea"; 
 import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
-import { usePyodide } from '@/hooks/usePyodide'; // Import the new Worker hook
+import { usePyodide } from '@/hooks/usePyodide'; // Import the Singleton Hook
 import { TerminalView } from '@/components/TerminalView'; // Import the Terminal
-import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard, Square } from 'lucide-react';
+import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-// ... (Keep getStarterTemplate and getFileName functions exactly as they were) ...
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
     case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
@@ -50,7 +49,7 @@ const Compiler = () => {
     return localStorage.getItem('codevo-code') || getStarterTemplate('python');
   });
 
-  // State for Non-Python languages
+  // State for Non-Python languages (Piston)
   const [inputData, setInputData] = useState<string>(""); 
   const [output, setOutput] = useState<string>('// Output will appear here...');
   const [activeTab, setActiveTab] = useState("output");
@@ -58,10 +57,19 @@ const Compiler = () => {
   
   // Hooks
   const { executeCode, loading: pistonLoading } = useCodeRunner();
-  const { runCode: runPython, output: pythonOutput, isRunning: pythonRunning, writeInputToWorker } = usePyodide();
+  
+  // PYTHON HOOK (Singleton Worker)
+  const { 
+      runCode: runPython, 
+      output: pythonOutput, 
+      isRunning: pythonRunning, 
+      isReady: pythonReady, 
+      writeInputToWorker 
+  } = usePyodide();
 
-  // Combine loading states
-  const isLoading = pistonLoading || pythonRunning;
+  // Unified Loading State
+  // We consider it "loading" if Piston is running, Python is running, OR Python is still booting up
+  const isLoading = pistonLoading || pythonRunning || (activeLanguage === 'python' && !pythonReady);
 
   useEffect(() => {
     localStorage.setItem('codevo-code', code);
@@ -81,6 +89,7 @@ const Compiler = () => {
 
     if (activeLanguage === 'python') {
         // Run Python (Terminal Mode)
+        // Only works if pythonReady is true, which is handled by the disabled button
         runPython(code);
     } else {
         // Run Piston (Batch Mode)
@@ -96,22 +105,21 @@ const Compiler = () => {
   };
 
   const handleDownload = () => {
-      // ... (Keep existing download logic) ...
-       try {
-          const filename = getFileName(activeLanguage);
-          const blob = new Blob([code], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          toast({ title: "Download Started", description: `Downloading ${filename}`, duration: 2000 });
-        } catch (err) {
-          toast({ title: "Download Failed", description: "Could not generate file.", variant: "destructive" });
-        }
+      try {
+      const filename = getFileName(activeLanguage);
+      const blob = new Blob([code], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast({ title: "Download Started", description: `Downloading ${filename}`, duration: 2000 });
+    } catch (err) {
+      toast({ title: "Download Failed", description: "Could not generate file.", variant: "destructive" });
+    }
   };
 
   return (
@@ -164,7 +172,11 @@ const Compiler = () => {
             )}
           >
             {isLoading ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Running...</>
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin"/> 
+                  {/* Show distinct text for "Booting" vs "Running" */}
+                  {!pythonReady && activeLanguage === 'python' ? "Booting Python..." : "Running..."}
+                </>
             ) : (
                 <><Play className="w-4 h-4 mr-2 fill-current"/> Run Code</>
             )}
@@ -210,10 +222,21 @@ const Compiler = () => {
                      </div>
                      
                      <div className="flex-1 relative">
-                        <TerminalView 
-                           output={pythonOutput} 
-                           onInput={writeInputToWorker} 
-                        />
+                        {/* If Python isn't ready yet, show the Boot Screen */}
+                        {!pythonReady ? (
+                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-mono">
+                                <div className="flex flex-col items-center gap-3">
+                                    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                                    <span>Initializing Python Kernel... (First run takes time)</span>
+                                </div>
+                            </div>
+                        ) : (
+                             // Otherwise show the actual Terminal
+                            <TerminalView 
+                               output={pythonOutput} 
+                               onInput={writeInputToWorker} 
+                            />
+                        )}
                      </div>
                  </div>
             ) : (
