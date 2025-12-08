@@ -266,4 +266,4 @@ const Compiler = () => {
   );
 };
 
-export default Compiler;
+export default Compile;
