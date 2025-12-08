@@ -71,12 +71,8 @@ const Compiler = () => {
     // 1. Switch to Output Tab
     setActiveTab("output"); 
     
-    // 2. HARD RESET OUTPUT
-    // We clear it here, but we also wait 50ms to ensure React updates the UI 
-    // before the main thread gets busy with Pyodide.
-    setOutput(''); 
-    
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // 2. Clear Output Immediately
+    setOutput(""); 
     
     // 3. Define Streaming Handler
     const handleStreamOutput = (text: string) => {
@@ -92,22 +88,29 @@ const Compiler = () => {
         if (result.success) {
             setOutput(result.output);
         } else {
-            // FIX: Show the error message (which we now get from data.run.output)
+            // FIX: Show the error message (captured from stderr in useCodeRunner)
             setOutput(result.error || "An unknown error occurred.");
         }
     } else {
         // Python (Streaming)
-        // If there was an error (like SyntaxError), append it to whatever was printed
+        // If there was an error (like SyntaxError), append it
         if (!result.success) {
             setOutput((prev) => prev + "\n" + (result.error || ""));
         }
     }
   };
 
-  // Helper to determine if output is an error
+  // Improved Error Detection Regex
   const isError = (text: string) => {
+     if (!text) return false;
      const lower = text.toLowerCase();
-     return lower.includes('error') || lower.includes('exception') || lower.includes('traceback') || lower.includes('failed');
+     return (
+        lower.includes('error:') || 
+        lower.includes('exception') || 
+        lower.includes('traceback') || 
+        lower.includes('failed') ||
+        lower.includes('syntaxerror')
+     );
   };
 
   const handleDownload = () => {
@@ -227,8 +230,18 @@ const Compiler = () => {
 
                 <TabsContent value="output" className="flex-1 p-0 m-0 overflow-hidden relative group">
                      <div className="absolute inset-0 p-4 font-mono text-sm overflow-auto custom-scrollbar">
+                        {/* LOADING OVERLAY */}
+                        {loading && output === "" && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
+                                <div className="flex flex-col items-center gap-2">
+                                    <Loader2 className="w-6 h-6 animate-spin text-purple-500"/>
+                                    <span className="text-xs text-muted-foreground">Compiling...</span>
+                                </div>
+                            </div>
+                        )}
+                        
                         <pre className={cn("whitespace-pre-wrap font-mono", isError(output) ? "text-red-400" : "text-blue-300")}>
-                            {output || <span className="text-white/20 italic">Run code to see output...</span>}
+                            {output || (!loading && <span className="text-white/20 italic">Run code to see output...</span>)}
                         </pre>
                      </div>
                 </TabsContent>
