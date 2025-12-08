@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 
 // INTELLIGENT PYTHON RUNNER SCRIPT
-// Updated to support Streaming Stdout and Pre-fed Stdin
 const PYTHON_TEST_RUNNER_SCRIPT = `
 import sys
-import ast
 import traceback
 import io
 import js
@@ -20,7 +18,7 @@ class JSWriter:
         pass
 
 def _run_code_with_streams(user_code, input_str):
-    # 1. Setup Stdin
+    # 1. Setup Stdin (Reset every run)
     sys.stdin = io.StringIO(input_str)
     
     # 2. Setup Stdout (Streaming)
@@ -28,19 +26,17 @@ def _run_code_with_streams(user_code, input_str):
     sys.stdout = JSWriter()
     
     try:
-        # Execute User Code
+        # Execute User Code with FRESH globals ({} as second arg) 
+        # to ensure no variables persist from previous runs.
         exec(user_code, {})
         return {"success": True}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+    except Exception:
+        # Capture the FULL traceback (including SyntaxErrors)
+        error_msg = traceback.format_exc()
+        return {"success": False, "error": error_msg}
     finally:
-        # Restore stdout
+        # Restore stdout so the browser console still works
         sys.stdout = old_stdout
-
-# Keep existing test runner for other parts of the app if needed...
-def _run_test_case_internal(user_code, func_name, input_str):
-    # ... (existing implementation if you need to keep it for assignments)
-    pass
 `;
 
 export const usePyodide = () => {
@@ -70,11 +66,10 @@ export const usePyodide = () => {
     loadPyodide();
   }, []);
 
-  // Updated runCode to accept stdin and an output callback
   const runCode = async (code: string, stdin: string = "", onOutput?: (text: string) => void) => {
     if (!pyodideRef.current) throw new Error('Pyodide not loaded');
     
-    // Mount the callback to the window object so Python can call it
+    // Mount the callback
     // @ts-ignore
     window.handlePythonOutput = (text: string) => {
       if (onOutput) onOutput(text);
@@ -86,14 +81,13 @@ export const usePyodide = () => {
       const result = resultProxy.toJs();
       resultProxy.destroy();
 
-      // Cleanup global
       // @ts-ignore
       delete window.handlePythonOutput;
 
       if (!result.success) {
         return { success: false, error: result.error };
       }
-      return { success: true, output: "" }; // Output already handled via stream
+      return { success: true, output: "" }; 
     } catch (err: any) {
       // @ts-ignore
       delete window.handlePythonOutput;
@@ -102,7 +96,6 @@ export const usePyodide = () => {
   };
 
   const runTestFunction = async (userCode: string, functionName: string, inputArgs: string) => {
-     // ... (Keep existing implementation for Assignments)
      return { success: false, error: "Not implemented for Compiler view" };
   };
 
