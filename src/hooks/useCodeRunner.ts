@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { usePyodide } from './usePyodide';
 
 // Piston API
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
@@ -13,7 +12,6 @@ interface ExecutionResult {
 }
 
 export const useCodeRunner = () => {
-  const { runCode: runPython, loading: pythonLoading } = usePyodide();
   const [loading, setLoading] = useState(false);
 
   const runPiston = async (language: string, version: string, code: string, stdin: string = "") => {
@@ -33,10 +31,7 @@ export const useCodeRunner = () => {
       if (data.run) {
         const stdout = data.run.stdout || "";
         const stderr = data.run.stderr || "";
-        const output = data.run.output || ""; // Piston's attempt to combine them
-        
-        // Fallback: If output is empty but we have stderr, use stderr
-        // This fixes cases where Piston separates them strictly
+        const output = data.run.output || ""; 
         const finalOutput = output ? output : (stdout + "\n" + stderr);
 
         return {
@@ -54,46 +49,24 @@ export const useCodeRunner = () => {
   const executeCode = async (
     language: Language, 
     code: string, 
-    input: string = "",
-    onOutput?: (text: string) => void
+    input: string = ""
   ): Promise<ExecutionResult> => {
     setLoading(true);
     let result: ExecutionResult = { success: false, output: "" };
 
     try {
       switch (language) {
+        // Python is now handled by usePyodide directly in the UI!
         case 'python':
-          // Python now handles errors via the stream (onOutput), so we just await it
-          const pyResult = await runPython(code, input, onOutput); 
-          result = { success: pyResult.success, output: "", error: pyResult.error };
+          result = { success: false, output: "Python is handled by the local kernel.", error: "" };
           break;
-
-        case 'javascript':
-          result = await runPiston('javascript', '18.15.0', code, input);
-          break;
-
-        case 'java':
-          result = await runPiston('java', '15.0.2', code, input);
-          break;
-
-        case 'cpp':
-          result = await runPiston('cpp', '10.2.0', code, input);
-          break;
-          
-        case 'c':
-          result = await runPiston('c', '10.2.0', code, input);
-          break;
-
-        case 'sql':
-          result = await runPiston('sqlite3', '3.36.0', code, input);
-          break;
-
-        case 'bash':
-          result = await runPiston('bash', '5.0.0', code, input);
-          break;
-
-        default:
-          result = { success: false, output: "Language not supported", error: "Unsupported language" };
+        case 'javascript': result = await runPiston('javascript', '18.15.0', code, input); break;
+        case 'java': result = await runPiston('java', '15.0.2', code, input); break;
+        case 'cpp': result = await runPiston('cpp', '10.2.0', code, input); break;
+        case 'c': result = await runPiston('c', '10.2.0', code, input); break;
+        case 'sql': result = await runPiston('sqlite3', '3.36.0', code, input); break;
+        case 'bash': result = await runPiston('bash', '5.0.0', code, input); break;
+        default: result = { success: false, output: "Language not supported", error: "Unsupported language" };
       }
     } catch (err: any) {
       result = { success: false, output: err.message, error: err.message };
@@ -104,8 +77,5 @@ export const useCodeRunner = () => {
     return result;
   };
 
-  return {
-    executeCode,
-    loading: loading || pythonLoading,
-  };
+  return { executeCode, loading };
 };
