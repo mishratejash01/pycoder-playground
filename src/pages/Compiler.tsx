@@ -3,15 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // ShadCN Tabs
-import { Textarea } from "@/components/ui/textarea"; // ShadCN Textarea
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; 
+import { Textarea } from "@/components/ui/textarea"; 
 import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
-import { Loader2, Play, RefreshCw, Code2, FileCode, Home, Terminal, Download, Keyboard } from 'lucide-react';
+import { Loader2, Play, RefreshCw, Code2, Home, Terminal, Download, Keyboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-// ... (Helper Functions getStarterTemplate and getFileName remain the same) ...
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
     case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
@@ -25,7 +24,6 @@ const getStarterTemplate = (lang: Language) => {
 };
 
 const getFileName = (lang: Language) => {
-    // ... (Keep existing)
     switch(lang) {
     case 'java': return 'Main.java';
     case 'cpp': return 'main.cpp';
@@ -41,7 +39,6 @@ const Compiler = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // -- FEATURE 5: PERSISTENCE --
   const [activeLanguage, setActiveLanguage] = useState<Language>(() => {
     return (localStorage.getItem('codevo-lang') as Language) || 'python';
   });
@@ -50,13 +47,12 @@ const Compiler = () => {
     return localStorage.getItem('codevo-code') || getStarterTemplate('python');
   });
 
-  const [inputData, setInputData] = useState<string>(""); // FEATURE 1: Input Data State
+  const [inputData, setInputData] = useState<string>(""); 
   const [output, setOutput] = useState<string>('// Output will appear here...');
-  const [activeTab, setActiveTab] = useState("output"); // To switch tabs automatically
+  const [activeTab, setActiveTab] = useState("output"); 
   
   const { executeCode, loading } = useCodeRunner();
 
-  // Save to LocalStorage whenever code or language changes
   useEffect(() => {
     localStorage.setItem('codevo-code', code);
     localStorage.setItem('codevo-lang', activeLanguage);
@@ -65,9 +61,6 @@ const Compiler = () => {
   const handleLanguageChange = (val: string) => {
     const newLang = val as Language;
     setActiveLanguage(newLang);
-    // Only reset code if it's the default template or empty, otherwise preserve user work? 
-    // For now, let's reset to template to avoid syntax mismatch, but user can Undo (Ctrl+Z) in editor usually.
-    // Better UX: Ask confirmation or just reset. sticking to reset for now.
     setCode(getStarterTemplate(newLang));
     setOutput('// Language changed. Output cleared.');
   };
@@ -75,26 +68,36 @@ const Compiler = () => {
   const handleRun = async () => {
     if (loading) return;
     
-    setActiveTab("output"); // Switch to output tab
-    setOutput(''); // Clear previous output
+    // 1. Switch to Output Tab
+    setActiveTab("output"); 
     
-    // FEATURE 2: STREAMING HANDLER
+    // 2. HARD RESET OUTPUT
+    // We clear it here, but we also wait 50ms to ensure React updates the UI 
+    // before the main thread gets busy with Pyodide.
+    setOutput(''); 
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // 3. Define Streaming Handler
     const handleStreamOutput = (text: string) => {
         setOutput((prev) => prev + text);
     };
 
-    // Pass inputData to executeCode
+    // 4. Run Code
     const result = await executeCode(activeLanguage, code, inputData, handleStreamOutput);
     
-    // Handle non-streaming results (Piston languages) or Errors
+    // 5. Handle Final Result / Errors
     if (activeLanguage !== 'python') {
+        // Piston (Non-streaming)
         if (result.success) {
             setOutput(result.output);
         } else {
+            // Show Piston Error
             setOutput(result.error || "An unknown error occurred.");
         }
     } else {
-        // For Python, if there was an error, append it
+        // Python (Streaming)
+        // If there was an error (like SyntaxError), append it to whatever was printed
         if (!result.success) {
             setOutput((prev) => prev + "\n" + (result.error || ""));
         }
@@ -102,33 +105,20 @@ const Compiler = () => {
   };
 
   const handleDownload = () => {
-      // ... (Keep existing download logic)
       try {
       const filename = getFileName(activeLanguage);
       const blob = new Blob([code], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
-      
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      
-      // Cleanup
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      toast({
-        title: "Download Started",
-        description: `Downloading ${filename}`,
-        duration: 2000,
-      });
+      toast({ title: "Download Started", description: `Downloading ${filename}`, duration: 2000 });
     } catch (err) {
-      toast({
-        title: "Download Failed",
-        description: "Could not generate file.",
-        variant: "destructive",
-      });
+      toast({ title: "Download Failed", description: "Could not generate file.", variant: "destructive" });
     }
   };
 
@@ -136,7 +126,6 @@ const Compiler = () => {
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
       {/* Header Bar */}
       <header className="border-b border-white/10 bg-[#0c0c0e] px-4 py-3 flex items-center justify-between shrink-0 h-16">
-         {/* ... (Keep existing Header content) ... */}
          <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white hover:bg-white/10">
             <Home className="w-5 h-5" />
@@ -168,7 +157,6 @@ const Compiler = () => {
             </SelectContent>
           </Select>
           
-           {/* Download & Run Buttons ... */}
            <Button 
             onClick={handleDownload} 
             variant="outline"
@@ -209,7 +197,6 @@ const Compiler = () => {
           {/* Bottom Panel: Output & Input */}
           <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col min-h-[100px] relative">
             
-            {/* FEATURE 1 & 2: TABS FOR INPUT/OUTPUT */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between px-4 border-b border-white/10 bg-black/20 shrink-0">
                     <TabsList className="bg-transparent h-10 p-0 gap-4">
@@ -234,7 +221,7 @@ const Compiler = () => {
 
                 <TabsContent value="output" className="flex-1 p-0 m-0 overflow-hidden relative group">
                      <div className="absolute inset-0 p-4 font-mono text-sm overflow-auto custom-scrollbar">
-                        <pre className={cn("whitespace-pre-wrap font-mono", output.includes('Error') ? "text-red-400" : "text-blue-300")}>
+                        <pre className={cn("whitespace-pre-wrap font-mono", (output.includes('Error') || output.includes('Exception')) ? "text-red-400" : "text-blue-300")}>
                             {output || <span className="text-white/20 italic">Run code to see output...</span>}
                         </pre>
                      </div>
