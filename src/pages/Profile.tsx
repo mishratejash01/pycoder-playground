@@ -220,7 +220,9 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 relative overflow-hidden">
       
-      {/* --- DESKTOP 'HIT ME UP' POP-OUT --- */}
+      {/* --- DESKTOP ONLY: 'HIT ME UP' POP-OUT --- */}
+      {/* 'hidden' hides it by default (Mobile) */}
+      {/* 'md:block' shows it on screens > 768px (Desktop/Tablet) */}
       <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-50">
         <Sheet>
           <SheetTrigger asChild>
@@ -469,7 +471,9 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Right Column: Socials (Mobile/Desktop Card View) */}
+              {/* Right Column: Socials (Card View - Visible on all devices) */}
+              {/* If you want this removed on Desktop since you have "Hit Me Up", add 'md:hidden' here. */}
+              {/* Currently it is kept so user has quick access without clicking "Hit Me Up" */}
               <div className="space-y-6">
                 <div className="bg-white/5 rounded-xl p-5 border border-white/5">
                   <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Connect</h3>
