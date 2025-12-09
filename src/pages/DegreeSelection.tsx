@@ -11,7 +11,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-// --- IMPORT THE NEW LOCK ---
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 
 const getSubjectIcon = (name: string) => {
@@ -235,7 +234,6 @@ const DegreeSelection = () => {
               const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
               const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
               
-              // --- LOCK LOGIC ---
               const isLocked = subject.is_unlocked === false; 
 
               return (
@@ -243,19 +241,16 @@ const DegreeSelection = () => {
                   key={subject.id} 
                   className={cn(
                     "group relative bg-[#0c0c0e] rounded-xl border border-white/10 transition-all duration-300 flex flex-col overflow-hidden",
-                    // Lock state styling: Slightly reduced opacity for locked items, keep hover effects subtle
                     isLocked 
                       ? "opacity-90" 
                       : "hover:border-white/20 hover:shadow-[0_0_30px_rgba(0,0,0,0.6)]"
                   )}
                 >
                   
-                  {/* Premium Hover Glow (Only for Unlocked) */}
                   {!isLocked && (
                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-500" />
                   )}
                   
-                  {/* Tech Corners - Wireframe Style */}
                   <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-white/20 rounded-tl-sm opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-white/20 rounded-tr-sm opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-white/20 rounded-bl-sm opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -263,13 +258,11 @@ const DegreeSelection = () => {
 
                   <div className="p-6 flex flex-col h-full relative z-10">
                     
-                    {/* Header */}
                     <div className="flex items-start justify-between mb-5">
                         <div className="p-2.5 rounded-lg bg-[#151515] border border-white/10 group-hover:border-primary/30 group-hover:bg-primary/10 transition-all duration-300 shadow-lg">
                             {getSubjectIcon(subject.name)}
                         </div>
                         
-                        {/* RIGHT SIDE: Lock + Level Badge */}
                         <div className="flex items-center gap-2">
                            {isLocked && <PremiumLockOverlay />}
                            
@@ -279,7 +272,6 @@ const DegreeSelection = () => {
                         </div>
                     </div>
 
-                    {/* Title & Desc */}
                     <div className="mb-8 flex-1">
                         <h3 className="text-lg font-bold text-white mb-2 line-clamp-1 group-hover:text-primary transition-colors tracking-tight" title={subject.name}>
                             {subject.name}
@@ -289,7 +281,6 @@ const DegreeSelection = () => {
                         </p>
                     </div>
 
-                    {/* Actions / Footer */}
                     <div className="space-y-4 mt-auto">
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
                             <span>Select Module</span>
@@ -345,13 +336,14 @@ const DegreeSelection = () => {
               className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('learning')}
             >
-              <div className="flex-1 flex items-center justify-center p-12 relative overflow-hidden">
+              <div className="flex-1 flex items-center justify-center p-0 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
                  <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
+                  src="https://images.unsplash.com/photo-1555099962-4199c345e5dd?q=80&w=1000&auto=format&fit=crop" 
                   alt="Practice Coding" 
-                  className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
               <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
                 <div className="flex items-center gap-3 mb-2">
@@ -371,13 +363,14 @@ const DegreeSelection = () => {
               className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('proctored')}
             >
-              <div className="flex-1 flex items-center justify-center p-12 relative overflow-hidden">
+              <div className="flex-1 flex items-center justify-center p-0 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
                 <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
+                  src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop" 
                   alt="Proctored Exam" 
-                  className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
               <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
                 <div className="flex items-center gap-3 mb-2">
