@@ -2,11 +2,21 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 
 let pyodide = null;
 let sharedBuffer = null;
-let bufferParams = null; // { headIndex: 0, tailIndex: 1, dataOffset: 2, size: ... }
+let bufferParams = null;
 
 async function loadPyodideAndPackages() {
   pyodide = await loadPyodide();
-  // Redirect stdout/stderr to postMessage
+  
+  // 1. Force Unbuffered Stdout (Fixes the "No Output" bug)
+  // This tells Python: "Print everything immediately, don't wait for a newline"
+  await pyodide.runPythonAsync(`
+import sys
+import io
+sys.stdout = io.TextIOWrapper(open(sys.stdout.fileno(), 'wb', 0), write_through=True)
+sys.stderr = io.TextIOWrapper(open(sys.stderr.fileno(), 'wb', 0), write_through=True)
+  `);
+
+  // 2. Redirect Streams to React
   pyodide.setStdout({ batched: (msg) => self.postMessage({ type: 'OUTPUT', text: msg + "\n" }) });
   pyodide.setStderr({ batched: (msg) => self.postMessage({ type: 'OUTPUT', text: msg + "\n" }) });
 }
@@ -15,40 +25,36 @@ self.onmessage = async (event) => {
   const { type, code, inputBuffer, params } = event.data;
 
   if (type === 'INIT') {
-    await loadPyodideAndPackages();
-    sharedBuffer = new Int32Array(inputBuffer);
-    bufferParams = params || { headIndex: 0, tailIndex: 1, dataOffset: 2, size: 256 };
-    
-    // Set up the Ring Buffer Reader
-    pyodide.setStdin({
-      stdin: () => {
-        // 1. Notify Main thread we want input (optional, mostly for UI focus)
-        self.postMessage({ type: 'INPUT_REQUEST' });
+    try {
+        await loadPyodideAndPackages();
+        sharedBuffer = new Int32Array(inputBuffer);
+        bufferParams = params;
         
-        // 2. Check if Buffer is Empty (Head == Tail)
-        let head = Atomics.load(sharedBuffer, bufferParams.headIndex);
-        let tail = Atomics.load(sharedBuffer, bufferParams.tailIndex);
-        
-        // 3. Wait if empty
-        if (head === tail) {
-            // Wait on the TAIL index to change from its current value
-            Atomics.wait(sharedBuffer, bufferParams.tailIndex, tail);
-            // Reload fresh tail after wake up
-            tail = Atomics.load(sharedBuffer, bufferParams.tailIndex);
-        }
+        // Setup Input Reader (The Queue)
+        pyodide.setStdin({
+          stdin: () => {
+            self.postMessage({ type: 'INPUT_REQUEST' });
+            
+            // Wait for input from React
+            let head = Atomics.load(sharedBuffer, bufferParams.headIndex);
+            let tail = Atomics.load(sharedBuffer, bufferParams.tailIndex);
+            
+            if (head === tail) {
+                Atomics.wait(sharedBuffer, bufferParams.tailIndex, tail);
+                tail = Atomics.load(sharedBuffer, bufferParams.tailIndex);
+            }
 
-        // 4. Read Character
-        const charCode = Atomics.load(sharedBuffer, bufferParams.dataOffset + head);
-        
-        // 5. Advance Head
-        const newHead = (head + 1) % bufferParams.size;
-        Atomics.store(sharedBuffer, bufferParams.headIndex, newHead);
-        
-        // 6. Return character
-        return String.fromCharCode(charCode);
-      }
-    });
-    self.postMessage({ type: 'READY' });
+            const charCode = Atomics.load(sharedBuffer, bufferParams.dataOffset + head);
+            const newHead = (head + 1) % bufferParams.size;
+            Atomics.store(sharedBuffer, bufferParams.headIndex, newHead);
+            
+            return String.fromCharCode(charCode);
+          }
+        });
+        self.postMessage({ type: 'READY' });
+    } catch (e) {
+        self.postMessage({ type: 'OUTPUT', text: "Error loading Pyodide: " + e.message });
+    }
   }
 
   if (type === 'RUN') {
