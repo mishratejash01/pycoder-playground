@@ -14,7 +14,9 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
-  SheetClose
+  SheetClose,
+  SheetTitle,        // Added import
+  SheetDescription   // Added import
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -285,6 +287,12 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
           </Button>
         </SheetTrigger>
         <SheetContent side="right" className="bg-transparent border-none shadow-none w-[380px] p-0 z-[10000] flex items-center h-full mr-4 [&>button]:hidden focus:outline-none">
+           {/* Added invisible Title and Description for Accessibility */}
+           <SheetTitle className="sr-only">Profile Preview</SheetTitle>
+           <SheetDescription className="sr-only">
+             Profile details for {profile.full_name || 'User'}
+           </SheetDescription>
+           
            <div className="w-full h-[80vh] relative flex flex-col">
              <ProfileCardContent profile={profile} isOwner={false} />
              
