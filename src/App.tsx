@@ -21,7 +21,7 @@ import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
 import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
 import SubjectModeSelection from "./pages/SubjectModeSelection";
-import Profile from "./pages/Profile"; // <--- RESTORED THIS IMPORT
+import Profile from "./pages/Profile"; 
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
@@ -62,7 +62,11 @@ const AppContent = () => {
 
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
-    { icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, label: 'IITM BS', onClick: () => navigate('/degree') },
+    { 
+      icon: <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
+      label: 'IITM BS', 
+      onClick: () => navigate('/degree') 
+    },
     { icon: <Code2 size={20} />, label: 'Practice', onClick: () => navigate('/practice-arena') },
     { icon: <Terminal size={20} />, label: 'Compiler', onClick: () => navigate('/compiler') },
     { icon: <Trophy size={20} />, label: 'Ranks', onClick: () => navigate('/leaderboard') },
@@ -89,10 +93,8 @@ const AppContent = () => {
         <Route path="/compiler" element={<Compiler />} />
         <Route path="/docs" element={<Documentation />} />
 
-        {/* --- RESTORED PROFILE ROUTES --- */}
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/profile" element={<Profile />} />
-        {/* ------------------------------- */}
 
         <Route path="*" element={<NotFound />} />
       </Routes>
