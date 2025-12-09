@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; 
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -60,18 +60,18 @@ interface ProfileData {
 
 // --- Constants: Premium Abstract Covers ---
 const COVER_TEMPLATES = [
-  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2064&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=2068&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=2074&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1506318137071-a8bcbf6755dd?q=80&w=2070&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1492321936769-b49830bc1d1e?q=80&w=1974&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=1974&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?q=80&w=2070&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2064&auto=format&fit=crop", // Dark Fluid
+  "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop", // Liquid Pink/Blue
+  "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop", // Retro Grid Dark
+  "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop", // Gradient Texture
+  "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=2068&auto=format&fit=crop", // Dark Abstract 3D
+  "https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=2074&auto=format&fit=crop", // Neon Red/Black
+  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop", // Cyberpunk Blue
+  "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop", // Purple Mesh
+  "https://images.unsplash.com/photo-1506318137071-a8bcbf6755dd?q=80&w=2070&auto=format&fit=crop", // Dark Leaves
+  "https://images.unsplash.com/photo-1492321936769-b49830bc1d1e?q=80&w=1974&auto=format&fit=crop", // Concrete Dark
+  "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=1974&auto=format&fit=crop", // Dark Fabric
+  "https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?q=80&w=2070&auto=format&fit=crop", // Golden Particles
 ];
 
 // --- Helper Functions ---
@@ -160,6 +160,7 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
   const displayUrl = `${window.location.host}/u/${profile.username}`;
   const linkedInUser = getLinkedInUsername(profile.linkedin_url);
   
+  // REMOVED unavatar.io/username to fix "Twitch" issue
   const avatarSources = [
     profile.avatar_url,
     linkedInUser ? `https://unavatar.io/linkedin/${linkedInUser}` : null,
@@ -271,6 +272,7 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
 
   if (!profile) return null;
 
+  // Logic: Incomplete if no Bio or no Institute
   const isProfileComplete = !!(profile.bio && profile.institute_name);
   const isOwner = session?.user?.id === profile.id;
 
@@ -286,6 +288,7 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
            <div className="w-full h-[80vh] relative flex flex-col">
              <ProfileCardContent profile={profile} isOwner={false} />
              
+             {/* Dynamic Button Action */}
              <div className="mt-4">
                {isOwner && !isProfileComplete ? (
                  <Button onClick={() => navigate('/profile')} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-lg hover:shadow-orange-500/20">
@@ -383,14 +386,7 @@ const Profile = () => {
 
           <div className="space-y-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">About You</h2>
-            <div className="relative">
-              <Textarea 
-                value={profile.bio || ''} 
-                onChange={(e) => updateProfile('bio', e.target.value)} 
-                className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" 
-                placeholder="Tell the world who you are..." 
-              />
-            </div>
+            <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateProfile('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
           </div>
           
           <div className="space-y-6 pb-20">
