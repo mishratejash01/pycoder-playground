@@ -11,8 +11,8 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
-    // THESE HEADERS ENABLE THE WORKER TO TALK TO PYTHON
+    port: 3000,
+    // THESE HEADERS ARE CRITICAL FOR PYTHON WORKER
     headers: {
       "Cross-Origin-Embedder-Policy": "require-corp",
       "Cross-Origin-Opener-Policy": "same-origin",
