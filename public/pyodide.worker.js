@@ -8,7 +8,6 @@ async function loadPyodideAndPackages() {
   pyodide = await loadPyodide();
   
   // 1. Force Unbuffered Stdout (Fixes the "No Output" bug)
-  // This tells Python: "Print everything immediately, don't wait for a newline"
   await pyodide.runPythonAsync(`
 import sys
 import io
