@@ -3,21 +3,20 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 let pyodide = null;
 let sharedBuffer = null;
 let bufferParams = null;
+const decoder = new TextDecoder();
 
 async function loadPyodideAndPackages() {
   pyodide = await loadPyodide();
   
-  // 1. Force Unbuffered Stdout (Fixes the "No Output" bug)
-  await pyodide.runPythonAsync(`
-import sys
-import io
-sys.stdout = io.TextIOWrapper(open(sys.stdout.fileno(), 'wb', 0), write_through=True)
-sys.stderr = io.TextIOWrapper(open(sys.stderr.fileno(), 'wb', 0), write_through=True)
-  `);
+  // Use Raw Stdout to avoid buffering issues
+  function rawStdout(code) {
+      const char = String.fromCharCode(code);
+      self.postMessage({ type: 'OUTPUT', text: char });
+  }
 
-  // 2. Redirect Streams to React
-  pyodide.setStdout({ batched: (msg) => self.postMessage({ type: 'OUTPUT', text: msg + "\n" }) });
-  pyodide.setStderr({ batched: (msg) => self.postMessage({ type: 'OUTPUT', text: msg + "\n" }) });
+  // Redirect Streams
+  pyodide.setStdout({ raw: rawStdout });
+  pyodide.setStderr({ raw: rawStdout });
 }
 
 self.onmessage = async (event) => {
@@ -29,12 +28,12 @@ self.onmessage = async (event) => {
         sharedBuffer = new Int32Array(inputBuffer);
         bufferParams = params;
         
-        // Setup Input Reader (The Queue)
         pyodide.setStdin({
           stdin: () => {
+            // Notify we are waiting
             self.postMessage({ type: 'INPUT_REQUEST' });
             
-            // Wait for input from React
+            // Block and Wait for React to write to buffer
             let head = Atomics.load(sharedBuffer, bufferParams.headIndex);
             let tail = Atomics.load(sharedBuffer, bufferParams.tailIndex);
             
@@ -52,7 +51,7 @@ self.onmessage = async (event) => {
         });
         self.postMessage({ type: 'READY' });
     } catch (e) {
-        self.postMessage({ type: 'OUTPUT', text: "Error loading Pyodide: " + e.message });
+        self.postMessage({ type: 'OUTPUT', text: "Init Error: " + e.message });
     }
   }
 
@@ -60,7 +59,7 @@ self.onmessage = async (event) => {
     try {
       await pyodide.runPythonAsync(code);
     } catch (err) {
-      self.postMessage({ type: 'OUTPUT', text: err.toString() });
+      self.postMessage({ type: 'OUTPUT', text: "\r\nTraceback: " + err.toString() });
     } finally {
       self.postMessage({ type: 'FINISHED' });
     }
