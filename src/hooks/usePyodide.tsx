@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
 // --- GLOBAL SINGLETON STATE ---
-// These live outside the hook, so they persist across re-renders and page navigation!
 let globalWorker: Worker | null = null;
 let globalBuffer: SharedArrayBuffer | null = null;
 let globalInt32: Int32Array | null = null;
@@ -33,12 +32,12 @@ const initGlobalWorker = () => {
         params: { headIndex: HEAD_INDEX, tailIndex: TAIL_INDEX, dataOffset: DATA_OFFSET, size: BUFFER_SIZE }
     });
 
-    // 4. Global Message Handler (Broadcasts to all active hooks)
+    // 4. Global Message Handler
     globalWorker.onmessage = (e) => {
         const { type } = e.data;
         if (type === 'READY') globalIsReady = true;
         
-        // Send data to any active React components
+        // Broadcast to all active hooks
         messageSubscribers.forEach(callback => callback(e.data));
     };
 };
@@ -49,10 +48,8 @@ export const usePyodide = () => {
   const [isReady, setIsReady] = useState(globalIsReady);
 
   useEffect(() => {
-    // 1. Ensure Worker is alive immediately
     initGlobalWorker();
 
-    // 2. Subscribe to Worker Messages
     const handleMessage = (data: any) => {
       if (data.type === 'OUTPUT') {
         setOutput((prev) => prev + data.text);
@@ -65,8 +62,6 @@ export const usePyodide = () => {
     };
 
     messageSubscribers.push(handleMessage);
-
-    // Cleanup: Unsubscribe, BUT DO NOT TERMINATE WORKER
     return () => {
         messageSubscribers = messageSubscribers.filter(cb => cb !== handleMessage);
     };
@@ -77,7 +72,6 @@ export const usePyodide = () => {
 
     for (let i = 0; i < text.length; i++) {
         const charCode = text.charCodeAt(i);
-        
         let tail = Atomics.load(globalInt32, TAIL_INDEX);
         const head = Atomics.load(globalInt32, HEAD_INDEX);
         const nextTail = (tail + 1) % BUFFER_SIZE;
@@ -94,9 +88,8 @@ export const usePyodide = () => {
     if (!globalWorker || !globalInt32) return;
     
     setIsRunning(true);
-    setOutput(""); // Clear terminal for new run
+    setOutput(""); 
     
-    // Reset Input Buffer
     Atomics.store(globalInt32, HEAD_INDEX, 0);
     Atomics.store(globalInt32, TAIL_INDEX, 0);
     
