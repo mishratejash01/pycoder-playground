@@ -7,11 +7,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea"; 
 import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
-import { usePyodide } from '@/hooks/usePyodide'; // Import the Singleton Hook
-import { TerminalView } from '@/components/TerminalView'; // Import the Terminal
-import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard } from 'lucide-react';
+import { usePyodide } from '@/hooks/usePyodide';
+import { TerminalView } from '@/components/TerminalView';
+import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
+
+// --- CONFIGURATION ---
+
+const LANGUAGES_CONFIG = [
+  { id: 'python', name: 'Python' },
+  { id: 'java', name: 'Java' },
+  { id: 'cpp', name: 'C++' },
+  { id: 'c', name: 'C' },
+  { id: 'javascript', name: 'JavaScript' },
+  { id: 'sql', name: 'SQL' },
+  { id: 'bash', name: 'Bash' },
+] as const;
 
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
@@ -49,7 +62,10 @@ const Compiler = () => {
     return localStorage.getItem('codevo-code') || getStarterTemplate('python');
   });
 
-  // State for Non-Python languages (Piston)
+  // Lock State: { python: false, java: true ... }
+  const [lockedLanguages, setLockedLanguages] = useState<Record<string, boolean>>({});
+
+  // Non-Python State
   const [inputData, setInputData] = useState<string>(""); 
   const [output, setOutput] = useState<string>('// Output will appear here...');
   const [activeTab, setActiveTab] = useState("output");
@@ -57,8 +73,6 @@ const Compiler = () => {
   
   // Hooks
   const { executeCode, loading: pistonLoading } = useCodeRunner();
-  
-  // PYTHON HOOK (Singleton Worker)
   const { 
       runCode: runPython, 
       output: pythonOutput, 
@@ -67,9 +81,26 @@ const Compiler = () => {
       writeInputToWorker 
   } = usePyodide();
 
-  // Unified Loading State
-  // We consider it "loading" if Piston is running, Python is running, OR Python is still booting up
   const isLoading = pistonLoading || pythonRunning || (activeLanguage === 'python' && !pythonReady);
+
+  // --- FETCH LANGUAGE LOCK STATUS ---
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      const { data, error } = await supabase
+        .from('languages')
+        .select('id, is_locked');
+
+      if (!error && data) {
+        const statusMap: Record<string, boolean> = {};
+        data.forEach((lang: any) => {
+          statusMap[lang.id] = lang.is_locked;
+        });
+        setLockedLanguages(statusMap);
+      }
+    };
+
+    fetchLanguages();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('codevo-code', code);
@@ -78,6 +109,13 @@ const Compiler = () => {
 
   const handleLanguageChange = (val: string) => {
     const newLang = val as Language;
+    
+    // Prevent switching if locked (extra safety)
+    if (lockedLanguages[newLang]) {
+        toast({ title: "Locked", description: "This language is currently disabled.", variant: "destructive" });
+        return;
+    }
+
     setActiveLanguage(newLang);
     setCode(getStarterTemplate(newLang));
     setOutput('// Language changed. Output cleared.');
@@ -86,13 +124,16 @@ const Compiler = () => {
 
   const handleRun = async () => {
     if (isLoading) return;
+    
+    // Safety check for lock on run
+    if (lockedLanguages[activeLanguage]) {
+        toast({ title: "Locked", description: "This language is currently disabled.", variant: "destructive" });
+        return;
+    }
 
     if (activeLanguage === 'python') {
-        // Run Python (Terminal Mode)
-        // Only works if pythonReady is true, which is handled by the disabled button
         runPython(code);
     } else {
-        // Run Piston (Batch Mode)
         setActiveTab("output"); 
         setOutput(""); 
         setIsError(false); 
@@ -124,7 +165,6 @@ const Compiler = () => {
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
-      {/* Header Bar */}
       <header className="border-b border-white/10 bg-[#0c0c0e] px-4 py-3 flex items-center justify-between shrink-0 h-16">
          <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white hover:bg-white/10">
@@ -147,13 +187,19 @@ const Compiler = () => {
               </div>
             </SelectTrigger>
             <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
-              <SelectItem value="python">Python</SelectItem>
-              <SelectItem value="java">Java</SelectItem>
-              <SelectItem value="cpp">C++</SelectItem>
-              <SelectItem value="c">C</SelectItem>
-              <SelectItem value="javascript">JavaScript</SelectItem>
-              <SelectItem value="sql">SQL</SelectItem>
-              <SelectItem value="bash">Bash</SelectItem>
+              {LANGUAGES_CONFIG.map((lang) => (
+                <SelectItem 
+                  key={lang.id} 
+                  value={lang.id} 
+                  disabled={lockedLanguages[lang.id]}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    {lang.name}
+                    {lockedLanguages[lang.id] && <Lock className="w-3 h-3 ml-2 text-red-400" />}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           
@@ -164,19 +210,20 @@ const Compiler = () => {
 
           <Button 
             onClick={handleRun} 
-            disabled={isLoading} 
+            disabled={isLoading || lockedLanguages[activeLanguage]} 
             size="sm" 
             className={cn(
                 "h-9 px-6 font-bold text-white transition-all",
-                isLoading ? "bg-red-600 hover:bg-red-500" : "bg-green-600 hover:bg-green-500 shadow-[0_0_15px_rgba(22,163,74,0.4)]"
+                isLoading || lockedLanguages[activeLanguage] ? "bg-red-600 hover:bg-red-500" : "bg-green-600 hover:bg-green-500 shadow-[0_0_15px_rgba(22,163,74,0.4)]"
             )}
           >
             {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin"/> 
-                  {/* Show distinct text for "Booting" vs "Running" */}
                   {!pythonReady && activeLanguage === 'python' ? "Booting Python..." : "Running..."}
                 </>
+            ) : lockedLanguages[activeLanguage] ? (
+                <><Lock className="w-4 h-4 mr-2"/> Locked</>
             ) : (
                 <><Play className="w-4 h-4 mr-2 fill-current"/> Run Code</>
             )}
@@ -184,11 +231,8 @@ const Compiler = () => {
         </div>
       </header>
 
-      {/* Main Layout */}
       <div className="flex-1 overflow-hidden relative">
         <ResizablePanelGroup direction="vertical" className="h-full">
-          
-          {/* Top Panel: Editor */}
           <ResizablePanel defaultSize={70} className="bg-[#09090b]">
             <CodeEditor 
               value={code} 
@@ -199,12 +243,9 @@ const Compiler = () => {
 
           <ResizableHandle withHandle className="bg-black border-t border-b border-white/10 h-2 hover:bg-purple-500/20 transition-colors" />
 
-          {/* Bottom Panel: Output Area */}
           <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col min-h-[100px] relative">
             
-            {/* CONDITIONAL RENDERING: TERMINAL VS TABS */}
             {activeLanguage === 'python' ? (
-                 // --- PYTHON TERMINAL VIEW ---
                  <div className="flex-1 flex flex-col min-h-0 relative">
                      <div className="flex items-center justify-between px-4 border-b border-white/10 bg-black/20 h-10 shrink-0">
                         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -222,7 +263,6 @@ const Compiler = () => {
                      </div>
                      
                      <div className="flex-1 relative">
-                        {/* If Python isn't ready yet, show the Boot Screen */}
                         {!pythonReady ? (
                              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-mono">
                                 <div className="flex flex-col items-center gap-3">
@@ -231,7 +271,6 @@ const Compiler = () => {
                                 </div>
                             </div>
                         ) : (
-                             // Otherwise show the actual Terminal
                             <TerminalView 
                                output={pythonOutput} 
                                onInput={writeInputToWorker} 
@@ -240,7 +279,6 @@ const Compiler = () => {
                      </div>
                  </div>
             ) : (
-                // --- OLD TABS VIEW FOR OTHER LANGUAGES ---
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
                     <div className="flex items-center justify-between px-4 border-b border-white/10 bg-black/20 shrink-0">
                         <TabsList className="bg-transparent h-10 p-0 gap-4">
@@ -275,7 +313,6 @@ const Compiler = () => {
                 </Tabs>
             )}
 
-            {/* Watermark (Shared) */}
             <div className="absolute bottom-2 right-3 pointer-events-none select-none z-50 flex items-center justify-end opacity-40">
               <span className="font-neuropol text-[10px] font-bold tracking-widest text-white">
                 COD<span className="text-[1.2em] lowercase relative top-[0.5px] mx-[0.5px] inline-block">é</span>VO
