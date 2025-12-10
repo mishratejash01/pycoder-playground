@@ -40,10 +40,10 @@ export default function QuestionSetSelection() {
       if (isProctored) {
         // --- PROCTORED MODE ---
         // Fetch sets from 'iitm_exam_question_bank'
-        // UPDATED: Selecting 'title' as well
+        // UPDATED: Correct column name is 'sequence_number'
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
-          .select('set_name, expected_time, title')
+          .select('set_name, expected_time, title, sequence_number')
           .eq('subject_id', subjectId) 
           .ilike('exam_type', currentExamType); 
         
@@ -52,16 +52,18 @@ export default function QuestionSetSelection() {
           throw error;
         }
         
-        // Aggregate: Sum expected_time for each set and capture Title
-        const setMap: Record<string, { totalTime: number; title: string }> = {};
+        // Aggregate: Sum expected_time for each set and capture Title & Sequence
+        const setMap: Record<string, { totalTime: number; title: string; sequence_number: number }> = {};
         
         data?.forEach(item => {
            if (item.set_name) {
              if (!setMap[item.set_name]) {
-               // Initialize with the first title found for this set, fallback to set_name if title is missing
+               // Initialize with the first title/sequence found for this set
                setMap[item.set_name] = { 
                  totalTime: 0, 
-                 title: item.title || item.set_name 
+                 title: item.title || item.set_name,
+                 // Use sequence_number from DB, default to 9999 if null
+                 sequence_number: item.sequence_number ?? 9999 
                };
              }
              setMap[item.set_name].totalTime += (item.expected_time || 0);
@@ -72,10 +74,12 @@ export default function QuestionSetSelection() {
         const sets = Object.entries(setMap).map(([name, val]) => ({ 
           name, 
           totalTime: val.totalTime,
-          title: val.title 
+          title: val.title,
+          sequence_number: val.sequence_number
         }));
         
-        return sets.sort((a, b) => a.name.localeCompare(b.name));
+        // Sort by sequence_number ascending
+        return sets.sort((a, b) => a.sequence_number - b.sequence_number);
       } else {
         // --- PRACTICE MODE ---
         // Fetch assignments from 'iitm_assignments'
