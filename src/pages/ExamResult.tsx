@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trophy, BarChart2, User, XCircle, AlertCircle, Clock, CheckCircle2, MinusCircle, TrendingUp, Activity, PieChart } from 'lucide-react';
+// FIX: Added 'Target' to the imports
+import { Trophy, BarChart2, User, XCircle, AlertCircle, Clock, CheckCircle2, MinusCircle, TrendingUp, Activity, PieChart, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -264,17 +265,19 @@ const ExamResult = () => {
                         {q.description || q.title}
                       </div>
                     </TableCell>
-                    <TableCell className="text-center"><Badge variant="outline" className="border-white/10 bg-white/5 text-gray-400 font-normal">{q.category}</Badge></TableCell>
+                    <TableCell className="text-center"><div className="inline-flex"><span className="text-xs border border-white/10 bg-white/5 text-gray-400 px-2 py-0.5 rounded-full font-normal">{q.category}</span></div></TableCell>
                     <TableCell className={cn("text-center font-mono text-xs", q.timeSpent > q.expectedTime ? "text-red-400" : "text-gray-400")}>{formatTime(q.timeSpent)}</TableCell>
                     <TableCell className="text-center align-middle">
-                      <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border", 
-                        q.status === 'Correct' ? "bg-green-500/10 text-green-500 border-green-500/20" : 
-                        q.status === 'Skipped' ? "bg-gray-500/10 text-gray-500 border-gray-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
-                        {q.status === 'Correct' && <CheckCircle2 className="w-3 h-3" />}
-                        {q.status === 'Skipped' && <MinusCircle className="w-3 h-3" />}
-                        {q.status === 'Incorrect' && <XCircle className="w-3 h-3" />}
-                        {q.status}
-                      </span>
+                      <div className="flex justify-center">
+                        <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border w-24 justify-center", 
+                          q.status === 'Correct' ? "bg-green-500/10 text-green-500 border-green-500/20" : 
+                          q.status === 'Skipped' ? "bg-gray-500/10 text-gray-500 border-gray-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
+                          {q.status === 'Correct' && <CheckCircle2 className="w-3 h-3" />}
+                          {q.status === 'Skipped' && <MinusCircle className="w-3 h-3" />}
+                          {q.status === 'Incorrect' && <XCircle className="w-3 h-3" />}
+                          {q.status}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right font-bold font-mono align-middle">{q.score || 0}</TableCell>
                   </TableRow>
