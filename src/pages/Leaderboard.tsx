@@ -22,26 +22,26 @@ const Leaderboard = () => {
       const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
       const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
 
-      // 2. Fetch Exam Sessions
+      // 2. Fetch Exam Sessions (Removed non-existent columns full_name, user_email)
       const { data: examData, error: examError } = await supabase
         .from('iitm_exam_sessions') 
-        .select(`user_id, total_score, end_time, full_name, user_email`)
+        .select(`user_id, total_score, end_time`)
         .eq('status', 'completed')
         .gt('total_score', 0);
 
       if (examError) console.error("Exam data fetch error:", examError);
 
-      // 3. Fetch Practice Submissions
+      // 3. Fetch Practice Submissions (Changed 'points' to 'score')
       const { data: practiceData, error: practiceError } = await supabase
         .from('practice_submissions')
-        .select('user_id, points, submitted_at');
+        .select('user_id, score, submitted_at');
 
       if (practiceError) console.error("Practice data fetch error:", practiceError);
 
       // 4. Combine & Aggregate
       const userMap = new Map();
 
-      const processEntry = (userId: string, score: number, date: string, name?: string, email?: string, isExam = false) => {
+      const processEntry = (userId: string, score: number, date: string) => {
         // Date filtering
         const d = new Date(date);
         let isValidDate = true;
@@ -53,8 +53,7 @@ const Leaderboard = () => {
         if (!userMap.has(userId)) {
           userMap.set(userId, {
             user_id: userId,
-            full_name: name || 'Anonymous', // Placeholder, will update later
-            user_email: email,
+            full_name: 'Anonymous', // Will be populated by profiles fetch
             total_score: 0,
             last_active: date,
             activities_count: 0
@@ -65,10 +64,6 @@ const Leaderboard = () => {
         user.total_score += (Number(score) || 0);
         user.activities_count += 1;
         
-        // Update basic info if available and currently missing/generic
-        if (name && user.full_name === 'Anonymous') user.full_name = name;
-        if (email && !user.user_email) user.user_email = email;
-
         if (new Date(date) > new Date(user.last_active)) {
           user.last_active = date;
         }
@@ -76,17 +71,15 @@ const Leaderboard = () => {
 
       // Process Exams
       examData?.forEach((session: any) => {
-        processEntry(session.user_id, session.total_score, session.end_time, session.full_name, session.user_email, true);
+        processEntry(session.user_id, session.total_score, session.end_time);
       });
 
       // Process Practice
       practiceData?.forEach((sub: any) => {
-        // Points logic is already handled in PracticeSolver, so we just sum 'points'
-        processEntry(sub.user_id, sub.points, sub.submitted_at);
+        processEntry(sub.user_id, sub.score, sub.submitted_at);
       });
 
-      // 5. Fetch Missing Profiles
-      // Some users might only have practice data, so we don't have their name/email from exam sessions
+      // 5. Fetch Profiles for Names (Essential since sessions table doesn't have names)
       const userIds = Array.from(userMap.keys());
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -97,10 +90,7 @@ const Leaderboard = () => {
         profiles?.forEach((p: any) => {
           if (userMap.has(p.id)) {
             const u = userMap.get(p.id);
-            // Update name if it was anonymous or fallback
-            if (u.full_name === 'Anonymous' || !u.full_name) {
-               u.full_name = p.full_name || p.username || 'Anonymous';
-            }
+            u.full_name = p.full_name || p.username || 'Anonymous';
           }
         });
       }
