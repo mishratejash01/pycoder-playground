@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Lock, Timer, EyeOff } from 'lucide-react';
+import { ShieldAlert, Lock, Timer, Video, Maximize, Mic, MonitorX, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -37,9 +37,8 @@ const Exam = () => {
   const mode = searchParams.get('mode');
   const isProctored = mode === 'proctored';
   
-  // Logic to determine which table to use
   const activeTables = isProctored 
-    ? { ...IITM_TABLES, assignments: PROCTORED_TABLE } // Override assignments source
+    ? { ...IITM_TABLES, assignments: PROCTORED_TABLE }
     : (iitmSubjectId ? IITM_TABLES : STANDARD_TABLES);
 
   const SESSION_TABLE = iitmSubjectId ? 'iitm_exam_sessions' : 'exam_sessions';
@@ -48,11 +47,13 @@ const Exam = () => {
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
-  
   const [isContentObscured, setIsContentObscured] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0); 
-  const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
+  
+  // Changed from elapsedTime (0 -> up) to timeRemaining (Duration -> 0)
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null); 
+  const [totalDuration, setTotalDuration] = useState(0); // To store initial duration for calculation
 
+  const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
@@ -79,14 +80,11 @@ const Exam = () => {
       const currentExamType = decodeURIComponent(examType || '');
 
       if (isProctored && setName) {
-        // --- PROCTORED FETCH LOGIC ---
-        // Fetch from iitm_exam_question_bank filtered by set_name and exam_type AND subject_id
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId)
                      .eq('exam_type', currentExamType)
                      .eq('set_name', setName);
       } else if (iitmSubjectId) {
-        // --- PRACTICE FETCH LOGIC ---
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
         if (examType) query = query.eq('exam_type', currentExamType);
@@ -98,10 +96,24 @@ const Exam = () => {
     },
   });
 
+  // --- Initialize Timer from Fetched Data ---
+  useEffect(() => {
+    if (assignments.length > 0 && timeRemaining === null) {
+      // Calculate total duration from fetched questions (sum of expected_time)
+      // If expected_time is missing, default to 20 mins per question
+      const totalMinutes = assignments.reduce((acc: number, curr: any) => acc + (curr.expected_time || 20), 0);
+      const totalSeconds = totalMinutes * 60;
+      
+      setTotalDuration(totalSeconds);
+      setTimeRemaining(totalSeconds);
+    }
+  }, [assignments, timeRemaining]);
+
   useEffect(() => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
+  // ... (Media Stream & Violation Logic remains same) ...
   const startMediaStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true });
@@ -173,7 +185,29 @@ const Exam = () => {
   }, [isExamStarted, isSubmitting, violationCount]);
 
   useEffect(() => { if (videoNode && mediaStream) { videoNode.srcObject = mediaStream; videoNode.play().catch(console.error); } }, [videoNode, mediaStream]);
-  useEffect(() => { let interval: NodeJS.Timeout; if (isExamStarted && !isSubmitting) { interval = setInterval(() => { setElapsedTime(prev => prev + 1); if (currentQuestionRef.current) { const qId = currentQuestionRef.current; setQuestionMetrics(prev => ({ ...prev, [qId]: { ...prev[qId], attempts: prev[qId]?.attempts || 0, isCorrect: prev[qId]?.isCorrect || false, score: prev[qId]?.score || 0, timeSpent: (prev[qId]?.timeSpent || 0) + 1 } })); } }, 1000); } return () => clearInterval(interval); }, [isExamStarted, isSubmitting]);
+  
+  // --- COUNTDOWN TIMER LOGIC ---
+  useEffect(() => { 
+    let interval: NodeJS.Timeout; 
+    if (isExamStarted && !isSubmitting && timeRemaining !== null && timeRemaining > 0) { 
+      interval = setInterval(() => { 
+        setTimeRemaining(prev => {
+          if (prev === null || prev <= 0) return 0;
+          return prev - 1;
+        }); 
+        
+        // Track per-question metrics (time spent on current question still increments)
+        if (currentQuestionRef.current) { 
+          const qId = currentQuestionRef.current; 
+          setQuestionMetrics(prev => ({ ...prev, [qId]: { ...prev[qId], attempts: prev[qId]?.attempts || 0, isCorrect: prev[qId]?.isCorrect || false, score: prev[qId]?.score || 0, timeSpent: (prev[qId]?.timeSpent || 0) + 1 } })); 
+        } 
+      }, 1000); 
+    } else if (timeRemaining === 0 && isExamStarted && !isSubmitting) {
+        // Auto-submit when timer hits 0
+        finishExam("TIME_UP");
+    }
+    return () => clearInterval(interval); 
+  }, [isExamStarted, isSubmitting, timeRemaining]);
 
   const handleStartExamRequest = async () => {
     if (!(await checkMultipleScreens())) return;
@@ -200,28 +234,36 @@ const Exam = () => {
     if (audioContextRef.current) audioContextRef.current.close();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     const qIds = Object.keys(questionMetrics); const correctCount = Object.values(questionMetrics).filter(m => m.isCorrect).length; const totalScore = Object.values(questionMetrics).reduce((acc, curr) => acc + curr.score, 0); const totalMaxScore = assignments.reduce((acc: number, curr: any) => acc + (curr.max_score || 0), 0);
+    
+    // Calculate total duration spent based on (Total Duration - Time Remaining)
+    const spentTime = timeRemaining !== null ? (totalDuration - timeRemaining) : 0;
+
     const resultsPayload = {
       stats: { score: totalScore, totalScore: totalMaxScore || (assignments.length * 100), accuracy: qIds.length > 0 ? Math.round((correctCount / qIds.length) * 100) : 0, correct: correctCount, totalQuestions: assignments.length, attempted: qIds.length },
       questionDetails: assignments.map((a: any) => ({ id: a.id, title: a.title, status: (questionMetrics[a.id]?.attempts || 0) === 0 ? 'Skipped' : (questionMetrics[a.id]?.isCorrect ? 'Correct' : 'Incorrect'), timeSpent: questionMetrics[a.id]?.timeSpent || 0, score: questionMetrics[a.id]?.score, attempts: questionMetrics[a.id]?.attempts })),
-      terminationReason: statusReason?.includes("TERMINATED") ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null), isError: statusReason?.includes("TERMINATED"), totalTime: elapsedTime, examMetadata: { subjectId: iitmSubjectId, examType, setName }
+      terminationReason: statusReason?.includes("TERMINATED") ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null), isError: statusReason?.includes("TERMINATED"), totalTime: spentTime, examMetadata: { subjectId: iitmSubjectId, examType, setName }
     };
     if (sessionId) { 
         // @ts-ignore
-        supabase.from(SESSION_TABLE).update({ status: statusReason?.includes("TERMINATED") ? 'terminated' : 'completed', end_time: new Date().toISOString(), duration_seconds: elapsedTime, questions_attempted: qIds.length, questions_correct: correctCount, total_score: totalScore }).eq('id', sessionId).then(); 
+        supabase.from(SESSION_TABLE).update({ status: statusReason?.includes("TERMINATED") ? 'terminated' : 'completed', end_time: new Date().toISOString(), duration_seconds: spentTime, questions_attempted: qIds.length, questions_correct: correctCount, total_score: totalScore }).eq('id', sessionId).then(); 
     }
     navigate('/exam/result', { state: resultsPayload });
   };
 
-  const formatTime = (s: number) => new Date(s * 1000).toISOString().substr(11, 8);
+  const formatTime = (s: number) => {
+      if (s < 0) s = 0;
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      if (h > 0) {
+          return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+      }
+      return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden relative" onContextMenu={e => e.preventDefault()}>
       {isContentObscured && <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-200 cursor-none"><div className="relative mb-6"><div className="absolute inset-0 bg-red-500 blur-3xl opacity-20 animate-pulse" /><EyeOff className="w-24 h-24 text-red-600 relative z-10" /></div><h2 className="text-4xl font-bold text-red-500 font-neuropol mb-4 tracking-widest">SECURITY LOCKOUT</h2><p className="text-xl text-gray-400 max-w-lg mb-8">Suspicious activity detected. The exam environment has been obscured to prevent unauthorized access, recording, or remote viewing.</p><div className="px-6 py-3 border border-red-500/30 rounded-full bg-red-950/30 text-red-400 font-mono text-sm animate-pulse">RETURN FOCUS TO BROWSER TO RESUME</div></div>}
-      
-      {/* CONDITIONAL RENDERING: 
-        If exam hasn't started -> Show Instructions (FullScreen).
-        If exam has started -> Show Exam UI (Header + Panels).
-      */}
       
       {!isExamStarted ? (
         <ProctoredInstructions onStart={handleStartExamRequest} />
@@ -230,7 +272,7 @@ const Exam = () => {
           <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50 relative">
             <div className="flex items-center gap-3"><div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20"><Lock className="w-4 h-4 text-red-500" /></div><div><div className="font-bold text-red-500">{decodeURIComponent(examType || 'Proctored')} Exam</div>{setName && <div className="text-[10px] text-muted-foreground">{setName}</div>}</div></div>
             {isExamStarted && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2"><div className="relative group"><div className="w-24 h-16 bg-black rounded-md overflow-hidden border border-red-500/30 relative shadow-[0_0_10px_rgba(239,68,68,0.1)]"><video ref={setVideoNode} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" /><div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_red]" /></div><div className="absolute -bottom-4 left-0 w-full text-center"><span className="text-[9px] text-red-500/70 font-mono uppercase">REC</span></div></div><div className="h-16 w-3 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">{[...Array(12)].map((_, i) => <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all duration-75", audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />)}</div></div>}
-            <div className="flex items-center gap-4">{isExamStarted && <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 font-mono text-sm"><Timer className="w-4 h-4 text-muted-foreground" />{formatTime(elapsedTime)}</div>}<div className="flex items-center gap-1 border border-white/10 bg-white/5 px-2 py-1 rounded"><span className="text-[10px] text-muted-foreground uppercase">Strikes</span><div className="flex gap-1">{[...Array(MAX_VIOLATIONS)].map((_, i) => <div key={i} className={cn("w-1.5 h-4 rounded-full transition-colors", i < violationCount ? "bg-red-600 shadow-[0_0_5px_red]" : "bg-white/20")} />)}</div></div><Button variant="destructive" size="sm" onClick={() => setFinishDialogOpen(true)}>Finish</Button></div>
+            <div className="flex items-center gap-4">{isExamStarted && <div className={cn("hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border font-mono text-sm", (timeRemaining || 0) < 300 ? "border-red-500 text-red-500 animate-pulse" : "border-white/10 text-muted-foreground")}><Timer className="w-4 h-4" />{formatTime(timeRemaining || 0)}</div>}<div className="flex items-center gap-1 border border-white/10 bg-white/5 px-2 py-1 rounded"><span className="text-[10px] text-muted-foreground uppercase">Strikes</span><div className="flex gap-1">{[...Array(MAX_VIOLATIONS)].map((_, i) => <div key={i} className={cn("w-1.5 h-4 rounded-full transition-colors", i < violationCount ? "bg-red-600 shadow-[0_0_5px_red]" : "bg-white/20")} />)}</div></div><Button variant="destructive" size="sm" onClick={() => setFinishDialogOpen(true)}>Finish</Button></div>
           </header>
           
           <div className="flex-1 min-h-0 relative">
