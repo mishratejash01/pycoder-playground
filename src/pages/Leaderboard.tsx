@@ -16,71 +16,99 @@ const Leaderboard = () => {
   const { data: leaderboardData = [], isLoading } = useQuery({
     queryKey: ['global_leaderboard', timeframe],
     queryFn: async () => {
-      // Date Filtering Logic
+      // 1. Timeframe Logic
       const now = new Date();
       const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
       const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
 
-      // We use iitm_exam_sessions to aggregate scores dynamically
-      const { data, error } = await supabase
+      // 2. Fetch Exam Sessions
+      const { data: examData, error: examError } = await supabase
         .from('iitm_exam_sessions') 
-        .select(`
-          user_id,
-          total_score,
-          duration_seconds,
-          end_time,
-          full_name,
-          user_email
-        `)
+        .select(`user_id, total_score, end_time, full_name, user_email`)
         .eq('status', 'completed')
         .gt('total_score', 0);
 
-      if (error) {
-        console.error("Leaderboard fetch error:", error);
-        return [];
-      }
+      if (examError) console.error("Exam data fetch error:", examError);
 
-      // 1. Filter by Date
-      const filtered = data.filter((item: any) => {
-        if (!item.end_time) return false;
-        const d = new Date(item.end_time);
-        if (timeframe === 'current') return d >= new Date(firstDayCurrentMonth);
-        if (timeframe === 'last_month') return d >= new Date(firstDayLastMonth) && d <= new Date(lastDayLastMonth);
-        return true;
-      });
+      // 3. Fetch Practice Submissions
+      const { data: practiceData, error: practiceError } = await supabase
+        .from('practice_submissions')
+        .select('user_id, points, submitted_at');
 
-      // 2. Aggregate by User (Summing Total Score for "Overall" Ranking)
+      if (practiceError) console.error("Practice data fetch error:", practiceError);
+
+      // 4. Combine & Aggregate
       const userMap = new Map();
-      
-      filtered.forEach((session: any) => {
-        if (!userMap.has(session.user_id)) {
-          userMap.set(session.user_id, {
-            user_id: session.user_id,
-            full_name: session.full_name,
-            user_email: session.user_email,
+
+      const processEntry = (userId: string, score: number, date: string, name?: string, email?: string, isExam = false) => {
+        // Date filtering
+        const d = new Date(date);
+        let isValidDate = true;
+        if (timeframe === 'current') isValidDate = d >= new Date(firstDayCurrentMonth);
+        if (timeframe === 'last_month') isValidDate = d >= new Date(firstDayLastMonth) && d <= new Date(lastDayLastMonth);
+        
+        if (!isValidDate) return;
+
+        if (!userMap.has(userId)) {
+          userMap.set(userId, {
+            user_id: userId,
+            full_name: name || 'Anonymous', // Placeholder, will update later
+            user_email: email,
             total_score: 0,
-            duration_seconds: 0,
-            end_time: session.end_time, // Track latest activity
-            exams_count: 0
+            last_active: date,
+            activities_count: 0
           });
         }
+
+        const user = userMap.get(userId);
+        user.total_score += (Number(score) || 0);
+        user.activities_count += 1;
         
-        const user = userMap.get(session.user_id);
-        user.total_score += (Number(session.total_score) || 0);
-        user.duration_seconds += (session.duration_seconds || 0);
-        user.exams_count += 1;
-        
-        // Keep the most recent date for display
-        if (new Date(session.end_time) > new Date(user.end_time)) {
-          user.end_time = session.end_time;
+        // Update basic info if available and currently missing/generic
+        if (name && user.full_name === 'Anonymous') user.full_name = name;
+        if (email && !user.user_email) user.user_email = email;
+
+        if (new Date(date) > new Date(user.last_active)) {
+          user.last_active = date;
         }
+      };
+
+      // Process Exams
+      examData?.forEach((session: any) => {
+        processEntry(session.user_id, session.total_score, session.end_time, session.full_name, session.user_email, true);
       });
 
-      // 3. Sort & Slice
+      // Process Practice
+      practiceData?.forEach((sub: any) => {
+        // Points logic is already handled in PracticeSolver, so we just sum 'points'
+        processEntry(sub.user_id, sub.points, sub.submitted_at);
+      });
+
+      // 5. Fetch Missing Profiles
+      // Some users might only have practice data, so we don't have their name/email from exam sessions
+      const userIds = Array.from(userMap.keys());
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('id', userIds);
+        
+        profiles?.forEach((p: any) => {
+          if (userMap.has(p.id)) {
+            const u = userMap.get(p.id);
+            // Update name if it was anonymous or fallback
+            if (u.full_name === 'Anonymous' || !u.full_name) {
+               u.full_name = p.full_name || p.username || 'Anonymous';
+            }
+          }
+        });
+      }
+
+      // 6. Sort & Slice
       return Array.from(userMap.values())
-        .sort((a: any, b: any) => b.total_score - a.total_score) // Highest Score First
-        .slice(0, 50); // Top 50
+        .sort((a: any, b: any) => b.total_score - a.total_score)
+        .slice(0, 50);
     }
   });
 
@@ -117,7 +145,7 @@ const Leaderboard = () => {
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto text-sm md:text-base">
             Celebrating the top performers of {timeframe === 'current' ? 'this month' : 'last month'}. 
-            <br className="hidden md:block" /> Scores are aggregated across all exams.
+            <br className="hidden md:block" /> Scores aggregated from Exams & Practice Arena.
           </p>
         </div>
 
@@ -178,9 +206,9 @@ const Leaderboard = () => {
                             {index === 0 && <span className="text-[9px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full border border-yellow-500/30 tracking-wider">KING</span>}
                           </div>
                           <div className="text-xs md:text-sm text-muted-foreground font-mono flex items-center gap-3">
-                             <span>{user.exams_count} Exams</span>
+                             <span>{user.activities_count} Activities</span>
                              <span className="text-white/10">|</span>
-                             <span>Last: {new Date(user.end_time).toLocaleDateString()}</span>
+                             <span>Last: {new Date(user.last_active).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
@@ -205,7 +233,7 @@ const Leaderboard = () => {
                   <Trophy className="w-10 h-10 opacity-20" />
                 </div>
                 <p className="text-lg font-medium text-white/50">No champions found for this period.</p>
-                <Button variant="link" className="mt-2 text-primary" onClick={() => window.location.href='/degree'}>
+                <Button variant="link" className="mt-2 text-primary" onClick={() => window.location.href='/practice-arena'}>
                   Compete Now
                 </Button>
               </div>
