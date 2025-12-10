@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+// Removed unused Card imports since we are using custom design
+// import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   ArrowLeft, Search, Layers, Filter, Clock, Play, 
@@ -40,7 +41,6 @@ export default function QuestionSetSelection() {
       if (isProctored) {
         // --- PROCTORED MODE ---
         // Fetch sets from 'iitm_exam_question_bank'
-        // UPDATED: Correct column name is 'sequence_number'
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
           .select('set_name, expected_time, title, sequence_number')
@@ -257,36 +257,75 @@ export default function QuestionSetSelection() {
                   : "No problems found."}
               </div>
             ) : isProctored ? (
-              /* --- PROCTORED VIEW (SETS) --- */
+              /* --- PROCTORED VIEW (SETS) - NEW CUSTOM CARD DESIGN --- */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(filteredData as { name: string, title: string, totalTime: number }[]).map((set) => (
-                  <Card 
+                {(filteredData as { name: string, title: string, totalTime: number, sequence_number: number }[]).map((set) => (
+                  <div 
                     key={set.name} 
-                    className="bg-[#121212] border border-white/10 hover:border-red-500/50 hover:bg-red-950/10 cursor-pointer transition-all duration-300 group"
-                    onClick={() => handleStart(set.name, true)}
+                    className="relative w-full bg-[#111111] rounded-2xl border border-white/10 shadow-[inset_0px_1px_0px_0px_rgba(255,255,255,0.08)] hover:border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-out group flex flex-col"
                   >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      {/* UPDATED: Showing the Title instead of just the Set ID */}
-                      <CardTitle className="text-xl font-bold text-gray-200 group-hover:text-white line-clamp-1">
-                        {set.title}
-                      </CardTitle>
-                      <Lock className="w-5 h-5 text-red-500/70" />
-                    </CardHeader>
-                    <div className="p-6 pt-0 mt-4">
-                       <div className="text-sm text-muted-foreground">
-                         Click to start <strong>{set.name}</strong> for {decodeURIComponent(examType || '')}.
+                    <div className="p-8 flex flex-col h-full">
+                       
+                       {/* HEADER: Eyebrow + Lock */}
+                       <div className="flex justify-between items-start mb-6">
+                         <span className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">
+                           Proctored Exam
+                         </span>
+                         
+                         <div className="flex items-center gap-1.5 text-zinc-600 bg-white/5 px-2 py-1 rounded-full border border-white/5">
+                           <Lock size={12} strokeWidth={2.5} />
+                           <span className="text-[10px] font-medium tracking-wide">SECURE</span>
+                         </div>
                        </div>
 
-                       <div className="flex items-center gap-2 mt-4 text-xs font-mono text-red-400 bg-red-950/20 px-3 py-2 rounded border border-red-500/20 w-fit">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Total Time: {set.totalTime} min</span>
+                       {/* TITLE SECTION */}
+                       <div className="space-y-2 mb-auto">
+                         <h2 className="text-xl font-medium text-zinc-100 tracking-tight line-clamp-1" title={set.title}>
+                           {set.title}
+                         </h2>
+                         <p className="text-sm text-zinc-500 font-normal">
+                           {decodeURIComponent(examType || '')} — {set.name}
+                         </p>
                        </div>
 
-                       <Button className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20">
-                         Start Exam
-                       </Button>
+                       {/* METADATA GRID */}
+                       <div className="mt-8 flex items-center gap-6 pb-8 border-b border-white/5">
+                         
+                         {/* Duration */}
+                         <div className="flex items-center gap-2.5">
+                           <Clock size={16} className="text-zinc-600" />
+                           <div className="flex flex-col">
+                             <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-bold">Duration</span>
+                             <span className="text-xs font-mono text-zinc-300">{set.totalTime} MIN</span>
+                           </div>
+                         </div>
+
+                         {/* Set Info */}
+                         <div className="flex items-center gap-2.5">
+                           <Layers size={16} className="text-zinc-600" />
+                           <div className="flex flex-col">
+                             <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-bold">Sequence</span>
+                             <span className="text-xs font-mono text-zinc-300">{String(set.sequence_number || 1).padStart(2, '0')}</span>
+                           </div>
+                         </div>
+                       </div>
+
+                       {/* FOOTER ACTION */}
+                       <div className="mt-8">
+                         <button 
+                           onClick={() => handleStart(set.name, true)}
+                           className="w-full py-3.5 bg-white text-black font-medium text-sm tracking-wide rounded-lg shadow-[0px_0px_15px_rgba(255,255,255,0.1)] hover:bg-zinc-200 hover:shadow-[0px_0px_20px_rgba(255,255,255,0.2)] active:scale-[0.98] transition-all duration-200"
+                         >
+                           Start Proctored Exam
+                         </button>
+                         
+                         <p className="mt-4 text-center text-[10px] text-zinc-600">
+                           ID Verification required before starting.
+                         </p>
+                       </div>
+
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             ) : (
