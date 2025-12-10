@@ -2,19 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  ShieldAlert, 
-  Video, 
-  Mic, 
-  MonitorX, 
-  Maximize, 
-  Smartphone, 
-  Users, 
-  Globe, 
-  AlertTriangle, 
-  CheckCircle2,
-  ScanFace
-} from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Monitor, UserCheck, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProctoredInstructionsProps {
@@ -24,132 +12,90 @@ interface ProctoredInstructionsProps {
 export const ProctoredInstructions = ({ onStart }: ProctoredInstructionsProps) => {
   const [agreed, setAgreed] = useState(false);
 
-  const steps = [
-    {
-      id: 1,
-      title: "System Verification",
-      icon: <ScanFace className="w-6 h-6 text-blue-400" />,
-      items: [
-        { icon: <Video className="w-4 h-4" />, text: "Webcam must be active and unobstructed." },
-        { icon: <Mic className="w-4 h-4" />, text: "Microphone must be on. Audio is recorded." },
-        { icon: <Maximize className="w-4 h-4" />, text: "Fullscreen mode is mandatory." },
-        { icon: <MonitorX className="w-4 h-4" />, text: "Single monitor only. Disconnect secondary displays." },
-      ]
-    },
-    {
-      id: 2,
-      title: "Environment Protocol",
-      icon: <Globe className="w-6 h-6 text-purple-400" />,
-      items: [
-        { icon: <Users className="w-4 h-4" />, text: "You must be alone in the room." },
-        { icon: <Smartphone className="w-4 h-4" />, text: "No phones, tablets, or smartwatches allowed." },
-        { icon: <div className="w-4 h-4 rounded-full bg-yellow-500/20 flex items-center justify-center text-[10px] font-bold text-yellow-500">L</div>, text: "Ensure the room is well-lit. Face must be visible." },
-      ]
-    },
-    {
-      id: 3,
-      title: "Zero-Tolerance Violations",
-      icon: <ShieldAlert className="w-6 h-6 text-red-500" />,
-      className: "border-red-500/20 bg-red-950/10",
-      items: [
-        { icon: <AlertTriangle className="w-4 h-4 text-red-400" />, text: "Tab switching or minimizing the browser." },
-        { icon: <AlertTriangle className="w-4 h-4 text-red-400" />, text: "Copy-pasting content (Clipboard locked)." },
-        { icon: <AlertTriangle className="w-4 h-4 text-red-400" />, text: "Use of developer tools or extensions." },
-        { icon: <AlertTriangle className="w-4 h-4 text-red-400" />, text: "Exiting fullscreen mode." },
-      ]
-    }
-  ];
-
   return (
-    <div className="flex flex-col h-full bg-[#050505] text-white overflow-hidden font-sans">
+    <div className="flex flex-col h-full bg-[#050505] text-white font-sans selection:bg-white/20">
       
-      {/* Header */}
-      <div className="h-20 border-b border-white/10 flex items-center justify-center shrink-0 bg-[#0a0a0a]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-red-600/10 rounded-lg flex items-center justify-center border border-red-500/20">
-            <ShieldAlert className="w-6 h-6 text-red-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold font-neuropol tracking-wide text-white">Proctored Assessment</h1>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest">Secure Environment Protocol v2.0</p>
-          </div>
-        </div>
+      {/* Header - Formal & Minimal */}
+      <div className="h-16 border-b border-white/10 flex items-center px-8 md:px-12 bg-[#0a0a0a] shrink-0">
+        <h1 className="text-sm font-bold text-white uppercase tracking-[0.2em] flex items-center gap-3">
+          <ShieldAlert className="w-5 h-5 text-red-500" />
+          Examination Protocol
+        </h1>
       </div>
 
-      {/* Scrollable Content */}
-      <ScrollArea className="flex-1">
-        <div className="max-w-4xl mx-auto p-8 space-y-12">
+      {/* Content - Full Width Document Style */}
+      <ScrollArea className="flex-1 w-full">
+        <div className="w-full px-8 md:px-16 py-12 space-y-12">
           
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl font-bold text-white">Pre-Flight Instructions</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              You are about to enter a secure examination environment. 
-              Please review the following protocols carefully. Failure to adhere to these rules 
-              may result in <span className="text-red-400 font-medium">immediate termination</span> of your session.
+          {/* Intro */}
+          <div className="space-y-6 border-b border-white/5 pb-10 max-w-6xl">
+            <h2 className="text-3xl md:text-4xl font-light text-white tracking-tight">Instructions for Candidates</h2>
+            <p className="text-gray-400 leading-relaxed text-justify max-w-4xl text-sm md:text-base">
+              This assessment is conducted under strict proctoring protocols mandated by the examination authority. 
+              The system utilizes advanced AI monitoring to verify identity and detect potential academic dishonesty. 
+              Candidates are required to adhere strictly to the guidelines detailed below. 
+              <span className="text-red-400 ml-1">Non-compliance will result in immediate disqualification.</span>
             </p>
           </div>
 
-          <div className="grid gap-6">
-            {steps.map((step) => (
-              <div 
-                key={step.id} 
-                className={cn(
-                  "bg-[#0c0c0e] border border-white/10 rounded-xl p-6 transition-all hover:border-white/20",
-                  step.className
-                )}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-white/5 rounded-lg border border-white/5">
-                    {step.icon}
-                  </div>
-                  <div className="flex-1 space-y-4">
-                    <h3 className="text-lg font-bold text-gray-200">{step.title}</h3>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {step.items.map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 text-sm text-gray-400 bg-black/20 p-2 rounded border border-white/5">
-                          {item.icon}
-                          <span>{item.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+          {/* Grid Layout for Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-12 max-w-7xl">
+            
+            {/* Section 1 */}
+            <div className="space-y-5">
+              <h3 className="flex items-center gap-2 text-blue-400 font-bold uppercase text-xs tracking-widest border-b border-blue-500/20 pb-2 w-fit">
+                <Monitor className="w-4 h-4" /> 1. System Environment
+              </h3>
+              <ul className="space-y-4 text-sm text-gray-300 list-disc pl-5 marker:text-gray-600 leading-relaxed">
+                <li><strong className="text-white">Fullscreen Mode:</strong> The exam window must remain in fullscreen at all times. Exiting fullscreen or attempting to resize the window will be recorded as a violation.</li>
+                <li><strong className="text-white">No Tab Switching:</strong> Navigating to other browser tabs, windows, or applications is strictly prohibited.</li>
+                <li><strong className="text-white">Single Display:</strong> Secondary monitors must be disconnected before starting. Only the primary screen is allowed.</li>
+                <li><strong className="text-white">Hardware Access:</strong> Microphone and Camera permissions must be granted and active throughout the entire session.</li>
+              </ul>
+            </div>
+
+            {/* Section 2 */}
+            <div className="space-y-5">
+              <h3 className="flex items-center gap-2 text-purple-400 font-bold uppercase text-xs tracking-widest border-b border-purple-500/20 pb-2 w-fit">
+                <UserCheck className="w-4 h-4" /> 2. Candidate Conduct
+              </h3>
+              <ul className="space-y-4 text-sm text-gray-300 list-disc pl-5 marker:text-gray-600 leading-relaxed">
+                <li><strong className="text-white">Identity Verification:</strong> Ensure your face is clearly visible in the camera frame at all times. Do not cover your face or move out of frame.</li>
+                <li><strong className="text-white">Alone in Room:</strong> No other person is permitted in the room during the examination. Detection of multiple faces will flag the session.</li>
+                <li><strong className="text-white">Audio Integrity:</strong> The microphone will record ambient sound. Silence must be maintained. Talking to others is forbidden.</li>
+                <li><strong className="text-white">Prohibited Devices:</strong> Use of mobile phones, smartwatches, calculators, or other electronic devices is prohibited.</li>
+              </ul>
+            </div>
+
+            {/* Section 3 - Full Width Block */}
+            <div className="lg:col-span-2 space-y-5 pt-6">
+               <h3 className="flex items-center gap-2 text-red-400 font-bold uppercase text-xs tracking-widest border-b border-red-500/20 pb-2 w-fit">
+                <AlertTriangle className="w-4 h-4" /> 3. Violation Policy & Termination
+              </h3>
+              <div className="bg-[#0f0f0f] border border-white/10 rounded-lg p-6 md:p-8 text-sm text-gray-400 leading-loose">
+                <p>
+                  Any attempt to bypass security measures, including but not limited to disabling the camera, muting the microphone, using virtual machines, or using screen sharing software, will trigger an automated security flag.
+                </p>
+                <p className="mt-4 text-white">
+                  <strong>Three (3) confirmed violations</strong> (e.g., tab switching, face not visible, prohibited keys) will result in the <span className="text-red-500 font-bold underline decoration-red-500/50 underline-offset-4">automatic termination</span> of the exam session and submission of the current progress.
+                </p>
               </div>
-            ))}
-          </div>
-
-          <div className="bg-blue-900/10 border border-blue-500/20 p-6 rounded-xl flex gap-4 items-start">
-            <div className="p-2 bg-blue-500/10 rounded-lg shrink-0">
-              <MonitorX className="w-5 h-5 text-blue-400" />
             </div>
-            <div className="space-y-1">
-              <h4 className="font-bold text-blue-400 text-sm uppercase tracking-wide">Automated Proctoring Active</h4>
-              <p className="text-sm text-blue-200/70 leading-relaxed">
-                Our AI system monitors for multiple faces, object detection (phones/books), and audio anomalies. 
-                Human proctors may review flagged sessions. All violations are logged.
-              </p>
-            </div>
-          </div>
 
+          </div>
         </div>
       </ScrollArea>
 
-      {/* Footer Actions */}
-      <div className="h-24 border-t border-white/10 bg-[#0a0a0a] flex items-center justify-center shrink-0 p-6">
-        <div className="max-w-4xl w-full flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* Footer - Agreement */}
+      <div className="border-t border-white/10 bg-[#0a0a0a] p-6 md:p-8 shrink-0">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 w-full max-w-7xl mx-auto px-4">
           
-          <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => setAgreed(!agreed)}>
-            <Checkbox 
-              id="terms" 
-              checked={agreed} 
-              onCheckedChange={(c) => setAgreed(!!c)}
-              className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary w-5 h-5"
-            />
-            <label 
-              htmlFor="terms" 
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-400 group-hover:text-white transition-colors cursor-pointer select-none"
-            >
-              I have read the instructions and agree to the terms.
+          <div className="flex items-center space-x-3 group cursor-pointer select-none" onClick={() => setAgreed(!agreed)}>
+            <div className={cn("w-5 h-5 border-2 rounded-sm flex items-center justify-center transition-all", agreed ? "bg-white border-white" : "border-white/30 group-hover:border-white/50")}>
+                {agreed && <CheckCircle2 className="w-4 h-4 text-black" />}
+            </div>
+            <label className="text-sm text-gray-400 group-hover:text-white transition-colors cursor-pointer font-medium">
+              I have read the instructions and agree to the terms of the assessment.
             </label>
           </div>
 
@@ -158,13 +104,13 @@ export const ProctoredInstructions = ({ onStart }: ProctoredInstructionsProps) =
             onClick={onStart}
             disabled={!agreed}
             className={cn(
-              "px-8 py-6 font-bold text-base transition-all duration-500 min-w-[200px]",
+              "w-full md:w-auto px-10 py-6 font-bold text-sm uppercase tracking-widest transition-all rounded-none",
               agreed 
-                ? "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-[0_0_30px_rgba(220,38,38,0.4)] text-white" 
-                : "bg-white/5 text-gray-500 hover:bg-white/5 border border-white/5"
+                ? "bg-white text-black hover:bg-gray-200" 
+                : "bg-white/5 text-gray-600 cursor-not-allowed hover:bg-white/5"
             )}
           >
-            {agreed ? "Verify & Start Exam" : "Awaiting Agreement..."}
+            Start Assessment
           </Button>
 
         </div>
