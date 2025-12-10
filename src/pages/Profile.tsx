@@ -326,14 +326,55 @@ const Profile = () => {
     const init = async () => {
       setLoading(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      // CASE 1: No username in URL (Route: /profile)
       if (!username) {
         if (!currentUser) { navigate("/auth"); return; }
-        const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", currentUser.id).single();
-        if (myProfile?.username) navigate(`/u/${myProfile.username}`, { replace: true });
+        
+        const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
+        
+        // If profile exists and has a username, redirect to public URL
+        if (myProfile?.username) { 
+            navigate(`/u/${myProfile.username}`, { replace: true }); 
+            return; 
+        }
+
+        // If no profile exists OR profile is incomplete (no username), we stay here and enable Editor.
+        // Initialize default empty profile if none exists in DB.
+        const defaultProfile: ProfileData = {
+            id: currentUser.id,
+            username: "", // User needs to set this eventually (via ProfileCompletion or here if we added field)
+            full_name: currentUser.user_metadata?.full_name || "User",
+            institute_name: "",
+            degree: "",
+            branch: "",
+            start_year: new Date().getFullYear(),
+            end_year: new Date().getFullYear() + 4,
+            country: "",
+            github_handle: "",
+            linkedin_url: "",
+            portfolio_url: "",
+            bio: "",
+            avatar_url: currentUser.user_metadata?.avatar_url || "",
+            contact_no: "",
+            cover_url: ""
+        };
+
+        setProfile((myProfile as ProfileData) || defaultProfile);
+        setIsOwner(true);
+        setLoading(false);
         return;
       }
+
+      // CASE 2: Username provided (Route: /u/:username)
       const { data, error } = await supabase.from("profiles").select("*").eq("username", username).single();
-      if (error || !data) { toast.error("Profile not found"); navigate("/"); return; }
+      
+      if (error || !data) { 
+        toast.error("Profile not found"); 
+        navigate("/"); 
+        return; 
+      }
+      
       setProfile(data as ProfileData);
       if (currentUser && data.id === currentUser.id) setIsOwner(true);
       setLoading(false);
@@ -344,7 +385,18 @@ const Profile = () => {
   const updateProfile = async (field: keyof ProfileData, value: string) => {
     if (!profile) return;
     setProfile({ ...profile, [field]: value });
-    try { await supabase.from("profiles").update({ [field]: value }).eq("id", profile.id); toast.success("Saved"); } catch { toast.error("Failed"); }
+    try { 
+        // Use UPSERT to handle cases where the row might not exist yet (if user just signed up)
+        await supabase.from("profiles").upsert({ 
+            id: profile.id, 
+            [field]: value,
+            updated_at: new Date().toISOString()
+        }); 
+        toast.success("Saved"); 
+    } catch (error) { 
+        console.error(error);
+        toast.error("Failed to save"); 
+    }
   };
 
   if (loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
@@ -377,7 +429,7 @@ const Profile = () => {
                   <AvatarImage src={profile.avatar_url} className="object-cover" />
                   <AvatarFallback className="bg-[#1a1a1c] text-3xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="mb-4"><h2 className="text-2xl font-bold text-white">{profile.full_name}</h2><p className="text-primary font-medium">@{profile.username}</p></div>
+                <div className="mb-4"><h2 className="text-2xl font-bold text-white">{profile.full_name}</h2><p className="text-primary font-medium">@{profile.username || "username"}</p></div>
               </div>
             </div>
           </div>
