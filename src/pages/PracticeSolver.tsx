@@ -10,7 +10,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { CodeEditor } from '@/components/CodeEditor';
-// FIX: Added XCircle to the imports below
 import { Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, Home, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -160,6 +159,36 @@ export default function PracticeSolver() {
       total: totalCount,
       time: elapsedTime
     });
+
+    // --- LEADERBOARD UPDATE LOGIC ---
+    if (passedCount === totalCount) {
+        try {
+            // Calculate Points based on Difficulty
+            // Easy: 10, Medium: 30, Hard: 50
+            const pointsMap: Record<string, number> = { 'Easy': 10, 'Medium': 30, 'Hard': 50 };
+            const points = pointsMap[problem.difficulty] || 10;
+
+            // Save to 'practice_submissions'
+            // We use upsert to ensure a user only gets points ONCE per problem
+            const { error } = await supabase.from('practice_submissions').upsert({
+                user_id: user.id,
+                problem_slug: slug,
+                points: points,
+                problem_title: problem.title,
+                submitted_at: new Date().toISOString()
+            }, { onConflict: 'user_id, problem_slug' });
+
+            if (!error) {
+                toast({ 
+                    title: `Success! +${points} Points`, 
+                    description: "Your ranking has been updated.",
+                    className: "bg-green-600 border-none text-white"
+                });
+            }
+        } catch (err) {
+            console.error("Failed to update leaderboard", err);
+        }
+    }
     
     setSubmitting(false);
   };
