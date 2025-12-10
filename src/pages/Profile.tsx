@@ -38,7 +38,9 @@ import {
   UserCog,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  Save,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -66,18 +68,18 @@ interface ProfileData {
 
 // --- Constants: Premium Abstract Covers ---
 const COVER_TEMPLATES = [
-  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2064&auto=format&fit=crop", // Dark Fluid
-  "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop", // Liquid Pink/Blue
-  "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop", // Retro Grid Dark
-  "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop", // Gradient Texture
-  "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=2068&auto=format&fit=crop", // Dark Abstract 3D
-  "https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=2074&auto=format&fit=crop", // Neon Red/Black
-  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop", // Cyberpunk Blue
-  "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop", // Purple Mesh
-  "https://images.unsplash.com/photo-1506318137071-a8bcbf6755dd?q=80&w=2070&auto=format&fit=crop", // Dark Leaves
-  "https://images.unsplash.com/photo-1492321936769-b49830bc1d1e?q=80&w=1974&auto=format&fit=crop", // Concrete Dark
-  "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=1974&auto=format&fit=crop", // Dark Fabric
-  "https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?q=80&w=2070&auto=format&fit=crop", // Golden Particles
+  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2064&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=2068&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=2074&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1506318137071-a8bcbf6755dd?q=80&w=2070&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1492321936769-b49830bc1d1e?q=80&w=1974&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=1974&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?q=80&w=2070&auto=format&fit=crop", 
 ];
 
 // --- Helper Functions ---
@@ -103,6 +105,11 @@ const SocialEditBlock = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
+
+  // Sync temp value when prop changes
+  useEffect(() => {
+    setTempValue(value);
+  }, [value]);
 
   const handleSave = () => {
     onChange(tempValue);
@@ -277,7 +284,6 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
 
   if (!profile) return null;
 
-  // Logic: Incomplete if no Bio or no Institute
   const isProfileComplete = !!(profile.bio && profile.institute_name);
   const isOwner = session?.user?.id === profile.id;
 
@@ -298,7 +304,6 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
            <div className="w-full h-[80vh] relative flex flex-col">
              <ProfileCardContent profile={profile} isOwner={false} />
              
-             {/* Dynamic Button Action */}
              <div className="mt-4">
                {isOwner && !isProfileComplete ? (
                  <Button onClick={() => navigate('/profile')} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-lg hover:shadow-orange-500/20">
@@ -323,7 +328,14 @@ const Profile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  
+  // Save & Validation States
+  const [isSaving, setIsSaving] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  
   const sliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -357,6 +369,7 @@ const Profile = () => {
         };
 
         setProfile(defaultProfile);
+        setOriginalProfile(defaultProfile); // Snapshot for tracking changes
         setIsOwner(true);
         setLoading(false);
         return;
@@ -376,25 +389,79 @@ const Profile = () => {
       }
       
       setProfile(data as ProfileData);
+      setOriginalProfile(data as ProfileData);
       if (currentUser && data.id === currentUser.id) setIsOwner(true);
       setLoading(false);
     };
     init();
   }, [username, navigate]);
 
-  const updateProfile = async (field: keyof ProfileData, value: string) => {
+  // Debounced Username Check
+  useEffect(() => {
+    if (!profile || !originalProfile) return;
+
+    // Only check if username changed and is not empty
+    if (profile.username !== originalProfile.username && profile.username.length > 2) {
+      const checkAvailability = async () => {
+        setIsCheckingUsername(true);
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", profile.username)
+          .neq("id", profile.id) // Exclude self
+          .maybeSingle();
+        
+        setIsCheckingUsername(false);
+        
+        if (data) {
+          setUsernameError("Username already taken");
+        } else {
+          setUsernameError(null);
+        }
+      };
+
+      const timer = setTimeout(checkAvailability, 500); // 500ms debounce
+      return () => clearTimeout(timer);
+    } else {
+      setUsernameError(null);
+    }
+  }, [profile?.username, originalProfile?.username, profile?.id]);
+
+  const updateLocalState = (field: keyof ProfileData, value: string) => {
     if (!profile) return;
-    setProfile({ ...profile, [field]: value });
+    setProfile(prev => prev ? ({ ...prev, [field]: value }) : null);
+  };
+
+  const handleSave = async () => {
+    if (!profile) return;
+    if (usernameError) {
+      toast.error("Please fix username errors before saving.");
+      return;
+    }
+
+    setIsSaving(true);
     try { 
-        await supabase.from("profiles").upsert({ 
+        const { error } = await supabase.from("profiles").upsert({ 
             id: profile.id, 
-            [field]: value,
+            username: profile.username,
+            full_name: profile.full_name,
+            bio: profile.bio,
+            github_handle: profile.github_handle,
+            linkedin_url: profile.linkedin_url,
+            portfolio_url: profile.portfolio_url,
+            cover_url: profile.cover_url,
             updated_at: new Date().toISOString()
         }); 
-        toast.success("Saved"); 
-    } catch (error) { 
+
+        if (error) throw error;
+
+        toast.success("Profile saved successfully"); 
+        setOriginalProfile(profile); // Update snapshot
+    } catch (error: any) { 
         console.error(error);
-        toast.error("Failed to save"); 
+        toast.error("Failed to save: " + error.message); 
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -416,13 +483,39 @@ const Profile = () => {
     );
   }
 
+  // Helper to check if there are unsaved changes
+  const isDirty = JSON.stringify(profile) !== JSON.stringify(originalProfile);
+
   return (
     <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 md:px-8 lg:px-12">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative">
         
         {/* LEFT: Editor (Scrollable) */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-10">
-          <div><h1 className="text-3xl font-bold text-white mb-2">Edit Profile</h1><p className="text-muted-foreground">Customize your public presence. Changes save automatically.</p></div>
+          
+          {/* Header with SAVE BUTTON */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Edit Profile</h1>
+              <p className="text-muted-foreground">Customize your public presence.</p>
+            </div>
+            <Button 
+              onClick={handleSave} 
+              disabled={!isDirty || isSaving || isCheckingUsername || !!usernameError}
+              className={cn(
+                "min-w-[140px] font-bold shadow-lg transition-all",
+                isDirty ? "bg-primary hover:bg-primary/90 text-white" : "bg-white/10 text-muted-foreground hover:bg-white/15"
+              )}
+            >
+              {isSaving ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+              ) : isCheckingUsername ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Checking...</>
+              ) : (
+                <><Save className="w-4 h-4 mr-2" /> Save Changes</>
+              )}
+            </Button>
+          </div>
           
           <div className="space-y-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><User className="w-4 h-4" /> Identity</h2>
@@ -431,7 +524,7 @@ const Profile = () => {
                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Full Name</Label>
                  <Input 
                    value={profile.full_name} 
-                   onChange={(e) => updateProfile('full_name', e.target.value)} 
+                   onChange={(e) => updateLocalState('full_name', e.target.value)} 
                    className="bg-white/5 border-white/10"
                  />
                </div>
@@ -441,10 +534,18 @@ const Profile = () => {
                     <span className="absolute left-3 top-2.5 text-muted-foreground">@</span>
                     <Input 
                       value={profile.username} 
-                      onChange={(e) => updateProfile('username', e.target.value)} 
-                      className="bg-white/5 border-white/10 pl-8"
+                      onChange={(e) => updateLocalState('username', e.target.value)} 
+                      className={cn(
+                        "bg-white/5 border-white/10 pl-8 transition-colors",
+                        usernameError && "border-red-500 focus-visible:ring-red-500"
+                      )}
                     />
                  </div>
+                 {usernameError && (
+                   <p className="text-xs text-red-400 flex items-center gap-1 mt-1">
+                     <AlertCircle className="w-3 h-3" /> {usernameError}
+                   </p>
+                 )}
                </div>
             </div>
           </div>
@@ -461,7 +562,6 @@ const Profile = () => {
                   <AvatarFallback className="bg-[#1a1a1c] text-3xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 
-                {/* --- UPDATED: High Visibility Text Box with better username color --- */}
                 <div className="mb-4 bg-black/70 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 shadow-2xl">
                    <h2 className="text-3xl font-bold text-white tracking-tight mb-0.5">{profile.full_name}</h2>
                    <p className="text-gray-300 font-medium text-sm tracking-wide">@{profile.username || 'username'}</p>
@@ -470,7 +570,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* --- UPDATED: Cover Slider Section (Moved Up & Horizontal) --- */}
           <div className="space-y-6">
              <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><LayoutTemplate className="w-4 h-4" /> Cover Templates</h2>
@@ -487,7 +586,7 @@ const Profile = () => {
                 {COVER_TEMPLATES.map((url, i) => (
                   <div 
                     key={i} 
-                    onClick={() => updateProfile('cover_url', url)} 
+                    onClick={() => updateLocalState('cover_url', url)} 
                     className={cn(
                         "flex-shrink-0 w-64 aspect-video rounded-lg bg-cover bg-center cursor-pointer border-2 transition-all hover:scale-105", 
                         profile.cover_url === url ? "border-primary shadow-lg ring-2 ring-primary/20" : "border-transparent opacity-70 hover:opacity-100"
@@ -501,15 +600,15 @@ const Profile = () => {
           <div className="space-y-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Social & Links</h2>
             <div className="grid gap-4">
-              <SocialEditBlock icon={Github} label="GitHub Profile" value={profile.github_handle || ''} onChange={(v) => updateProfile('github_handle', v)} colorClass="group-hover:bg-[#24292e] group-hover:text-white" />
-              <SocialEditBlock icon={Linkedin} label="LinkedIn URL" value={profile.linkedin_url || ''} onChange={(v) => updateProfile('linkedin_url', v)} colorClass="group-hover:bg-[#0077b5] group-hover:text-white" />
-              <SocialEditBlock icon={Globe} label="Portfolio URL" value={profile.portfolio_url || ''} onChange={(v) => updateProfile('portfolio_url', v)} colorClass="group-hover:bg-emerald-600 group-hover:text-white" />
+              <SocialEditBlock icon={Github} label="GitHub Profile" value={profile.github_handle || ''} onChange={(v) => updateLocalState('github_handle', v)} colorClass="group-hover:bg-[#24292e] group-hover:text-white" />
+              <SocialEditBlock icon={Linkedin} label="LinkedIn URL" value={profile.linkedin_url || ''} onChange={(v) => updateLocalState('linkedin_url', v)} colorClass="group-hover:bg-[#0077b5] group-hover:text-white" />
+              <SocialEditBlock icon={Globe} label="Portfolio URL" value={profile.portfolio_url || ''} onChange={(v) => updateLocalState('portfolio_url', v)} colorClass="group-hover:bg-emerald-600 group-hover:text-white" />
             </div>
           </div>
 
           <div className="space-y-6 pb-20">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">About You</h2>
-            <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateProfile('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
+            <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateLocalState('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
           </div>
           
         </div>
