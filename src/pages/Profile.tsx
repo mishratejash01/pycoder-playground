@@ -298,7 +298,7 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
              {/* Dynamic Button Action */}
              <div className="mt-4">
                {isOwner && !isProfileComplete ? (
-                 <Button onClick={() => navigate(`/u/${profile.username}`)} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-lg hover:shadow-orange-500/20">
+                 <Button onClick={() => navigate('/profile')} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-lg hover:shadow-orange-500/20">
                    <UserCog className="w-4 h-4 mr-2" /> Complete Profile
                  </Button>
                ) : (
@@ -327,49 +327,48 @@ const Profile = () => {
       setLoading(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
-      // CASE 1: No username in URL (Route: /profile)
+      // CASE 1: No username in URL (Route: /profile) - PRIVATE EDITOR
       if (!username) {
         if (!currentUser) { navigate("/auth"); return; }
         
         const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
         
-        // If profile exists and has a username, redirect to public URL
-        if (myProfile?.username) { 
-            navigate(`/u/${myProfile.username}`, { replace: true }); 
-            return; 
-        }
-
-        // If no profile exists OR profile is incomplete (no username), we stay here and enable Editor.
-        // Initialize default empty profile if none exists in DB.
+        // If no profile exists, create a default local state to allow creation
         const defaultProfile: ProfileData = {
             id: currentUser.id,
-            username: "", // User needs to set this eventually (via ProfileCompletion or here if we added field)
-            full_name: currentUser.user_metadata?.full_name || "User",
-            institute_name: "",
-            degree: "",
-            branch: "",
-            start_year: new Date().getFullYear(),
-            end_year: new Date().getFullYear() + 4,
-            country: "",
-            github_handle: "",
-            linkedin_url: "",
-            portfolio_url: "",
-            bio: "",
-            avatar_url: currentUser.user_metadata?.avatar_url || "",
-            contact_no: "",
-            cover_url: ""
+            username: myProfile?.username || "", 
+            full_name: myProfile?.full_name || currentUser.user_metadata?.full_name || "User",
+            institute_name: myProfile?.institute_name || "",
+            degree: myProfile?.degree || "",
+            branch: myProfile?.branch || "",
+            start_year: myProfile?.start_year || new Date().getFullYear(),
+            end_year: myProfile?.end_year || new Date().getFullYear() + 4,
+            country: myProfile?.country || "",
+            github_handle: myProfile?.github_handle || "",
+            linkedin_url: myProfile?.linkedin_url || "",
+            portfolio_url: myProfile?.portfolio_url || "",
+            bio: myProfile?.bio || "",
+            avatar_url: myProfile?.avatar_url || currentUser.user_metadata?.avatar_url || "",
+            contact_no: myProfile?.contact_no || "",
+            cover_url: myProfile?.cover_url || ""
         };
 
-        setProfile((myProfile as ProfileData) || defaultProfile);
+        setProfile(defaultProfile);
         setIsOwner(true);
         setLoading(false);
         return;
       }
 
-      // CASE 2: Username provided (Route: /u/:username)
+      // CASE 2: Username provided (Route: /u/:username) - PUBLIC VIEW
       const { data, error } = await supabase.from("profiles").select("*").eq("username", username).single();
       
       if (error || !data) { 
+        // If profile not found in DB, check if it is the current user (fallback) or show error
+        if (currentUser) {
+            // If I am logged in but clicked a bad link, just take me to my editor
+             navigate("/profile"); 
+             return;
+        }
         toast.error("Profile not found"); 
         navigate("/"); 
         return; 
