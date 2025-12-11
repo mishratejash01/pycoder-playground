@@ -56,10 +56,7 @@ export const useCodeRunner = () => {
 
     try {
       switch (language) {
-        // Python is now handled by usePyodide directly in the UI!
-        case 'python':
-          result = { success: false, output: "Python is handled by the local kernel.", error: "" };
-          break;
+        case 'python': result = await runPiston('python', '3.10.0', code, input); break;
         case 'javascript': result = await runPiston('javascript', '18.15.0', code, input); break;
         case 'java': result = await runPiston('java', '15.0.2', code, input); break;
         case 'cpp': result = await runPiston('cpp', '10.2.0', code, input); break;
