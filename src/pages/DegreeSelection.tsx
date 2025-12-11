@@ -253,7 +253,7 @@ const DegreeSelection = () => {
                     <div className="absolute top-7 right-7">
                       {isLocked ? (
                          <div className="w-8 h-8 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center">
-                           <Lock className="w-3.5 h-3.5 text-[#52525b]" />
+                           <Lock className="w-4 h-4 text-[#71717a]" />
                          </div>
                       ) : (
                          <div className="w-8 h-8 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
@@ -293,18 +293,28 @@ const DegreeSelection = () => {
                          <div className="h-px w-1/2 bg-[#18181b]" />
                       </div>
 
-                      {availableExams.length > 0 ? (
+                      {/* --- LOCKED STATE UI --- */}
+                      {isLocked ? (
+                        <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center gap-3">
+                           <div className="w-8 h-8 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
+                             <Lock className="w-3.5 h-3.5 text-[#52525b]" />
+                           </div>
+                           <div className="flex flex-col">
+                             <span className="text-xs font-medium text-[#71717a]">Subject Locked</span>
+                             <span className="text-[10px] text-[#52525b]">Prerequisite required</span>
+                           </div>
+                        </div>
+                      ) : availableExams.length > 0 ? (
                         <div className="flex flex-col gap-2">
                           {availableExams.map((examType: any) => (
                             <button
                               key={examType}
-                              onClick={() => !isLocked && handleExamClick(subject.id, subject.name, examType)}
-                              disabled={isLocked}
-                              className="relative w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 hover:border-[#3f3f46] transition-all group/btn disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleExamClick(subject.id, subject.name, examType)}
+                              className="relative w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 hover:border-[#3f3f46] transition-all group/btn"
                             >
                               <div className="flex flex-col items-start gap-0.5">
                                 <div className="flex items-center gap-2">
-                                  <div className={cn("w-1.5 h-1.5 rounded-full", isLocked ? "bg-[#3f3f46]" : "bg-emerald-500/50")} />
+                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
                                   <span className="text-sm font-medium text-[#d4d4d8] group-hover/btn:text-white transition-colors">{examType}</span>
                                 </div>
                                 <span className="text-[10px] text-[#52525b] ml-3.5">Standard Assessment</span>
