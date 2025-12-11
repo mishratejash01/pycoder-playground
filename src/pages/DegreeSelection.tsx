@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, ArrowLeft, Grid3X3, GraduationCap } from 'lucide-react';
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 import { Card } from '@/components/ui/card';
 
 const getSubjectIcon = (name: string) => {
@@ -151,20 +150,20 @@ const DegreeSelection = () => {
     <div className="min-h-screen bg-[#121212] font-sans selection:bg-orange-500/30 p-2 md:p-6 flex items-center justify-center">
       
       {/* --- UNIFIED MAIN CONTAINER --- */}
-      {/* Restored Original Colors: bg-[#09090b] (Card Dark) with White/10 Border */}
+      {/* Acts as the "Background Section" to cover floating elements */}
       <div className="w-full max-w-[1800px] min-h-[95vh] bg-[#09090b] border border-white/10 rounded-3xl relative overflow-hidden flex flex-col shadow-2xl">
         
-        {/* Subtle Background Pattern (Grid) - Kept neutral/white */}
+        {/* Subtle Background Pattern (Grid) */}
         <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
              style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
         />
         
-        {/* LARGE WATERMARK (Original White/Neutral) */}
+        {/* LARGE WATERMARK */}
         <div className="absolute right-0 top-0 h-full w-1/3 overflow-hidden opacity-[0.02] pointer-events-none">
             <span className="font-serif text-[150px] leading-none text-white absolute -right-10 top-10 rotate-12">IITM</span>
         </div>
 
-        {/* --- 1. INTEGRATED SWISS HEADER --- */}
+        {/* --- 1. HEADER SECTION --- */}
         <div className="relative z-10 border-b border-white/10 bg-[#09090b]/50 backdrop-blur-sm">
             <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[240px]">
                 
@@ -179,7 +178,7 @@ const DegreeSelection = () => {
                     </button>
 
                     <div className="mt-6">
-                        {/* RESTORED ORANGE ACCENT */}
+                        {/* Orange Accent Bar */}
                         <div className="w-12 h-1 bg-orange-600 mb-6" />
                         <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[0.95] text-white tracking-tight">
                             Curriculum <br />
@@ -204,7 +203,6 @@ const DegreeSelection = () => {
                                     )}
                                 >
                                     {isActive && (
-                                        // RESTORED ORANGE ACCENT
                                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-600" />
                                     )}
                                     <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
@@ -277,7 +275,7 @@ const DegreeSelection = () => {
         {/* --- 2. MAIN CONTENT AREA (SCROLLABLE) --- */}
         <div className="flex-1 overflow-y-auto relative z-10 bg-transparent">
           <div className="p-4 md:p-12 pb-32">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredSubjects.length === 0 ? (
                 <div className="col-span-full py-24 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
                   <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
@@ -291,43 +289,75 @@ const DegreeSelection = () => {
               ) : (
                 filteredSubjects.map((subject: any) => {
                   const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
-                  const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown';
+                  const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
+                  
                   const isLocked = subject.is_unlocked === false; 
 
                   return (
                     <div key={subject.id} className="relative group">
+                      {/* Glow effect backing (Restored Original) */}
                       <div className={cn(
-                        "absolute -inset-0.5 bg-gradient-to-r rounded-2xl blur opacity-0 group-hover:opacity-40 transition duration-500",
-                        isLocked ? "from-red-900 to-red-950" : "from-zinc-700 to-zinc-800"
+                        "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur transition duration-1000 group-hover:duration-200",
+                        isLocked 
+                          ? "from-zinc-800 to-zinc-900 opacity-10 group-hover:opacity-20" 
+                          : "from-zinc-700 to-zinc-800 opacity-20 group-hover:opacity-40"
                       )} />
                       
-                      {/* CARD STYLE RESTORED TO ORIGINAL DARK THEME */}
-                      <div className="relative w-full h-full bg-[#0c0c0e] rounded-xl border border-white/10 p-6 shadow-lg flex flex-col gap-6 transition-all duration-300 hover:border-white/20 hover:bg-[#121212]">
+                      {/* Card Container (STRICTLY RESTORED ORIGINAL DESIGN) */}
+                      <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
                         
-                        {/* Header Section */}
-                        <div className={cn("flex flex-row items-start gap-4", isLocked && "opacity-50 grayscale")}>
-                          <div className="shrink-0 w-12 h-12 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center group-hover:border-white/20 transition-colors">
-                             {getSubjectIcon(subject.name)}
-                          </div>
-
-                          <div className="flex flex-col gap-1 w-full pt-0.5">
-                            <h3 className="text-base font-bold text-white leading-tight line-clamp-1">{subject.name}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="h-5 rounded px-1.5 border-white/10 bg-white/5 text-[10px] text-zinc-400 font-mono uppercase tracking-wider">
-                                    {levelName}
-                                </Badge>
-                                <span className="text-[10px] text-zinc-600 font-mono">|</span>
-                                <span className="text-[10px] text-zinc-500 font-mono">4 Credits</span>
-                            </div>
+                        {/* Top Right Status Badge */}
+                        <div className="absolute top-7 right-7">
+                          <div className="w-6 h-6 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
+                              isLocked 
+                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
+                                : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                            )} />
                           </div>
                         </div>
 
+                        {/* Header Section */}
+                        <div className={cn("flex flex-row items-start gap-5", isLocked && "opacity-50")}>
+                          <div className="shrink-0 w-14 h-14 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover:border-[#3f3f46]/50 transition-colors">
+                             {getSubjectIcon(subject.name)}
+                          </div>
+
+                          <div className="flex flex-col gap-1 w-full pt-1">
+                            <h3 className="text-lg font-bold text-[#f4f4f5] leading-tight line-clamp-1">{subject.name}</h3>
+                            <p className="text-xs text-[#71717a] font-medium line-clamp-2 leading-relaxed">
+                              Comprehensive resource center for {subject.name}. Access practice labs and evaluations.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Tags Section */}
+                        <div className={cn("flex flex-wrap gap-2", isLocked && "opacity-40 grayscale")}>
+                          <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#a1a1aa] font-normal hover:bg-[#18181b]">
+                            {levelName}
+                          </Badge>
+                          <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#71717a] font-normal hover:bg-[#18181b]">
+                            4 Credits
+                          </Badge>
+                        </div>
+
                         {/* Main Content Area */}
-                        <div className="flex flex-col gap-3 pt-1 mt-auto">
+                        <div className="flex flex-col gap-3 pt-1">
+                          <div className="flex justify-between items-center pb-1">
+                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#52525b]">Select Module</span>
+                             <div className="h-px w-1/2 bg-[#18181b]" />
+                          </div>
+
+                          {/* --- LOCKED STATE UI --- */}
                           {isLocked ? (
-                            <div className="w-full h-12 rounded-lg border border-dashed border-white/10 bg-white/5 flex items-center justify-center gap-2">
-                               <Lock className="w-3 h-3 text-zinc-500" />
-                               <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Locked</span>
+                            <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center gap-3">
+                               <div className="w-6 h-6 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
+                                 <Lock className="w-3 h-3 text-[#52525b]" />
+                               </div>
+                               <div className="flex flex-col justify-center">
+                                 <span className="text-xs font-medium text-[#71717a]">Subject Locked</span>
+                               </div>
                             </div>
                           ) : availableExams.length > 0 ? (
                             <div className="flex flex-col gap-2">
@@ -335,22 +365,45 @@ const DegreeSelection = () => {
                                 <button
                                   key={examType}
                                   onClick={() => handleExamClick(subject.id, subject.name, examType)}
-                                  className="relative w-full h-12 rounded-lg border border-white/10 bg-[#18181b]/50 flex items-center px-4 justify-between hover:bg-white/10 hover:border-white/20 transition-all group/btn"
+                                  className="relative w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 hover:border-[#3f3f46] transition-all group/btn"
                                 >
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                    <span className="text-xs font-medium text-zinc-300 group-hover/btn:text-white">{examType}</span>
+                                  <div className="flex flex-col items-start gap-0.5">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+                                      <span className="text-sm font-medium text-[#d4d4d8] group-hover/btn:text-white transition-colors">{examType}</span>
+                                    </div>
+                                    <span className="text-[10px] text-[#52525b] ml-3.5">Standard Assessment</span>
                                   </div>
-                                  <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover/btn:text-white transition-colors" />
+                                  <div className="w-8 h-8 rounded-full bg-[#27272a]/50 flex items-center justify-center group-hover/btn:bg-[#27272a] transition-colors">
+                                    <ChevronRight className="w-4 h-4 text-[#71717a] group-hover/btn:text-[#d4d4d8]" />
+                                  </div>
                                 </button>
                               ))}
                             </div>
                           ) : (
-                             <div className="w-full h-12 rounded-lg border border-dashed border-white/10 bg-white/5 flex items-center justify-center text-[10px] text-zinc-500 font-mono">
-                               NO MODULES ACTIVE
+                             <div className="w-full h-14 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center text-xs text-[#52525b]">
+                               No active exams
                              </div>
                           )}
                         </div>
+
+                        {/* Footer/Share Section */}
+                        <div className={cn("flex items-center justify-center gap-3 pt-2", isLocked && "opacity-40")}>
+                          <button 
+                            onClick={() => !isLocked && handleShare(subject.name)}
+                            disabled={isLocked}
+                            className="group/share flex items-center gap-3 hover:opacity-80 transition-opacity w-full justify-center"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover/share:border-[#3f3f46] transition-colors">
+                               <Share2 className="w-4 h-4 text-[#71717a] group-hover/share:text-[#a1a1aa]" />
+                            </div>
+                            <div className="flex flex-col items-start">
+                              <span className="text-xs font-medium text-[#71717a] group-hover/share:text-[#a1a1aa]">Share Resource</span>
+                              <div className="h-0.5 w-0 bg-[#3f3f46] group-hover/share:w-full transition-all duration-300 rounded-full" />
+                            </div>
+                          </button>
+                        </div>
+
                       </div>
                     </div>
                   );
@@ -378,15 +431,18 @@ const DegreeSelection = () => {
                   alt="Practice Coding" 
                   className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
-              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/10">
-                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3>
-                 </div>
-                 <p className="text-zinc-500 text-xs">Unrestricted environment.</p>
+              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                    <Sparkles className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                  Experiment freely. No pressure, no timers—just you improving your craft.
+                </p>
               </div>
             </div>
 
@@ -402,18 +458,26 @@ const DegreeSelection = () => {
                   alt="Proctored Exam" 
                   className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
-              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/10">
-                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                        <ShieldCheck className="w-5 h-5 text-red-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3>
-                 </div>
-                 <p className="text-zinc-500 text-xs">Strict monitoring enabled.</p>
+              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                    <ShieldCheck className="w-5 h-5 text-red-400" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                  Strict monitoring and time limits to officially validate your skills.
+                </p>
               </div>
             </div>
 
+          </div>
+
+          <div className="bg-[#050505] p-3 text-center text-xs text-muted-foreground border-t border-white/5 flex justify-between items-center px-6">
+            <span>Selected: <span className="text-white font-medium">{selectedExamData?.name}</span></span>
+            <span className="bg-white/5 px-2 py-1 rounded text-[10px] uppercase tracking-wider">{selectedExamData?.type}</span>
           </div>
         </DialogContent>
       </Dialog>
