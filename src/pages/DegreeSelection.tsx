@@ -249,9 +249,9 @@ const DegreeSelection = () => {
                   {/* Card Container */}
                   <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
                     
-                    {/* Top Right Status Badge (Signal Symbol) */}
+                    {/* Top Right Status Badge (Reduced Size) */}
                     <div className="absolute top-7 right-7">
-                      <div className="w-8 h-8 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
                         <div className={cn(
                           "w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
                           isLocked 
@@ -295,8 +295,9 @@ const DegreeSelection = () => {
                       {/* --- LOCKED STATE UI --- */}
                       {isLocked ? (
                         <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
-                             <Lock className="w-3.5 h-3.5 text-[#52525b]" />
+                           {/* Reduced lock icon container size */}
+                           <div className="w-6 h-6 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
+                             <Lock className="w-3 h-3 text-[#52525b]" />
                            </div>
                            <div className="flex flex-col justify-center">
                              <span className="text-xs font-medium text-[#71717a]">Subject Locked</span>
