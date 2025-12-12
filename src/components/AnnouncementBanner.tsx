@@ -90,13 +90,11 @@ export const AnnouncementBanner = () => {
         .animate-marquee-infinite {
           display: flex;
           width: fit-content;
-          /* Slower, cinematic speed (90s) */
           animation: marquee-infinite 90s linear infinite;
         }
         .animate-marquee-infinite:hover {
           animation-play-state: paused;
         }
-        /* Soft fade masks on the edges */
         .mask-fade-wide {
           mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
           -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
@@ -108,24 +106,26 @@ export const AnnouncementBanner = () => {
         onClose={() => setIsVisible(false)}
         className={cn(
           "fixed top-0 left-0 right-0 z-[60] transition-all duration-500 ease-in-out",
-          "border-b border-white/5 backdrop-blur-xl",
-          // Premium Gradient: Violet glow at top, fading to black/darkness below
-          "bg-[#020202] bg-[linear-gradient(180deg,rgba(109,40,217,0.15)_0%,rgba(2,2,2,0.8)_60%,rgba(0,0,0,1)_100%)]"
+          "border-b border-white/5 backdrop-blur-xl py-0", // Added py-0 to override default padding
+          // Sleek Dark Gradient
+          "bg-[#020202] bg-[linear-gradient(180deg,rgba(109,40,217,0.1)_0%,rgba(2,2,2,0.9)_100%)]"
         )}
       >
-        <div className="flex w-full items-center justify-between gap-6 px-4 py-2 min-h-[36px]">
+        {/* Compact container: h-8 (32px) total height */}
+        <div className="flex w-full items-center justify-between gap-4 px-4 h-8">
           
-          {/* SCROLLING TEXT AREA - 3/4th WIDTH */}
-          <div className="flex-1 flex justify-center w-full">
-            <div className="w-[85%] md:w-[75%] relative flex items-center overflow-hidden mask-fade-wide">
-               <div className="animate-marquee-infinite">
+          {/* SCROLLING TEXT AREA */}
+          <div className="flex-1 flex justify-center w-full h-full items-center">
+            <div className="w-[85%] md:w-[75%] relative flex items-center overflow-hidden mask-fade-wide h-full">
+               <div className="animate-marquee-infinite flex items-center">
                   {[0, 1, 2, 3].map((i) => (
                     <span 
                       key={i} 
-                      // FONT STYLE: Sans Serif + Italic (Perplexity Style)
-                      className="mx-12 font-sans italic text-sm md:text-[15px] font-medium text-gray-200/90 tracking-wide whitespace-nowrap flex items-center"
+                      // Compact Font: text-xs md:text-sm
+                      className="mx-12 font-sans italic text-xs md:text-sm font-medium text-gray-300/90 tracking-wide whitespace-nowrap flex items-center"
                     >
-                      <span className="w-1 h-1 rounded-full bg-violet-400 mr-4 opacity-75" />
+                      {/* Smaller dot */}
+                      <span className="w-1 h-1 rounded-full bg-violet-400 mr-3 opacity-75" />
                       {currentAnnouncement.message}
                     </span>
                   ))}
@@ -139,12 +139,13 @@ export const AnnouncementBanner = () => {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 px-4 text-xs font-sans italic text-violet-300 hover:text-white hover:bg-white/5 rounded-full border border-white/5 transition-all shadow-[0_0_10px_rgba(139,92,246,0.1)] group"
+                // Compact Button: h-6, smaller text
+                className="h-6 px-3 text-[10px] font-sans italic text-violet-300 hover:text-white hover:bg-white/5 rounded-full border border-white/5 transition-all shadow-sm group"
                 asChild
               >
                 <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
                   {currentAnnouncement.button_text || "Explore"}
-                  <ChevronRight className="w-3 h-3 ml-1 opacity-50 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="w-2.5 h-2.5 ml-1 opacity-50 group-hover:translate-x-0.5 transition-transform" />
                 </a>
               </Button>
             </div>
