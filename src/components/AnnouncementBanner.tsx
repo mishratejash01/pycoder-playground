@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StickyBanner } from "@/components/ui/sticky-banner";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 // Define the shape of your announcement data
 type Announcement = {
@@ -47,7 +48,7 @@ export const AnnouncementBanner = () => {
     fetchAnnouncements();
   }, [location.pathname]);
 
-  // 2. Sync Height to CSS Variable (This shifts the header)
+  // 2. Sync Height to CSS Variable
   useEffect(() => {
     const updateHeight = () => {
       const height = isVisible && announcements.length > 0 && bannerRef.current 
@@ -66,12 +67,12 @@ export const AnnouncementBanner = () => {
     };
   }, [isVisible, announcements, currentIndex]);
 
-  // 3. Carousel Logic
+  // 3. Carousel Logic (Cycles through messages if multiple exist)
   useEffect(() => {
     if (announcements.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % announcements.length);
-    }, 10000); // Increased duration for reading scrolling text
+    }, 45000); // Very slow cycle to match scrolling speed
     return () => clearInterval(interval);
   }, [announcements.length]);
 
@@ -81,63 +82,74 @@ export const AnnouncementBanner = () => {
 
   return (
     <>
-      {/* CSS for Marquee Animation */}
       <style>{`
         @keyframes marquee-scroll {
           0% { transform: translateX(100%); }
           100% { transform: translateX(-100%); }
         }
-        .animate-marquee-scroll {
+        .animate-marquee-slow {
           display: inline-block;
           white-space: nowrap;
-          animation: marquee-scroll 15s linear infinite;
+          animation: marquee-scroll 40s linear infinite; /* Slower speed */
         }
-        /* Pause on hover for readability */
-        .animate-marquee-scroll:hover {
+        .animate-marquee-slow:hover {
           animation-play-state: paused;
+        }
+        .mask-gradient-fade {
+          mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
         }
       `}</style>
 
       <StickyBanner 
         ref={bannerRef}
         onClose={() => setIsVisible(false)}
-        // UPDATED: Gradient Top-to-Bottom (Violet -> Black)
-        className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-b from-violet-600 to-black border-b border-white/10 shadow-lg transition-all duration-300"
+        className={cn(
+          "fixed top-0 left-0 right-0 z-[60] transition-all duration-300",
+          "border-b border-white/5 shadow-2xl backdrop-blur-md",
+          // Premium Color Grading: Dark Indigo base with a subtle top glow
+          "bg-[#0a0a0f] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/60 via-[#0a0a0f] to-[#0a0a0f]"
+        )}
       >
-        <div className="flex w-full max-w-4xl items-center justify-between gap-4">
+        <div className="flex w-full items-center justify-between gap-4 px-4 py-1">
           
-          {/* Animated Message Container */}
-          <div className="flex-1 relative flex items-center overflow-hidden h-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentAnnouncement.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full h-full relative"
-              >
-                {/* Marquee Text */}
-                <div className="w-full h-full absolute inset-0 flex items-center">
-                  <span className="font-medium text-sm md:text-base text-white drop-shadow-md animate-marquee-scroll">
-                    {currentAnnouncement.message} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {currentAnnouncement.message}
-                  </span>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+          {/* Main Content Area - 3/4th Width */}
+          <div className="flex-1 flex justify-center w-full">
+            <div className="w-full md:w-[75%] relative flex items-center overflow-hidden h-7 mask-gradient-fade">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentAnnouncement.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="w-full h-full relative flex items-center"
+                >
+                  {/* Scrolling Text */}
+                  <div className="w-full absolute inset-0 flex items-center">
+                    <span className="text-sm md:text-[15px] font-medium text-indigo-100/90 tracking-wide drop-shadow-sm animate-marquee-slow">
+                      {currentAnnouncement.message} 
+                      {/* Spacer for loop effect */}
+                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      {currentAnnouncement.message}
+                    </span>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
 
-          {/* Buttons (Desktop & Mobile) */}
+          {/* Action Button - Kept clean and minimal */}
           {currentAnnouncement.link && (
-            <div className="shrink-0 z-10 bg-inherit pl-2">
+            <div className="shrink-0 z-10">
               <Button
                 size="sm"
-                variant="secondary"
-                className="h-6 px-3 text-[10px] md:text-xs font-bold bg-white text-violet-900 hover:bg-violet-50 shadow-sm whitespace-nowrap"
+                variant="ghost"
+                className="h-7 px-4 text-xs font-semibold rounded-full bg-white/5 hover:bg-white/10 text-indigo-200 hover:text-white border border-white/5 transition-all shadow-sm"
                 asChild
               >
                 <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
-                  {currentAnnouncement.button_text || "Check it out"}
+                  {currentAnnouncement.button_text || "Explore"}
                 </a>
               </Button>
             </div>
