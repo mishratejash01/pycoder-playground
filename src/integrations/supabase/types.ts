@@ -1,4 +1,7 @@
-export type Json =
+{
+type: "file_change",
+fileName: "src/integrations/supabase/types.ts",
+content: `export type Json =
   | string
   | number
   | boolean
@@ -328,6 +331,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      iitm_exam_submission: {
+        Row: {
+          correct_questions_count: number | null
+          created_at: string | null
+          exam_id: string
+          id: string
+          incorrect_questions_count: number | null
+          marks_obtained: number | null
+          skipped_questions_count: number | null
+          status: string | null
+          submission_data: Json | null
+          termination_reason: string | null
+          total_marks: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          correct_questions_count?: number | null
+          created_at?: string | null
+          exam_id: string
+          id?: string
+          incorrect_questions_count?: number | null
+          marks_obtained?: number | null
+          skipped_questions_count?: number | null
+          status?: string | null
+          submission_data?: Json | null
+          termination_reason?: string | null
+          total_marks?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          correct_questions_count?: number | null
+          created_at?: string | null
+          exam_id?: string
+          id?: string
+          incorrect_questions_count?: number | null
+          marks_obtained?: number | null
+          skipped_questions_count?: number | null
+          status?: string | null
+          submission_data?: Json | null
+          termination_reason?: string | null
+          total_marks?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       iitm_exam_submissions: {
         Row: {
@@ -1028,3 +1079,5 @@ export const Constants = {
     Enums: {},
   },
 } as const
+`
+}
