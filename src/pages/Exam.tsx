@@ -49,7 +49,7 @@ const Exam = () => {
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   
-  // --- NEW: Candidate ID State ---
+  // --- Candidate ID State ---
   const [candidateId, setCandidateId] = useState<string>("Verifying..."); 
   
   const [isContentObscured, setIsContentObscured] = useState(false);
@@ -75,7 +75,7 @@ const Exam = () => {
 
   const MAX_VIOLATIONS = 3;
 
-  // --- NEW: Generate Candidate ID on Mount ---
+  // --- Generate Candidate ID on Mount ---
   useEffect(() => {
     const fetchUserAndGenerateID = async () => {
         const { data: { user } } = await supabase.auth.getUser();
