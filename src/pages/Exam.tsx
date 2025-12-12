@@ -1,7 +1,4 @@
-{
-type: "file_change",
-fileName: "src/pages/Exam.tsx",
-content: `import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,8 +81,6 @@ const Exam = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
             // LOGIC: Take first 4 and last 4 chars of UUID to create a "CAND-XXXX-YYYY" format
-            // Example UUID: 123e4567-e89b-12d3-a456-426614174000
-            // Result: CAND-123E-4000
             const id = user.id.toUpperCase().replace(/-/g, '');
             const shortId = `CAND-${id.substring(0, 4)}-${id.substring(id.length - 4)}`;
             setCandidateId(shortId);
@@ -201,7 +196,7 @@ const Exam = () => {
     if (newCount >= MAX_VIOLATIONS) { 
         finishExam("TERMINATED: Max Violations Reached"); 
     } else { 
-        toast({ title: "⚠️ Violation Alert", description: \`Strike \${newCount}/\${MAX_VIOLATIONS}: \${message}\`, variant: "destructive", duration: 5000 }); 
+        toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 }); 
         setTimeout(() => { 
             if (document.fullscreenElement && document.hasFocus()) { setIsContentObscured(false); } 
         }, 3000); 
@@ -331,6 +326,8 @@ const Exam = () => {
     const finalStatus = isTerminated ? 'terminated' : 'completed';
 
     // 3. Save to Backend (New Table & Session Table)
+    let isError = isTerminated; // Default to error if terminated
+    
     if (user) {
         try {
             const promises = [];
@@ -352,7 +349,7 @@ const Exam = () => {
             // B. Upsert into the NEW detailed submission table
             const detailedSubmission = {
                 user_id: user.id,
-                exam_id: \`\${examType}-\${setName}-\${iitmSubjectId}\`, // Unique composite ID for this exam context
+                exam_id: `${examType}-${setName}-${iitmSubjectId}`, // Unique composite ID for this exam context
                 marks_obtained: obtainedScore,
                 total_marks: totalMaxScore,
                 correct_questions_count: correctCount,
@@ -366,15 +363,27 @@ const Exam = () => {
 
             const submissionUpdate = supabase.from('iitm_exam_submission').upsert(
                 detailedSubmission, 
-                { onConflict: 'user_id, exam_id' }
+                { onConflict: 'user_id, exam_id' } 
             );
             promises.push(submissionUpdate);
 
-            await Promise.all(promises);
+            // C. Wait for all and CHECK ERRORS
+            const results = await Promise.all(promises);
+            
+            const dbErrors = results.filter(r => r.error);
+            if (dbErrors.length > 0) {
+                console.error("Database Save Errors:", dbErrors);
+                throw new Error("Failed to sync exam data to server.");
+            }
 
         } catch (error) {
-            console.error("Failed to save exam data:", error);
-            toast({ variant: "destructive", title: "Save Warning", description: "Exam finished, but some data may not have synced." });
+            console.error("Exam save execution failed:", error);
+            isError = true;
+            toast({ 
+                variant: "destructive", 
+                title: "Data Sync Failed", 
+                description: "Your local result is ready, but it was not saved to the server." 
+            });
         }
     }
 
@@ -398,7 +407,7 @@ const Exam = () => {
         attempts: questionMetrics[a.id]?.attempts 
       })),
       terminationReason: isTerminated ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null), 
-      isError: isTerminated, 
+      isError: isError, 
       totalTime: spentTime, 
       examMetadata: { subjectId: iitmSubjectId, examType, setName }
     };
@@ -412,9 +421,9 @@ const Exam = () => {
       const m = Math.floor((s % 3600) / 60);
       const sec = s % 60;
       if (h > 0) {
-          return \`\${h.toString().padStart(2, '0')}:\${m.toString().padStart(2, '0')}:\${sec.toString().padStart(2, '0')}\`;
+          return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
       }
-      return \`\${m.toString().padStart(2, '0')}:\${sec.toString().padStart(2, '0')}\`;
+      return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -493,7 +502,7 @@ const Exam = () => {
                           <div 
                              key={i} 
                              className={cn("w-[3px] transition-all duration-100 rounded-[1px]", audioLevel > (i * 20) ? "bg-[#4CAF50]" : "bg-[#333]")}
-                             style={{ height: audioLevel > (i * 20) ? \`\${Math.max(30, Math.random() * 100)}%\` : '20%' }} 
+                             style={{ height: audioLevel > (i * 20) ? `${Math.max(30, Math.random() * 100)}%` : '20%' }} 
                           />
                        ))}
                     </div>
@@ -574,5 +583,3 @@ const Exam = () => {
 };
 
 export default Exam;
-`
-}
