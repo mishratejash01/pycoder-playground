@@ -1,7 +1,4 @@
-{
-type: "file_change",
-fileName: "src/integrations/supabase/types.ts",
-content: `export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -17,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          id: string
+          created_at: string | null
+          message: string
+          link: string | null
+          button_text: string | null
+          page_route: string
+          is_active: boolean | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          message: string
+          link?: string | null
+          button_text?: string | null
+          page_route?: string
+          is_active?: boolean | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          message?: string
+          link?: string | null
+          button_text?: string | null
+          page_route?: string
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
+      app_routes: {
+        Row: {
+          path: string
+          name: string | null
+          last_seen_at: string | null
+        }
+        Insert: {
+          path: string
+          name?: string | null
+          last_seen_at?: string | null
+        }
+        Update: {
+          path?: string
+          name?: string | null
+          last_seen_at?: string | null
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           category: string | null
@@ -1079,5 +1124,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-`
-}
