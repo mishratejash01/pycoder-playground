@@ -49,6 +49,9 @@ const Exam = () => {
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   
+  // --- NEW: Candidate ID State ---
+  const [candidateId, setCandidateId] = useState<string>("Verifying..."); 
+  
   const [isContentObscured, setIsContentObscured] = useState(false);
   
   // Countdown Timer State
@@ -71,6 +74,24 @@ const Exam = () => {
   const currentQuestionRef = useRef<string | null>(selectedAssignmentId);
 
   const MAX_VIOLATIONS = 3;
+
+  // --- NEW: Generate Candidate ID on Mount ---
+  useEffect(() => {
+    const fetchUserAndGenerateID = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            // LOGIC: Take first 4 and last 4 chars of UUID to create a "CAND-XXXX-YYYY" format
+            // Example UUID: 123e4567-e89b-12d3-a456-426614174000
+            // Result: CAND-123E-4000
+            const id = user.id.toUpperCase().replace(/-/g, '');
+            const shortId = `CAND-${id.substring(0, 4)}-${id.substring(id.length - 4)}`;
+            setCandidateId(shortId);
+        } else {
+            setCandidateId("GUEST-SESSION");
+        }
+    };
+    fetchUserAndGenerateID();
+  }, []);
 
   // --- Fetch Data ---
   const { data: assignments = [] } = useQuery({
@@ -432,10 +453,10 @@ const Exam = () => {
                 )}
             </div>
 
-            {/* 2. RIGHT: Controls (Timer moved here) */}
+            {/* 2. RIGHT: Controls (Timer + A/V + End) */}
             <div className="flex items-center gap-4">
                 
-                {/* Timer Pill - Moved to the right */}
+                {/* Timer Pill */}
                 <div className="bg-black border border-[#333] rounded px-3 py-1.5 flex items-center gap-3 shadow-sm h-[38px]">
                    <Timer className="w-3.5 h-3.5 text-[#666]" />
                    <span className={cn(
@@ -491,13 +512,14 @@ const Exam = () => {
             <div className={cn("h-full transition-all duration-300", isContentObscured && "blur-2xl opacity-10 pointer-events-none")}>
               <ResizablePanelGroup direction="horizontal" className="h-full">
                   
-                  {/* LEFT: Sidebar */}
+                  {/* LEFT: Sidebar (With Candidate ID Prop) */}
                   <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#1E1E1E] border-r border-[#333] hidden md:block">
                      <AssignmentSidebar 
                         selectedId={selectedAssignmentId} 
                         onSelect={(id) => { setSearchParams(p => { p.set('q', id); return p; }); setQuestionStatuses(prev => ({...prev, [id]: 'visited'})); }} 
                         questionStatuses={questionStatuses} 
                         preLoadedAssignments={assignments as any} 
+                        candidateId={candidateId} // <-- Passed here
                      />
                   </ResizablePanel>
                   
