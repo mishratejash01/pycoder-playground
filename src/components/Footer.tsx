@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, MapPin } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const Footer = () => {
@@ -42,7 +42,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal Links - UPDATED */}
+          {/* Legal Links - LINKED TO NEW PAGES */}
           <div>
             <h4 className="font-bold text-white mb-6">Legal</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
@@ -66,21 +66,14 @@ export const Footer = () => {
 
         {/* Bottom Bar Details */}
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-              <p className="text-xs text-muted-foreground text-center md:text-left">
-                © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by CodeVo.
-              </p>
-              
-              {/* UPDATED LOCATION */}
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-                <MapPin className="w-3 h-3" />
-                <span>Based in San Francisco, United States</span>
-              </div>
-          </div>
+          <p className="text-xs text-muted-foreground text-center md:text-left">
+            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by CodeVo.
+          </p>
           
+          {/* UPDATED LOCATION SECTION */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-full border border-white/5">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-            All Systems Operational
+            <span className="text-sm">🇺🇸</span>
+            <span>San Francisco, United States</span>
           </div>
         </div>
       </div>
