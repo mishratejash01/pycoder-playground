@@ -4,32 +4,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-
-// Page Imports
-import Landing from "./pages/Landing";
-import Practice from "./pages/Practice";
-import Exam from "./pages/Exam";
-import ExamResult from "./pages/ExamResult";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import DegreeSelection from "./pages/DegreeSelection";
-import QuestionSetSelection from "./pages/QuestionSetSelection";
-import Leaderboard from "./pages/Leaderboard";
-import Compiler from "./pages/Compiler";
-import Documentation from "./pages/Documentation";
-import PracticeArena from "./pages/PracticeArena";
-import PracticeSolver from "./pages/PracticeSolver";
-import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
-import SubjectModeSelection from "./pages/SubjectModeSelection";
-import Profile from "./pages/Profile";
-import About from "./pages/About"; 
-import TermsOfService from "./pages/TermsOfService"; 
-import PrivacyPolicy from "./pages/PrivacyPolicy"; 
+import { supabase } from "@/integrations/supabase/client";
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
+
+// NEW IMPORTS
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { AppRoutes } from "./routes";
 
 const queryClient = new QueryClient();
 
@@ -49,7 +33,30 @@ const AppContent = () => {
     }
   }, []);
 
-  if (showSplash) return <SplashScreen />;
+  // --- AUTOMATIC ROUTE SYNC LOGIC ---
+  useEffect(() => {
+    // We only run this in development mode (npm run dev) to keep DB clean
+    if (import.meta.env.DEV) {
+      const syncRoutes = async () => {
+        // Prepare data from src/routes.tsx
+        const routeData = AppRoutes.map(route => ({
+          path: route.path,
+          name: route.name,
+          last_seen_at: new Date().toISOString()
+        }));
+
+        // Upsert into Supabase 'app_routes' table
+        const { error } = await supabase
+          .from('app_routes')
+          .upsert(routeData, { onConflict: 'path' });
+
+        if (error) console.error("Error syncing routes:", error);
+      };
+
+      syncRoutes();
+    }
+  }, []);
+  // ----------------------------------
 
   // Hide Dock/Footer on specific routes
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
@@ -77,34 +84,18 @@ const AppContent = () => {
 
   return (
     <>
+      {/* 1. Add Banner at the top */}
+      <AnnouncementBanner />
+
       <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/about" element={<About />} />
-        
-        {/* LEGAL ROUTES */}
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-
-        <Route path="/practice" element={<Practice />} />
-        <Route path="/exam" element={<Exam />} />
-        <Route path="/exam/result" element={<ExamResult />} />
-        
-        <Route path="/degree" element={<DegreeSelection />} />
-        <Route path="/degree/oppe/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
-        <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
-        <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
-
-        <Route path="/practice-arena" element={<PracticeArena />} />
-        <Route path="/practice-arena/:slug" element={<PracticeSolver />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/compiler" element={<Compiler />} />
-        <Route path="/docs" element={<Documentation />} />
-
-        <Route path="/u/:username" element={<Profile />} />
-        <Route path="/profile" element={<Profile />} />
-
-        <Route path="*" element={<NotFound />} />
+        {/* 2. Map routes from centralized config */}
+        {AppRoutes.map((route) => (
+          <Route 
+            key={route.path} 
+            path={route.path} 
+            element={<route.component />} 
+          />
+        ))}
       </Routes>
 
       {showFooter && <Footer />}
