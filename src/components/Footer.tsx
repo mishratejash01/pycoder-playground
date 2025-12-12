@@ -71,8 +71,8 @@ export const Footer = () => {
           </p>
           
           {/* UPDATED LOCATION SECTION */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-full border border-white/5">
-            <span className="text-sm">🇺🇸</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+            <img src="/image.png" alt="USA Flag" className="w-5 h-auto object-contain rounded-[2px]" />
             <span>San Francisco, USA</span>
           </div>
         </div>
