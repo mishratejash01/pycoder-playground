@@ -58,7 +58,11 @@ export function Header({ session, onLogout }: HeaderProps) {
 
   return (
     <>
-      <header className="fixed top-5 z-50 left-0 right-0 mx-auto w-full max-w-6xl px-4 md:px-0 transition-all duration-300">
+      <header 
+        className="fixed z-50 left-0 right-0 mx-auto w-full max-w-6xl px-4 md:px-0 transition-all duration-300"
+        // DYNAMIC POSITIONING: Calculates top based on banner height
+        style={{ top: 'calc(1.25rem + var(--banner-height, 0px))' }}
+      >
         <div className={cn(
           "rounded-2xl border border-white/10 shadow-2xl",
           "bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/40",
@@ -76,7 +80,6 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <div className="hidden md:flex flex-1 justify-center gap-4">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                {/* --- RESTORED ORIGINAL IITM LOGO --- */}
                 <img 
                   src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
                   alt="IITM" 
@@ -85,11 +88,9 @@ export function Header({ session, onLogout }: HeaderProps) {
                 IITM BS
               </Link>
 
-              {/* --- NEW PRACTICE LINK --- */}
               <Link to="/practice-arena" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
                 <Code2 className="w-4 h-4" /> Practice
               </Link>
-              {/* ------------------------- */}
 
               <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">
                 <Terminal className="w-4 h-4" /> Compiler
