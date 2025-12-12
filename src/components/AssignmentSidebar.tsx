@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
-import { Lock } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Eye, LockKeyhole, User, Fingerprint } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +19,7 @@ interface AssignmentSidebarProps {
   questionStatuses: Record<string, QuestionStatus>;
   preLoadedAssignments?: Assignment[];
   isProctored?: boolean;
+  candidateId?: string; // New prop for Candidate ID
 }
 
 export const AssignmentSidebar = ({ 
@@ -26,7 +27,8 @@ export const AssignmentSidebar = ({
   onSelect, 
   questionStatuses, 
   preLoadedAssignments = [], 
-  isProctored = false 
+  isProctored = false,
+  candidateId = "CAND-8829-X9" // Default/Fallback ID
 }: AssignmentSidebarProps) => {
   const { toast } = useToast();
 
@@ -36,9 +38,9 @@ export const AssignmentSidebar = ({
     if (!preLoadedAssignments) return groups;
     
     preLoadedAssignments.forEach(a => {
-      // If proctored, flatten everything into one "Questions" group for simplicity, 
-      // or keep categories if your exam data supports it.
-      const cat = isProctored ? "All Questions" : (a.category || "General");
+      // If proctored, we can still group by category if desired, or flatten. 
+      // Keeping original logic: use category or fallback.
+      const cat = isProctored ? "Exam Questions" : (a.category || "General Questions");
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(a);
     });
@@ -47,41 +49,40 @@ export const AssignmentSidebar = ({
 
   const [openItem, setOpenItem] = useState<string>("");
 
-  // Effect: Auto-open the category of the selected question
+  // Effect: Auto-open category
   useEffect(() => {
     if (selectedId && preLoadedAssignments.length > 0) {
       const assignment = preLoadedAssignments.find(a => a.id === selectedId);
       if (assignment) {
-        const category = isProctored ? "All Questions" : (assignment.category || "General");
+        const category = isProctored ? "Exam Questions" : (assignment.category || "General Questions");
         setOpenItem(prev => (prev !== category ? category : prev));
       }
     } else if (!openItem && Object.keys(groupedAssignments).length > 0) {
-      // Default to opening the first category if nothing selected
       setOpenItem(Object.keys(groupedAssignments)[0]);
     }
   }, [selectedId, preLoadedAssignments, isProctored, groupedAssignments]);
 
-  const getTileStyles = (id: string, isLocked: boolean, isSelected: boolean) => {
-    if (isLocked) {
-        return 'bg-[#1E1E1E] border-[#333] text-[#444] cursor-not-allowed opacity-60';
-    }
+  const getStatusColor = (id: string, isLocked: boolean) => {
+    if (isLocked) return 'bg-[#252526] border-[#333] opacity-50 cursor-not-allowed text-[#666]';
 
     const status = questionStatuses[id] || 'not-visited';
-    
-    // Priority: Selected > Status > Default
-    if (isSelected) {
-        return 'bg-[#003366] border-[#007ACC] text-white shadow-[inset_0_0_0_1px_#007ACC] z-10';
-    }
-
     switch (status) {
-      case 'attempted': // "Done" in reference
-        return 'bg-[#1b3a1b] border-[#2e7d32] text-[#4CAF50] hover:border-[#4CAF50]';
-      case 'review': // "Skip" in reference
-        return 'bg-[#3a2e05] border-[#fbc02d] text-[#fbc02d] hover:border-[#fff]';
-      case 'visited':
-        return 'bg-[#2D2D2D] border-[#555] text-[#ccc] hover:border-[#888]';
-      default: // Default "Normal"
-        return 'bg-[#2D2D2D] border-[#333] text-[#888] hover:border-[#666]';
+      case 'attempted': return 'bg-[#1b3a1b] text-[#4CAF50] border-[#2e7d32] hover:border-[#4CAF50]';
+      case 'review': return 'bg-[#3a2e05] text-[#fbc02d] border-[#fbc02d] hover:border-[#fff]';
+      case 'visited': return 'bg-[#2D2D2D] text-[#E0E0E0] border-[#555] hover:border-[#888]';
+      default: return 'bg-[#1E1E1E] text-[#888] border-[#333] hover:border-[#666]';
+    }
+  };
+
+  const getStatusIcon = (id: string, isLocked: boolean) => {
+    if (isLocked) return <LockKeyhole className="w-3 h-3" />;
+
+    const status = questionStatuses[id] || 'not-visited';
+    switch (status) {
+      case 'attempted': return <CheckCircle2 className="w-3 h-3" />;
+      case 'review': return <Clock className="w-3 h-3" />;
+      case 'visited': return <Eye className="w-3 h-3" />;
+      default: return <Circle className="w-3 h-3" />;
     }
   };
 
@@ -90,7 +91,7 @@ export const AssignmentSidebar = ({
     
     if (isLocked) {
       toast({
-        title: "Locked",
+        title: "Locked Question",
         description: "This question is currently locked.",
         variant: "destructive"
       });
@@ -100,75 +101,76 @@ export const AssignmentSidebar = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#1E1E1E] border-r border-[#333] select-none">
-      {/* Sidebar Header (Matches "OPPE 2" Sidebar Header style if needed, or simple Label) */}
-      <div className="h-[35px] flex items-center px-4 bg-[#252526] border-b border-[#333] shrink-0">
-        <span className="text-[11px] font-bold text-[#999] uppercase tracking-wider">Explorer</span>
+    <div className="flex flex-col h-full bg-[#1E1E1E] border-r border-[#333] select-none text-[#CCC] font-sans">
+      
+      {/* 1. CANDIDATE ID SECTION (Enduring) */}
+      <div className="px-4 py-3 bg-[#252526] border-b border-[#333] flex flex-col gap-1 shadow-sm shrink-0">
+        <div className="flex items-center justify-between text-[10px] font-bold text-[#888] uppercase tracking-wider">
+          <span className="flex items-center gap-1.5"><User className="w-3 h-3" /> Candidate</span>
+          <span className="flex items-center gap-1"><Fingerprint className="w-3 h-3" /> Verified</span>
+        </div>
+        <div className="font-mono text-xs text-white bg-[#111] px-2 py-1.5 rounded border border-[#333] truncate">
+          {candidateId}
+        </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="flex flex-col">
+      {/* 2. LEGEND (Original Design, New Colors) */}
+      <div className="p-4 border-b border-[#333] bg-[#1E1E1E] shrink-0">
+        <h3 className="text-[11px] font-bold text-[#999] uppercase tracking-wider mb-3">Question Palette</h3>
+        <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-[10px] text-[#888]">
+          <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#4CAF50] shadow-[0_0_4px_#4CAF50]" /> Answered</div>
+          <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#fbc02d]" /> Review</div>
+          <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#E0E0E0]" /> Visited</div>
+          <div className="flex items-center gap-2"><LockKeyhole className="w-2 h-2 text-[#666]" /> Locked</div>
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1 bg-[#151515]">
+        <div className="p-3">
           <Accordion 
             type="single" 
             collapsible
             value={openItem}
             onValueChange={setOpenItem}
-            className="w-full"
+            className="w-full space-y-3"
           >
-            {Object.entries(groupedAssignments).map(([category, items]) => {
-              // Calculate completion for the header (e.g., "2/6")
-              const completedCount = items.filter(i => questionStatuses[i.id] === 'attempted').length;
-
-              return (
-                <AccordionItem key={category} value={category} className="border-b border-[#333] data-[state=open]:border-b-0">
-                  {/* Category Header (.cat-btn style) */}
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-[#2A2D2E] bg-[#252526] text-white/90 data-[state=open]:bg-[#37373D] transition-colors group">
-                    <div className="flex items-center justify-between w-full pr-2">
-                       <span className="text-[11px] font-bold text-[#CCC] group-hover:text-white uppercase tracking-wide truncate max-w-[140px]" title={category}>
-                         {category}
-                       </span>
-                       <span className="text-[10px] text-[#666] font-mono group-hover:text-[#999]">
-                         {completedCount}/{items.length}
-                       </span>
-                    </div>
-                  </AccordionTrigger>
-                  
-                  {/* Grid Container (.grid-container style) */}
-                  <AccordionContent className="p-0 bg-[#151515]">
-                    <div className="p-[10px] grid grid-cols-5 gap-[6px]">
-                      {items.map((assignment, idx) => {
-                        const isLocked = assignment.is_unlocked === false;
-                        const isSelected = selectedId === assignment.id;
-                        
-                        return (
-                          <button
-                            key={assignment.id}
-                            onClick={() => handleItemClick(assignment)}
-                            className={cn(
-                              "aspect-square flex items-center justify-center border transition-all duration-100",
-                              "text-[11px] font-mono font-medium",
-                              getTileStyles(assignment.id, isLocked, isSelected)
-                            )}
-                            title={assignment.title}
-                          >
-                            {isLocked ? <Lock className="w-3 h-3" /> : (idx + 1)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              );
-            })}
+            {Object.entries(groupedAssignments).map(([category, items]) => (
+              <AccordionItem key={category} value={category} className="border border-[#333] rounded-md bg-[#1E1E1E] overflow-hidden">
+                <AccordionTrigger className="px-3 py-2.5 hover:no-underline hover:bg-[#2A2D2E] transition-colors text-xs font-semibold text-[#E0E0E0] data-[state=open]:text-white border-b border-transparent data-[state=open]:border-[#333]">
+                  <div className="flex items-center gap-2 w-full">
+                     <span className="uppercase tracking-wide opacity-90">{category}</span>
+                     <span className="ml-auto bg-[#333] text-[9px] px-1.5 py-0.5 rounded-full text-[#CCC]">{items.length}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-2 bg-[#151515]">
+                  <div className="grid grid-cols-4 gap-2">
+                    {items.map((assignment, idx) => {
+                      const isLocked = assignment.is_unlocked === false;
+                      const isSelected = selectedId === assignment.id;
+                      
+                      return (
+                        <button
+                          key={assignment.id}
+                          onClick={() => handleItemClick(assignment)}
+                          className={cn(
+                            "aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 border transition-all duration-200 relative group",
+                            getStatusColor(assignment.id, isLocked),
+                            isSelected && !isLocked && "ring-1 ring-[#007ACC] ring-offset-1 ring-offset-[#151515] bg-[#003366] border-[#007ACC] text-white z-10"
+                          )}
+                          title={isLocked ? "Locked" : assignment.title}
+                        >
+                          <span className="text-[11px] font-bold font-mono group-hover:scale-110 transition-transform">{idx + 1}</span>
+                          {getStatusIcon(assignment.id, isLocked)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </div>
       </ScrollArea>
-      
-      {/* Optional Footer / Legend */}
-      <div className="p-3 bg-[#1E1E1E] border-t border-[#333] text-[10px] text-[#666] grid grid-cols-2 gap-2">
-         <div className="flex items-center gap-2"><div className="w-2 h-2 bg-[#1b3a1b] border border-[#2e7d32]"></div> <span>Solved</span></div>
-         <div className="flex items-center gap-2"><div className="w-2 h-2 bg-[#3a2e05] border border-[#fbc02d]"></div> <span>Review</span></div>
-      </div>
     </div>
   );
 };
