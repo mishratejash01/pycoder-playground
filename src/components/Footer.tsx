@@ -73,7 +73,7 @@ export const Footer = () => {
           {/* UPDATED LOCATION SECTION */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-full border border-white/5">
             <span className="text-sm">🇺🇸</span>
-            <span>San Francisco, United States</span>
+            <span>San Francisco, USA</span>
           </div>
         </div>
       </div>
