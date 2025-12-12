@@ -91,7 +91,7 @@ export const AnnouncementBanner = () => {
         .animate-marquee-infinite {
           display: flex;
           width: fit-content;
-          animation: marquee-infinite 60s linear infinite; /* Slow, smooth speed */
+          animation: marquee-infinite 60s linear infinite;
         }
         .animate-marquee-infinite:hover {
           animation-play-state: paused;
@@ -112,17 +112,16 @@ export const AnnouncementBanner = () => {
           "bg-[#030305]/80 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/40 via-[#030305]/90 to-black"
         )}
       >
-        {/* Reduced padding (py-1.5) for smaller height */}
         <div className="flex w-full items-center justify-between gap-6 px-4 py-1.5 h-8">
           
-          {/* SCROLLING TEXT AREA (Flexible width, but contained) */}
+          {/* SCROLLING TEXT AREA */}
           <div className="flex-1 overflow-hidden relative h-full flex items-center mask-fade-edges">
              <div className="animate-marquee-infinite">
-                {/* We repeat the text to create a seamless infinite loop that starts VISIBLE immediately */}
                 {[0, 1, 2, 3].map((i) => (
                   <span 
                     key={i} 
-                    className="mx-8 font-mono text-xs md:text-sm font-medium text-violet-100/90 tracking-[0.15em] uppercase whitespace-nowrap flex items-center"
+                    // UPDATED FONT & CASE: font-sans, normal casing, tracking-normal
+                    className="mx-8 font-sans text-sm md:text-base font-medium text-violet-100/90 tracking-normal whitespace-nowrap flex items-center"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-violet-500 mr-3 animate-pulse" />
                     {currentAnnouncement.message}
@@ -131,13 +130,14 @@ export const AnnouncementBanner = () => {
              </div>
           </div>
 
-          {/* FIXED BUTTON AREA (Pinned to right, never moves) */}
+          {/* FIXED BUTTON AREA */}
           {currentAnnouncement.link && (
             <div className="shrink-0 z-20 flex items-center">
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-3 text-[10px] font-bold uppercase tracking-wider rounded border border-white/10 bg-white/5 hover:bg-violet-500/20 text-violet-200 hover:text-white transition-all group"
+                // UPDATED BUTTON TEXT: font-sans, normal casing
+                className="h-6 px-3 text-xs font-semibold rounded border border-white/10 bg-white/5 hover:bg-violet-500/20 text-violet-200 hover:text-white transition-all group"
                 asChild
               >
                 <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
