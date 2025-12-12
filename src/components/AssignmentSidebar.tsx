@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
-import { Check, LockKeyhole, User, Fingerprint } from 'lucide-react';
+import { Check, LockKeyhole, User, Fingerprint, ChevronRight } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 
@@ -110,7 +110,7 @@ export const AssignmentSidebar = ({
         </div>
       </div>
 
-      {/* 2. LEGEND (Modified colors to match new filled states) */}
+      {/* 2. LEGEND */}
       <div className="px-4 py-2 border-b border-[#333] bg-[#1E1E1E] shrink-0 flex items-center gap-4 text-[10px] text-[#888]">
          <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 bg-[#1b3a1b] border border-[#2e7d32]"></div> Solved
@@ -181,11 +181,6 @@ export const AssignmentSidebar = ({
           </Accordion>
         </div>
       </ScrollArea>
-      
-      {/* Footer Info */}
-      <div className="p-2 border-t border-[#333] bg-[#252526] text-[9px] text-center text-[#555] font-mono">
-         SECURE BROWSER ENVIRONMENT
-      </div>
     </div>
   );
 };
