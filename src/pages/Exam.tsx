@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { ProctoredInstructions } from '@/components/ProctoredInstructions';
 
 // Table Maps
+// Note: 'submissions' here refers to individual code runs. 
+// The final exam summary goes to 'iitm_exam_submission' defined in finishExam().
 const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
 const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
 const PROCTORED_TABLE = 'iitm_exam_question_bank';
@@ -279,9 +281,15 @@ const Exam = () => {
     setFinishDialogOpen(false);
     
     // 1. Stop Media / Cleanup
-    if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
-    if (audioContextRef.current) audioContextRef.current.close();
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+        audioContextRef.current.close();
+    }
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+    }
 
     // 2. Calculate Final Metrics
     const { data: { user } } = await supabase.auth.getUser();
@@ -326,7 +334,7 @@ const Exam = () => {
     const finalStatus = isTerminated ? 'terminated' : 'completed';
 
     // 3. Save to Backend (New Table & Session Table)
-    let isError = isTerminated; // Default to error if terminated
+    let isError = isTerminated; 
     
     if (user) {
         try {
@@ -347,9 +355,15 @@ const Exam = () => {
             }
 
             // B. Upsert into the NEW detailed submission table
+            // Robust Exam ID generation to prevent nulls
+            const safeExamType = examType ? decodeURIComponent(examType) : 'default_type';
+            const safeSetName = setName || 'default_set';
+            const safeSubjectId = iitmSubjectId || 'default_subject';
+            const compositeExamId = `${safeExamType}-${safeSetName}-${safeSubjectId}`;
+
             const detailedSubmission = {
                 user_id: user.id,
-                exam_id: `${examType}-${setName}-${iitmSubjectId}`, // Unique composite ID for this exam context
+                exam_id: compositeExamId,
                 marks_obtained: obtainedScore,
                 total_marks: totalMaxScore,
                 correct_questions_count: correctCount,
@@ -361,10 +375,13 @@ const Exam = () => {
                 updated_at: new Date().toISOString()
             };
 
-            const submissionUpdate = supabase.from('iitm_exam_submission').upsert(
-                detailedSubmission, 
-                { onConflict: 'user_id, exam_id' } 
-            );
+            console.log("Saving to iitm_exam_submission:", detailedSubmission);
+
+            const submissionUpdate = supabase
+                .from('iitm_exam_submission') // <-- Correct table used here
+                .upsert(detailedSubmission, { onConflict: 'user_id, exam_id' })
+                .select(); 
+
             promises.push(submissionUpdate);
 
             // C. Wait for all and CHECK ERRORS
@@ -375,14 +392,19 @@ const Exam = () => {
                 console.error("Database Save Errors:", dbErrors);
                 throw new Error("Failed to sync exam data to server.");
             }
+            
+            toast({
+                title: "Submission Saved",
+                description: "Your exam results have been recorded."
+            });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Exam save execution failed:", error);
             isError = true;
             toast({ 
                 variant: "destructive", 
                 title: "Data Sync Failed", 
-                description: "Your local result is ready, but it was not saved to the server." 
+                description: error.message || "Your local result is ready, but it was not saved to the server." 
             });
         }
     }
