@@ -17,6 +17,9 @@ import Profile from "./pages/Profile";
 import About from "./pages/About"; 
 import TermsOfService from "./pages/TermsOfService"; 
 import PrivacyPolicy from "./pages/PrivacyPolicy"; 
+// --- NEW IMPORTS ---
+import Events from "./pages/Events";
+import EventDetails from "./pages/EventDetails";
 
 export const AppRoutes = [
   { path: "/", component: Landing, name: "Landing Page" },
@@ -24,6 +27,11 @@ export const AppRoutes = [
   { path: "/about", component: About, name: "About Us" },
   { path: "/terms", component: TermsOfService, name: "Terms of Service" },
   { path: "/privacy", component: PrivacyPolicy, name: "Privacy Policy" },
+  
+  // --- NEW ROUTES ---
+  { path: "/events", component: Events, name: "Events" },
+  { path: "/events/:slug", component: EventDetails, name: "Event Details" },
+  
   { path: "/practice", component: Practice, name: "Practice Dashboard" },
   { path: "/exam", component: Exam, name: "Exam Interface" },
   { path: "/exam/result", component: ExamResult, name: "Exam Result" },
