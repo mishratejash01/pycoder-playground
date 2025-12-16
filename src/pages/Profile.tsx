@@ -24,7 +24,7 @@ import {
   Linkedin, 
   Globe, 
   Edit2, 
-  Share, // Changed from Share2
+  Share,
   MapPin, 
   Check,
   Loader2,
@@ -40,11 +40,16 @@ import {
   ChevronRight,
   User,
   Save,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Ticket,
+  Users
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 // --- Types ---
 interface ProfileData {
@@ -64,6 +69,21 @@ interface ProfileData {
   avatar_url?: string;
   contact_no?: string;
   cover_url?: string;
+}
+
+interface Registration {
+    id: string;
+    status: string;
+    participation_type: 'Solo' | 'Team';
+    team_name?: string;
+    created_at: string;
+    event: {
+        title: string;
+        slug: string;
+        image_url: string;
+        start_date: string;
+        location: string;
+    };
 }
 
 // --- Constants: Premium Abstract Covers ---
@@ -342,6 +362,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [registrations, setRegistrations] = useState<Registration[]>([]); // New state for events
   
   // Save & Validation States
   const [isSaving, setIsSaving] = useState(false);
@@ -383,6 +404,29 @@ const Profile = () => {
         setProfile(defaultProfile);
         setOriginalProfile(defaultProfile); // Snapshot for tracking changes
         setIsOwner(true);
+
+        // --- FETCH REGISTRATIONS ---
+        const { data: regs, error } = await supabase
+            .from('event_registrations')
+            .select(`
+                id,
+                status,
+                participation_type,
+                team_name,
+                created_at,
+                event:events (
+                    title,
+                    slug,
+                    image_url,
+                    start_date,
+                    location
+                )
+            `)
+            .order('created_at', { ascending: false });
+        
+        if (regs) setRegistrations(regs as any);
+        // ---------------------------
+
         setLoading(false);
         return;
       }
@@ -618,9 +662,61 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="space-y-6 pb-20">
+          <div className="space-y-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">About You</h2>
             <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateLocalState('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
+          </div>
+
+          {/* --- NEW SECTION: ACTIVE REGISTRATIONS --- */}
+          <div className="space-y-6 pb-20 border-t border-white/10 pt-10">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                <Ticket className="w-4 h-4" /> Active Event Registrations
+            </h2>
+            
+            {registrations.length === 0 ? (
+                <div className="text-center p-8 border border-dashed border-white/10 rounded-2xl bg-white/5">
+                    <p className="text-gray-400">No active registrations found.</p>
+                    <Button variant="link" onClick={() => navigate('/events')} className="text-purple-400">Explore Events</Button>
+                </div>
+            ) : (
+                <div className="grid gap-4">
+                    {registrations.map((reg) => (
+                        <div key={reg.id} className="relative overflow-hidden rounded-xl border border-white/10 bg-[#121214] p-4 flex flex-col md:flex-row gap-4 hover:border-purple-500/30 transition-all group">
+                            <div className="w-full md:w-32 h-32 md:h-auto rounded-lg overflow-hidden shrink-0">
+                                <img src={reg.event.image_url} alt={reg.event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                            </div>
+                            <div className="flex-1 py-1">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <Badge variant="outline" className="mb-2 border-white/10 text-xs">{reg.participation_type}</Badge>
+                                        <h3 className="text-lg font-bold text-white mb-1">{reg.event.title}</h3>
+                                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3"/> {format(new Date(reg.event.start_date), 'MMM d, yyyy')}</span>
+                                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {reg.event.location}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className={cn("px-2 py-1 rounded text-[10px] font-bold uppercase", 
+                                            reg.status === 'verified' ? "bg-green-500/10 text-green-400" : "bg-yellow-500/10 text-yellow-400"
+                                        )}>
+                                            {reg.status}
+                                        </div>
+                                    </div>
+                                </div>
+                                {reg.participation_type === 'Team' && reg.team_name && (
+                                    <div className="mt-4 flex items-center gap-2 text-sm text-gray-300 bg-white/5 p-2 rounded-lg w-fit">
+                                        <Users className="w-4 h-4 text-purple-400"/> 
+                                        <span>Team: <span className="font-bold text-white">{reg.team_name}</span></span>
+                                    </div>
+                                )}
+                            </div>
+                            <Button variant="ghost" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => navigate(`/events/${reg.event.slug}`)}>
+                                <ArrowRight className="w-4 h-4"/>
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            )}
           </div>
           
         </div>
