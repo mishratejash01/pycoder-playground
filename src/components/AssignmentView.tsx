@@ -23,6 +23,7 @@ interface AssignmentViewProps {
   onAttempt?: (isCorrect: boolean, score: number) => void;
   tables?: { assignments: string; testCases: string; submissions: string; };
   disableCopyPaste?: boolean;
+  onCodeSubmit?: (code: string, language: string, testResults: { public_passed: number; public_total: number; private_passed: number; private_total: number }) => void;
 }
 
 const getTargetName = (code: string) => {
@@ -84,7 +85,8 @@ export const AssignmentView = ({
   currentStatus, 
   onAttempt, 
   tables = DEFAULT_TABLES,
-  disableCopyPaste = false 
+  disableCopyPaste = false,
+  onCodeSubmit
 }: AssignmentViewProps) => {
   const [code, setCode] = useState<string>(''); 
   const [consoleOutput, setConsoleOutput] = useState<string>('');
@@ -321,11 +323,18 @@ export const AssignmentView = ({
         private_tests_passed: privateTests.filter(t => newTestResults[t.id]?.passed).length,
         private_tests_total: privateTests.length,
       });
-      return { score, passedCount, total };
+      return { 
+        score, 
+        passedCount, 
+        total, 
+        publicPassed: publicTests.filter(t => newTestResults[t.id]?.passed).length,
+        publicTotal: publicTests.length,
+        privatePassed: privateTests.filter(t => newTestResults[t.id]?.passed).length,
+        privateTotal: privateTests.length
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['submission', assignmentId] });
-      // Calculate percentage based on passed tests count vs total tests count
       const percentage = data.total > 0 ? Math.round((data.passedCount / data.total) * 100) : 0;
       toast({ 
         title: 'Submission Complete', 
@@ -334,6 +343,14 @@ export const AssignmentView = ({
       onStatusUpdate('attempted');
       setBottomTab('testcases');
       if (onAttempt) onAttempt(data.passedCount === data.total, data.score);
+      if (onCodeSubmit) {
+        onCodeSubmit(code, activeLanguage, {
+          public_passed: data.publicPassed,
+          public_total: data.publicTotal,
+          private_passed: data.privatePassed,
+          private_total: data.privateTotal
+        });
+      }
     },
     onError: (err: any) => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
