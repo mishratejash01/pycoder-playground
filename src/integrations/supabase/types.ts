@@ -268,66 +268,6 @@ export type Database = {
         }
         Relationships: []
       }
-      exam_sessions: {
-        Row: {
-          avg_attempts_per_correct: number | null
-          created_at: string | null
-          duration_seconds: number | null
-          end_time: string | null
-          full_name: string | null
-          id: string
-          questions_attempted: number | null
-          questions_correct: number | null
-          start_time: string | null
-          status: string | null
-          total_attempts: number | null
-          total_questions: number | null
-          total_score: number | null
-          user_email: string | null
-          user_id: string
-          violation_count: number | null
-          violation_logs: Json | null
-        }
-        Insert: {
-          avg_attempts_per_correct?: number | null
-          created_at?: string | null
-          duration_seconds?: number | null
-          end_time?: string | null
-          full_name?: string | null
-          id?: string
-          questions_attempted?: number | null
-          questions_correct?: number | null
-          start_time?: string | null
-          status?: string | null
-          total_attempts?: number | null
-          total_questions?: number | null
-          total_score?: number | null
-          user_email?: string | null
-          user_id: string
-          violation_count?: number | null
-          violation_logs?: Json | null
-        }
-        Update: {
-          avg_attempts_per_correct?: number | null
-          created_at?: string | null
-          duration_seconds?: number | null
-          end_time?: string | null
-          full_name?: string | null
-          id?: string
-          questions_attempted?: number | null
-          questions_correct?: number | null
-          start_time?: string | null
-          status?: string | null
-          total_attempts?: number | null
-          total_questions?: number | null
-          total_score?: number | null
-          user_email?: string | null
-          user_id?: string
-          violation_count?: number | null
-          violation_logs?: Json | null
-        }
-        Relationships: []
-      }
       iitm_assignments: {
         Row: {
           category: string | null
@@ -1051,16 +991,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      monthly_leaderboard: {
-        Row: {
-          full_name: string | null
-          month: string | null
-          questions_correct: number | null
-          total_score: number | null
-          user_id: string | null
-        }
-        Relationships: []
       }
     }
     Functions: {
