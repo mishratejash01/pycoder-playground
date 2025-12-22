@@ -1,0 +1,21 @@
+-- Add comprehensive tracking columns to iitm_exam_submission
+ALTER TABLE public.iitm_exam_submission
+ADD COLUMN IF NOT EXISTS candidate_id text,
+ADD COLUMN IF NOT EXISTS user_email text,
+ADD COLUMN IF NOT EXISTS user_full_name text,
+ADD COLUMN IF NOT EXISTS session_id uuid,
+ADD COLUMN IF NOT EXISTS browser_info jsonb DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS total_attempts integer DEFAULT 0,
+ADD COLUMN IF NOT EXISTS avg_time_per_question numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS first_question_time timestamp with time zone,
+ADD COLUMN IF NOT EXISTS last_activity_time timestamp with time zone,
+ADD COLUMN IF NOT EXISTS environment_flags jsonb DEFAULT '{}'::jsonb,
+ADD COLUMN IF NOT EXISTS proctoring_events jsonb DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS exam_start_time timestamp with time zone,
+ADD COLUMN IF NOT EXISTS exam_end_time timestamp with time zone,
+ADD COLUMN IF NOT EXISTS total_duration_seconds integer DEFAULT 0,
+ADD COLUMN IF NOT EXISTS subject_name text,
+ADD COLUMN IF NOT EXISTS set_name text,
+ADD COLUMN IF NOT EXISTS exam_type text,
+ADD COLUMN IF NOT EXISTS ip_address text,
+ADD COLUMN IF NOT EXISTS questions_data jsonb DEFAULT '[]'::jsonb;

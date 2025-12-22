@@ -543,48 +543,105 @@ export type Database = {
       }
       iitm_exam_submission: {
         Row: {
+          avg_time_per_question: number | null
+          browser_info: Json | null
+          candidate_id: string | null
           correct_questions_count: number | null
           created_at: string | null
+          environment_flags: Json | null
+          exam_end_time: string | null
           exam_id: string
+          exam_start_time: string | null
+          exam_type: string | null
+          first_question_time: string | null
           id: string
           incorrect_questions_count: number | null
+          ip_address: string | null
+          last_activity_time: string | null
           marks_obtained: number | null
+          proctoring_events: Json | null
+          questions_data: Json | null
+          session_id: string | null
+          set_name: string | null
           skipped_questions_count: number | null
           status: string | null
+          subject_name: string | null
           submission_data: Json | null
           termination_reason: string | null
+          total_attempts: number | null
+          total_duration_seconds: number | null
           total_marks: number | null
           updated_at: string | null
+          user_email: string | null
+          user_full_name: string | null
           user_id: string
         }
         Insert: {
+          avg_time_per_question?: number | null
+          browser_info?: Json | null
+          candidate_id?: string | null
           correct_questions_count?: number | null
           created_at?: string | null
+          environment_flags?: Json | null
+          exam_end_time?: string | null
           exam_id: string
+          exam_start_time?: string | null
+          exam_type?: string | null
+          first_question_time?: string | null
           id?: string
           incorrect_questions_count?: number | null
+          ip_address?: string | null
+          last_activity_time?: string | null
           marks_obtained?: number | null
+          proctoring_events?: Json | null
+          questions_data?: Json | null
+          session_id?: string | null
+          set_name?: string | null
           skipped_questions_count?: number | null
           status?: string | null
+          subject_name?: string | null
           submission_data?: Json | null
           termination_reason?: string | null
+          total_attempts?: number | null
+          total_duration_seconds?: number | null
           total_marks?: number | null
           updated_at?: string | null
+          user_email?: string | null
+          user_full_name?: string | null
           user_id: string
         }
         Update: {
+          avg_time_per_question?: number | null
+          browser_info?: Json | null
+          candidate_id?: string | null
           correct_questions_count?: number | null
           created_at?: string | null
+          environment_flags?: Json | null
+          exam_end_time?: string | null
           exam_id?: string
+          exam_start_time?: string | null
+          exam_type?: string | null
+          first_question_time?: string | null
           id?: string
           incorrect_questions_count?: number | null
+          ip_address?: string | null
+          last_activity_time?: string | null
           marks_obtained?: number | null
+          proctoring_events?: Json | null
+          questions_data?: Json | null
+          session_id?: string | null
+          set_name?: string | null
           skipped_questions_count?: number | null
           status?: string | null
+          subject_name?: string | null
           submission_data?: Json | null
           termination_reason?: string | null
+          total_attempts?: number | null
+          total_duration_seconds?: number | null
           total_marks?: number | null
           updated_at?: string | null
+          user_email?: string | null
+          user_full_name?: string | null
           user_id?: string
         }
         Relationships: []
