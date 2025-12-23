@@ -1,17 +1,33 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Medal, Calendar, History } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Trophy, Medal, Calendar, History, Flame, Clock, Target, TrendingUp, Infinity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header'; 
 import { Session } from '@supabase/supabase-js';
 
+interface LeaderboardEntry {
+  user_id: string;
+  full_name: string;
+  username: string | null;
+  avatar_url: string | null;
+  problems_solved: number;
+  total_score: number;
+  total_submissions: number;
+  current_streak: number;
+  longest_streak: number;
+  time_spent_minutes: number;
+  last_active: string;
+}
+
 const Leaderboard = () => {
-  const [timeframe, setTimeframe] = useState<'current' | 'last_month'>('current');
+  const [timeframe, setTimeframe] = useState<'all_time' | 'this_month' | 'this_week'>('all_time');
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -31,95 +47,28 @@ const Leaderboard = () => {
     setSession(null);
   };
 
-  // Fetch Leaderboard Data
+  // Fetch Leaderboard Data using the new RPC function
   const { data: leaderboardData = [], isLoading } = useQuery({
-    queryKey: ['global_leaderboard', timeframe],
+    queryKey: ['practice_leaderboard', timeframe],
     queryFn: async () => {
-      // 1. Timeframe Logic
-      const now = new Date();
-      const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-      const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
-
-      // 2. Fetch Exam Sessions (Removed non-existent columns full_name, user_email)
-      const { data: examData, error: examError } = await supabase
-        .from('iitm_exam_sessions') 
-        .select(`user_id, total_score, end_time`)
-        .eq('status', 'completed')
-        .gt('total_score', 0);
-
-      if (examError) console.error("Exam data fetch error:", examError);
-
-      // 3. Fetch Practice Submissions (Changed 'points' to 'score')
-      const { data: practiceData, error: practiceError } = await supabase
-        .from('practice_submissions')
-        .select('user_id, score, submitted_at');
-
-      if (practiceError) console.error("Practice data fetch error:", practiceError);
-
-      // 4. Combine & Aggregate
-      const userMap = new Map();
-
-      const processEntry = (userId: string, score: number, date: string) => {
-        // Date filtering
-        const d = new Date(date);
-        let isValidDate = true;
-        if (timeframe === 'current') isValidDate = d >= new Date(firstDayCurrentMonth);
-        if (timeframe === 'last_month') isValidDate = d >= new Date(firstDayLastMonth) && d <= new Date(lastDayLastMonth);
-        
-        if (!isValidDate) return;
-
-        if (!userMap.has(userId)) {
-          userMap.set(userId, {
-            user_id: userId,
-            full_name: 'Anonymous', // Will be populated by profiles fetch
-            total_score: 0,
-            last_active: date,
-            activities_count: 0
-          });
-        }
-
-        const user = userMap.get(userId);
-        user.total_score += (Number(score) || 0);
-        user.activities_count += 1;
-        
-        if (new Date(date) > new Date(user.last_active)) {
-          user.last_active = date;
-        }
-      };
-
-      // Process Exams
-      examData?.forEach((session: any) => {
-        processEntry(session.user_id, session.total_score, session.end_time);
+      const { data, error } = await supabase.rpc('get_practice_leaderboard', {
+        p_timeframe: timeframe,
+        p_limit: 50
       });
 
-      // Process Practice
-      practiceData?.forEach((sub: any) => {
-        processEntry(sub.user_id, sub.score, sub.submitted_at);
-      });
-
-      // 5. Fetch Profiles for Names (Essential since sessions table doesn't have names)
-      const userIds = Array.from(userMap.keys());
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, username')
-          .in('id', userIds);
-        
-        profiles?.forEach((p: any) => {
-          if (userMap.has(p.id)) {
-            const u = userMap.get(p.id);
-            u.full_name = p.full_name || p.username || 'Anonymous';
-          }
-        });
+      if (error) {
+        console.error('Leaderboard fetch error:', error);
+        return [];
       }
 
-      // 6. Sort & Slice
-      return Array.from(userMap.values())
-        .sort((a: any, b: any) => b.total_score - a.total_score)
-        .slice(0, 50);
-    }
+      return (data || []) as LeaderboardEntry[];
+    },
   });
+
+  // Find current user's position
+  const currentUserRank = session?.user?.id 
+    ? leaderboardData.findIndex(u => u.user_id === session.user.id) + 1
+    : 0;
 
   const getRankStyle = (index: number) => {
     switch (index) {
@@ -137,8 +86,26 @@ const Leaderboard = () => {
     return <span className="font-mono font-bold text-sm w-5 text-center">#{index + 1}</span>;
   };
 
+  const formatTimeSpent = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours < 24) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+  };
+
+  const getTimeframeLabel = () => {
+    switch (timeframe) {
+      case 'this_week': return 'this week';
+      case 'this_month': return 'this month';
+      default: return 'all time';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-20 px-4 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground pt-24 pb-20 px-4 relative overflow-hidden font-sans">
       <Header session={session} onLogout={handleLogout} />
       
       {/* Background Ambience */}
@@ -153,97 +120,160 @@ const Leaderboard = () => {
             Hall of Fame
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto text-sm md:text-base">
-            Celebrating the top performers of {timeframe === 'current' ? 'this month' : 'last month'}. 
-            <br className="hidden md:block" /> Scores aggregated from Exams & Practice Arena.
+            Celebrating the top performers of {getTimeframeLabel()}. 
+            <br className="hidden md:block" /> Ranked by problems solved, points earned & activity.
           </p>
         </div>
 
+        {/* Current User Position Banner */}
+        {session && currentUserRank > 0 && (
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 border border-primary/30">
+              <Trophy className="w-4 h-4 text-primary" />
+              <span className="text-sm">
+                You're ranked <span className="font-bold text-primary">#{currentUserRank}</span> {getTimeframeLabel()}!
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex justify-center">
-          <Tabs defaultValue="current" className="w-[400px]" onValueChange={(v: any) => setTimeframe(v)}>
-            <TabsList className="grid w-full grid-cols-2 bg-black/40 border border-white/10 p-1 h-12 rounded-xl">
-              <TabsTrigger value="current" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg font-medium">
-                <Calendar className="w-4 h-4 mr-2" /> This Month
+          <Tabs value={timeframe} className="w-full max-w-md" onValueChange={(v: any) => setTimeframe(v)}>
+            <TabsList className="grid w-full grid-cols-3 bg-card/50 border border-border/50 p-1 h-12 rounded-xl">
+              <TabsTrigger value="all_time" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg font-medium text-xs md:text-sm">
+                <Infinity className="w-4 h-4 mr-1 md:mr-2" /> All Time
               </TabsTrigger>
-              <TabsTrigger value="last_month" className="data-[state=active]:bg-white/10 rounded-lg font-medium">
-                <History className="w-4 h-4 mr-2" /> Past Month
+              <TabsTrigger value="this_month" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg font-medium text-xs md:text-sm">
+                <Calendar className="w-4 h-4 mr-1 md:mr-2" /> Month
+              </TabsTrigger>
+              <TabsTrigger value="this_week" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg font-medium text-xs md:text-sm">
+                <History className="w-4 h-4 mr-1 md:mr-2" /> Week
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
+        {/* Stats Legend */}
+        <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Problems Solved</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+            <span>Total Points</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Flame className="w-3.5 h-3.5 text-orange-400" />
+            <span>Current Streak</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-purple-400" />
+            <span>Time on Platform</span>
+          </div>
+        </div>
+
         {/* Leaderboard Card */}
-        <Card className="bg-[#0c0c0e]/80 border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden w-full">
-          <CardHeader className="border-b border-white/5 pb-4 px-6 md:px-8">
+        <Card className="bg-card/80 border-border/50 backdrop-blur-xl shadow-2xl overflow-hidden w-full">
+          <CardHeader className="border-b border-border/50 pb-4 px-6 md:px-8">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg md:text-xl flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-primary" /> 
-                {timeframe === 'current' ? 'Current Standings' : 'Historical Records'}
+                {timeframe === 'all_time' ? 'All-Time Champions' : timeframe === 'this_month' ? 'Monthly Leaders' : 'Weekly Stars'}
               </CardTitle>
-              <span className="text-xs text-muted-foreground uppercase tracking-widest font-mono bg-white/5 px-2 py-1 rounded">
+              <Badge variant="outline" className="text-xs uppercase tracking-widest font-mono">
                 Top {leaderboardData.length}
-              </span>
+              </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 space-y-4">
-                {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-white/5 rounded-xl animate-pulse" />)}
+                {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-secondary/50 rounded-xl animate-pulse" />)}
               </div>
             ) : leaderboardData.length > 0 ? (
-              <div className="divide-y divide-white/5">
-                {leaderboardData.map((user: any, index: number) => (
-                  <div 
-                    key={index} 
-                    className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-5 hover:bg-white/5 transition-colors group gap-4 md:gap-0"
-                  >
-                    <div className="flex items-center gap-4 md:gap-6">
-                      {/* Rank Indicator */}
-                      <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border bg-gradient-to-br shrink-0 transition-transform group-hover:scale-110", getRankStyle(index))}>
-                        {getMedalIcon(index)}
-                      </div>
-                      
-                      {/* User Info */}
-                      <div className="flex items-center gap-4">
-                        <Avatar className="w-10 h-10 md:w-12 md:h-12 border border-white/10 ring-2 ring-transparent group-hover:ring-white/10 transition-all">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.user_id}`} />
-                          <AvatarFallback className="bg-white/10 text-xs">{user.full_name?.slice(0,2) || 'VN'}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-bold text-white flex items-center gap-2 text-base md:text-lg">
-                            {user.full_name || user.user_email?.split('@')[0] || 'Anonymous'}
-                            {index === 0 && <span className="text-[9px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full border border-yellow-500/30 tracking-wider">KING</span>}
-                          </div>
-                          <div className="text-xs md:text-sm text-muted-foreground font-mono flex items-center gap-3">
-                             <span>{user.activities_count} Activities</span>
-                             <span className="text-white/10">|</span>
-                             <span>Last: {new Date(user.last_active).toLocaleDateString()}</span>
+              <div className="divide-y divide-border/50">
+                {leaderboardData.map((user, index) => {
+                  const isCurrentUser = session?.user?.id === user.user_id;
+                  
+                  return (
+                    <div 
+                      key={user.user_id} 
+                      className={cn(
+                        "flex flex-col md:flex-row md:items-center justify-between p-4 md:p-5 hover:bg-secondary/30 transition-colors group gap-4 md:gap-0",
+                        isCurrentUser && "bg-primary/5 border-l-2 border-l-primary"
+                      )}
+                    >
+                      <div className="flex items-center gap-4 md:gap-6">
+                        {/* Rank Indicator */}
+                        <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border bg-gradient-to-br shrink-0 transition-transform group-hover:scale-110", getRankStyle(index))}>
+                          {getMedalIcon(index)}
+                        </div>
+                        
+                        {/* User Info */}
+                        <div className="flex items-center gap-4">
+                          <Link to={user.username ? `/u/${user.username}` : '#'}>
+                            <Avatar className="w-10 h-10 md:w-12 md:h-12 border border-border ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
+                              <AvatarImage src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.user_id}`} />
+                              <AvatarFallback className="bg-secondary text-xs">{user.full_name?.slice(0,2).toUpperCase() || 'AN'}</AvatarFallback>
+                            </Avatar>
+                          </Link>
+                          <div>
+                            <div className="font-bold text-foreground flex items-center gap-2 text-base md:text-lg">
+                              <Link to={user.username ? `/u/${user.username}` : '#'} className="hover:text-primary transition-colors">
+                                {user.full_name || 'Anonymous'}
+                              </Link>
+                              {index === 0 && <span className="text-[9px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full border border-yellow-500/30 tracking-wider">CHAMPION</span>}
+                              {isCurrentUser && <span className="text-[9px] bg-primary/20 text-primary px-2 py-0.5 rounded-full border border-primary/30">YOU</span>}
+                            </div>
+                            <div className="text-xs md:text-sm text-muted-foreground font-mono flex flex-wrap items-center gap-2 md:gap-3">
+                              <span className="flex items-center gap-1">
+                                <Target className="w-3 h-3 text-emerald-400" />
+                                {user.problems_solved}
+                              </span>
+                              <span className="text-border">|</span>
+                              <span className="flex items-center gap-1">
+                                <Flame className="w-3 h-3 text-orange-400" />
+                                {user.current_streak}d
+                              </span>
+                              <span className="text-border">|</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-purple-400" />
+                                {formatTimeSpent(user.time_spent_minutes)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Score */}
-                    <div className="flex md:block items-center justify-between md:text-right pl-16 md:pl-0">
-                      <div className="md:hidden text-xs text-muted-foreground uppercase tracking-wider">Total Score</div>
-                      <div>
-                        <div className="text-2xl md:text-3xl font-bold font-mono text-white group-hover:text-primary transition-colors">
-                          {user.total_score}
+                      {/* Score */}
+                      <div className="flex md:block items-center justify-between md:text-right pl-16 md:pl-0">
+                        <div className="md:hidden text-xs text-muted-foreground uppercase tracking-wider">Total Points</div>
+                        <div>
+                          <div className="text-2xl md:text-3xl font-bold font-mono text-foreground group-hover:text-primary transition-colors">
+                            {Number(user.total_score).toLocaleString()}
+                          </div>
+                          <div className="hidden md:block text-[10px] text-muted-foreground uppercase tracking-wider">
+                            {user.total_submissions} submissions
+                          </div>
                         </div>
-                        <div className="hidden md:block text-[10px] text-muted-foreground uppercase tracking-wider">Total Points</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-20 text-center text-muted-foreground flex flex-col items-center">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10">
+                <div className="w-20 h-20 bg-secondary/50 rounded-full flex items-center justify-center mb-6 border border-border">
                   <Trophy className="w-10 h-10 opacity-20" />
                 </div>
-                <p className="text-lg font-medium text-white/50">No champions found for this period.</p>
-                <Button variant="link" className="mt-2 text-primary" onClick={() => window.location.href='/practice-arena'}>
-                  Compete Now
+                <p className="text-lg font-medium text-foreground/50">No champions found for this period.</p>
+                <p className="text-sm text-muted-foreground mt-1">Start solving problems to appear on the leaderboard!</p>
+                <Button variant="default" className="mt-4" asChild>
+                  <Link to="/practice-arena">
+                    <Target className="w-4 h-4 mr-2" /> Start Practicing
+                  </Link>
                 </Button>
               </div>
             )}
