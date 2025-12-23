@@ -1,20 +1,17 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; 
-import { Textarea } from "@/components/ui/textarea"; 
 import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
-import { TerminalView } from '@/components/TerminalView';
-import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard, Lock, AlertTriangle, Square, Clock, RotateCcw } from 'lucide-react';
+import { TerminalView, TerminalMode } from '@/components/TerminalView';
+import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Lock, Square, Clock, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LANGUAGES_CONFIG = [
   { id: 'python', name: 'Python' },
@@ -187,26 +184,6 @@ const getFileName = (lang: Language) => {
   }
 };
 
-// Detect if code uses input functions
-const detectsInput = (code: string, language: Language): boolean => {
-  switch(language) {
-    case 'python': 
-      return /\binput\s*\(/.test(code);
-    case 'java': 
-      return /Scanner|BufferedReader|System\.in|InputStreamReader/.test(code);
-    case 'cpp': 
-      return /\bcin\b|scanf|getline\s*\(.*cin/.test(code);
-    case 'c': 
-      return /\bscanf\b|\bgets\b|\bfgets\b|\bgetchar\b/.test(code);
-    case 'javascript': 
-      return /readline|prompt|process\.stdin/.test(code);
-    case 'bash': 
-      return /\bread\b/.test(code);
-    default: 
-      return false;
-  }
-};
-
 // Format execution time
 const formatTime = (ms: number): string => {
   if (ms < 1000) return `${ms}ms`;
@@ -228,11 +205,11 @@ const Compiler = () => {
   });
 
   const [lockedLanguages, setLockedLanguages] = useState<Record<string, boolean>>({});
-  const [inputData, setInputData] = useState<string>(""); 
-  const [output, setOutput] = useState<string>('// Output will appear here...');
-  const [activeTab, setActiveTab] = useState("output");
+  const [collectedInputLines, setCollectedInputLines] = useState<string[]>([]);
+  const [terminalOutput, setTerminalOutput] = useState<string>('');
   const [isError, setIsError] = useState(false);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [isPistonRunning, setIsPistonRunning] = useState(false);
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -248,16 +225,10 @@ const Compiler = () => {
     hasSharedArrayBuffer
   } = usePyodide();
 
-  const isLoading = pistonLoading || pythonRunning || (activeLanguage === 'python' && !pythonReady);
-  const isExecuting = pistonLoading || pythonRunning;
-  
-  // Detect if code needs input and show warning
-  const codeNeedsInput = useMemo(() => {
-    if (activeLanguage === 'python') return false; // Python is interactive
-    return detectsInput(code, activeLanguage);
-  }, [code, activeLanguage]);
-  
-  const inputIsEmpty = inputData.trim() === '';
+  const isPython = activeLanguage === 'python';
+  const terminalMode: TerminalMode = isPython ? 'interactive' : 'collect';
+  const isLoading = pistonLoading || pythonRunning || (isPython && !pythonReady);
+  const isExecuting = pistonLoading || pythonRunning || isPistonRunning;
 
   // Execution timer
   useEffect(() => {
@@ -316,15 +287,16 @@ const Compiler = () => {
 
     setActiveLanguage(newLang);
     setCode(getStarterTemplate(newLang));
-    setOutput('// Language changed. Output cleared.');
+    setTerminalOutput('');
+    setCollectedInputLines([]);
     setIsError(false);
     setExecutionTime(null);
   };
 
   const handleReset = () => {
     setCode(getStarterTemplate(activeLanguage));
-    setOutput('// Code reset to template.');
-    setInputData('');
+    setTerminalOutput('');
+    setCollectedInputLines([]);
     setIsError(false);
     setExecutionTime(null);
     toast({ title: "Reset", description: "Code reset to starter template.", duration: 2000 });
@@ -341,27 +313,37 @@ const Compiler = () => {
     setExecutionTime(null);
     executionStartRef.current = Date.now();
 
-    if (activeLanguage === 'python') {
+    if (isPython) {
+      // Python: Use interactive Pyodide terminal
       runPython(code);
     } else {
-      setActiveTab("output"); 
-      setOutput(""); 
-      setIsError(false); 
+      // Non-Python: Use Piston API with collected inputs
+      setIsPistonRunning(true);
+      setTerminalOutput(''); // This will trigger terminal reset
+      setIsError(false);
+      
+      // Join collected input lines for Piston
+      const inputData = collectedInputLines.join('\n');
       
       const result = await executeCode(activeLanguage, code, inputData);
       
       if (!result.success) setIsError(true);
-      setOutput(result.output || result.error || "Unknown Error");
+      
+      // Format output for terminal display
+      const output = result.output || result.error || "Unknown Error";
+      setTerminalOutput(output);
       
       // Set final execution time
       if (executionStartRef.current) {
         setExecutionTime(Date.now() - executionStartRef.current);
       }
+      
+      setIsPistonRunning(false);
     }
   };
 
   const handleStop = () => {
-    if (activeLanguage === 'python') {
+    if (isPython) {
       stopExecution();
       toast({ title: "Stopped", description: "Program execution interrupted.", duration: 2000 });
     }
@@ -384,6 +366,25 @@ const Compiler = () => {
       toast({ title: "Download Failed", description: "Could not generate file.", variant: "destructive" });
     }
   };
+
+  const handleCollectedInput = useCallback((lines: string[]) => {
+    setCollectedInputLines(lines);
+  }, []);
+
+  const handleClearTerminal = () => {
+    if (!isExecuting) {
+      if (isPython) {
+        runPython(''); // Empty run to clear
+      } else {
+        setTerminalOutput('');
+        setCollectedInputLines([]);
+      }
+    }
+  };
+
+  // Determine which output to show in terminal
+  const currentOutput = isPython ? pythonOutput : terminalOutput;
+  const currentIsRunning = isPython ? pythonRunning : isPistonRunning;
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
@@ -453,7 +454,7 @@ const Compiler = () => {
           </Button>
 
           {/* Stop Button - Only show when running Python */}
-          {pythonRunning && activeLanguage === 'python' && (
+          {pythonRunning && isPython && (
             <Button 
               onClick={handleStop}
               size="sm" 
@@ -479,7 +480,7 @@ const Compiler = () => {
             {isLoading ? (
               <>
                 <Loader2 className="w-3.5 md:w-4 h-3.5 md:h-4 mr-1.5 md:mr-2 animate-spin"/> 
-                <span className="hidden sm:inline">{!pythonReady && activeLanguage === 'python' ? "Loading..." : "Running..."}</span>
+                <span className="hidden sm:inline">{!pythonReady && isPython ? "Loading..." : "Running..."}</span>
                 <span className="sm:hidden">...</span>
               </>
             ) : lockedLanguages[activeLanguage] ? (
@@ -505,123 +506,77 @@ const Compiler = () => {
 
           <ResizablePanel defaultSize={isMobile ? 40 : 30} minSize={15} className="bg-[#0c0c0e] flex flex-col min-h-[100px] relative">
             
-            {activeLanguage === 'python' ? (
-              <div className="flex-1 flex flex-col min-h-0 relative">
-                <div className="flex items-center justify-between px-3 md:px-4 border-b border-white/10 bg-black/20 h-9 md:h-10 shrink-0">
-                  <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    <TerminalIcon className="w-3 h-3" /> Interactive Terminal
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {/* SharedArrayBuffer status */}
-                    {!hasSharedArrayBuffer && (
-                      <span className="text-[8px] md:text-[10px] text-amber-400 font-mono" title="Interactive input requires SharedArrayBuffer">
-                        Limited Mode
-                      </span>
-                    )}
-                    {pythonRunning && (
-                      <div className="flex items-center gap-2">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        <span className="text-[8px] md:text-[10px] text-green-400 font-mono">
-                          {isWaitingForInput ? 'WAITING FOR INPUT' : 'RUNNING'}
-                        </span>
-                      </div>
-                    )}
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-muted-foreground hover:text-white" 
-                      onClick={() => {
-                        // Clear terminal by triggering a reset
-                        if (!pythonRunning) {
-                          runPython(''); // Empty run to clear
-                        }
-                      }}
-                      title="Clear terminal"
-                    >
-                      <RefreshCw className="w-3 h-3"/>
-                    </Button>
-                  </div>
+            {/* Unified Terminal for ALL languages */}
+            <div className="flex-1 flex flex-col min-h-0 relative">
+              <div className="flex items-center justify-between px-3 md:px-4 border-b border-white/10 bg-black/20 h-9 md:h-10 shrink-0">
+                <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  <TerminalIcon className="w-3 h-3" /> 
+                  {isPython ? 'Interactive Terminal' : 'Terminal'}
                 </div>
-                
-                <div className="flex-1 relative">
-                  {!pythonReady ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs md:text-sm font-mono">
-                      <div className="flex flex-col items-center gap-3 p-4 text-center">
-                        <Loader2 className="w-6 md:w-8 h-6 md:h-8 animate-spin text-purple-500" />
-                        <span className="text-[10px] md:text-xs">Loading Python Environment...</span>
-                        <span className="text-[8px] md:text-[10px] text-muted-foreground">First load may take 5-10 seconds</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <TerminalView 
-                      output={pythonOutput} 
-                      onInput={writeInputToWorker}
-                      isWaitingForInput={isWaitingForInput}
-                    />
+                <div className="flex items-center gap-3">
+                  {/* SharedArrayBuffer status for Python */}
+                  {isPython && !hasSharedArrayBuffer && (
+                    <span className="text-[8px] md:text-[10px] text-amber-400 font-mono" title="Interactive input requires SharedArrayBuffer">
+                      Limited Mode
+                    </span>
                   )}
-                </div>
-              </div>
-            ) : (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                <div className="flex items-center justify-between px-3 md:px-4 border-b border-white/10 bg-black/20 shrink-0">
-                  <TabsList className="bg-transparent h-9 md:h-10 p-0 gap-2 md:gap-4">
-                    <TabsTrigger value="output" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-purple-500 data-[state=active]:text-purple-400 rounded-none h-9 md:h-10 px-1.5 md:px-2 text-[10px] md:text-xs uppercase tracking-wider font-bold text-muted-foreground">
-                      <TerminalIcon className="w-3 h-3 mr-1.5 md:mr-2" /> Output
-                    </TabsTrigger>
-                    <TabsTrigger value="input" className={cn(
-                      "data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-400 rounded-none h-9 md:h-10 px-1.5 md:px-2 text-[10px] md:text-xs uppercase tracking-wider font-bold text-muted-foreground relative",
-                      codeNeedsInput && inputIsEmpty && "animate-pulse"
-                    )}>
-                      <Keyboard className="w-3 h-3 mr-1.5 md:mr-2" /> Input
-                      {codeNeedsInput && inputIsEmpty && (
-                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                        </span>
-                      )}
-                    </TabsTrigger>
-                  </TabsList>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setOutput('// Output cleared.')}>
+                  
+                  {/* Non-Python: Show input hint when not running */}
+                  {!isPython && !currentIsRunning && (
+                    <span className="text-[8px] md:text-[10px] text-muted-foreground font-mono">
+                      Type inputs, then Run
+                    </span>
+                  )}
+                  
+                  {/* Running indicator */}
+                  {currentIsRunning && (
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      <span className="text-[8px] md:text-[10px] text-green-400 font-mono">
+                        {isPython && isWaitingForInput ? 'WAITING FOR INPUT' : 'RUNNING'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Clear terminal button */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-muted-foreground hover:text-white" 
+                    onClick={handleClearTerminal}
+                    disabled={isExecuting}
+                    title="Clear terminal"
+                  >
                     <RefreshCw className="w-3 h-3"/>
                   </Button>
                 </div>
-
-                {/* Input warning banner */}
-                {codeNeedsInput && inputIsEmpty && activeTab === 'output' && (
-                  <Alert className="mx-2 mt-2 mb-0 py-2 bg-amber-500/10 border-amber-500/30 text-amber-300">
-                    <AlertTriangle className="h-3 w-3" />
-                    <AlertDescription className="text-[10px] md:text-xs">
-                      Your code uses input! Switch to the <button onClick={() => setActiveTab('input')} className="underline font-bold hover:text-amber-200">Input tab</button> to add your inputs before running.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <TabsContent value="output" className={cn("flex-1 p-0 m-0 overflow-hidden relative group", codeNeedsInput && inputIsEmpty && activeTab === 'output' && "pt-0")}>
-                  <div className="absolute inset-0 p-3 md:p-4 font-mono text-xs md:text-sm overflow-auto custom-scrollbar">
-                    <pre className={cn("whitespace-pre-wrap font-mono", isError ? "text-red-400" : "text-blue-300")}>
-                      {output || (!pistonLoading && <span className="text-white/20 italic">Run code to see output...</span>)}
-                    </pre>
+              </div>
+              
+              <div className="flex-1 relative">
+                {isPython && !pythonReady ? (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs md:text-sm font-mono">
+                    <div className="flex flex-col items-center gap-3 p-4 text-center">
+                      <Loader2 className="w-6 md:w-8 h-6 md:h-8 animate-spin text-purple-500" />
+                      <span className="text-[10px] md:text-xs">Loading Python Environment...</span>
+                      <span className="text-[8px] md:text-[10px] text-muted-foreground">First load may take 5-10 seconds</span>
+                    </div>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="input" className="flex-1 p-0 m-0 overflow-hidden flex flex-col">
-                  <div className="px-3 pt-2 pb-1">
-                    <p className="text-[9px] md:text-[10px] text-muted-foreground">
-                      Enter each input on a new line, in the order your program expects them.
-                    </p>
-                  </div>
-                  <Textarea 
-                    value={inputData}
-                    onChange={(e) => setInputData(e.target.value)}
-                    placeholder={`Example:\nJohn\n25\n3.14`}
-                    className="flex-1 bg-[#1e1e20] text-white border-none resize-none rounded-none p-3 md:p-4 font-mono text-xs md:text-sm focus-visible:ring-0"
+                ) : (
+                  <TerminalView 
+                    output={currentOutput} 
+                    onInput={writeInputToWorker}
+                    isWaitingForInput={isWaitingForInput}
+                    mode={terminalMode}
+                    language={activeLanguage}
+                    onCollectedInput={handleCollectedInput}
+                    isRunning={currentIsRunning}
                   />
-                </TabsContent>
-              </Tabs>
-            )}
+                )}
+              </div>
+            </div>
 
             <div className="absolute bottom-2 right-3 pointer-events-none select-none z-50 flex items-center justify-end opacity-40">
               <span className="font-neuropol text-[8px] md:text-[10px] font-bold tracking-widest text-white">
