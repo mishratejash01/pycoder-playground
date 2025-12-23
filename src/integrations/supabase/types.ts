@@ -1287,6 +1287,7 @@ export type Database = {
           linkedin_url: string | null
           portfolio_url: string | null
           start_year: number | null
+          total_time_spent_minutes: number | null
           university: string | null
           updated_at: string | null
           username: string | null
@@ -1313,6 +1314,7 @@ export type Database = {
           linkedin_url?: string | null
           portfolio_url?: string | null
           start_year?: number | null
+          total_time_spent_minutes?: number | null
           university?: string | null
           updated_at?: string | null
           username?: string | null
@@ -1339,6 +1341,7 @@ export type Database = {
           linkedin_url?: string | null
           portfolio_url?: string | null
           start_year?: number | null
+          total_time_spent_minutes?: number | null
           university?: string | null
           updated_at?: string | null
           username?: string | null
@@ -1521,6 +1524,23 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: Json
       }
+      get_practice_leaderboard: {
+        Args: { p_limit?: number; p_timeframe?: string }
+        Returns: {
+          avatar_url: string
+          current_streak: number
+          full_name: string
+          last_active: string
+          longest_streak: number
+          problems_solved: number
+          time_spent_minutes: number
+          total_score: number
+          total_submissions: number
+          user_id: string
+          username: string
+        }[]
+      }
+      update_time_spent: { Args: { p_minutes?: number }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

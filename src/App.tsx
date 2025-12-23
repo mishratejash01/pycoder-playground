@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner"; // Import toast for debug
+import { toast } from "sonner";
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
@@ -14,6 +14,7 @@ import { Home, Code2, Trophy, Terminal } from "lucide-react";
 
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { AppRoutes } from "./routes";
+import { useTimeTracking } from "@/hooks/useTimeTracking";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,9 @@ const AppContent = () => {
   const [showSplash, setShowSplash] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Track user time on platform
+  useTimeTracking();
 
   useEffect(() => {
     const hasSeenSplash = sessionStorage.getItem("has_seen_splash");
