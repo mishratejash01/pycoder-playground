@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
 import { format } from 'date-fns';
-import { Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2 } from 'lucide-react';
-import { EventRegistrationModal } from '@/components/EventRegistrationModal';
+import { Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, Users } from 'lucide-react';
+import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
+import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
+import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
+import { useEventRegistration } from '@/hooks/useEventRegistration';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
@@ -18,6 +21,7 @@ export default function EventDetails() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const { isRegistered, registration, loading: regLoading } = useEventRegistration(event?.id);
 
   // Auth state management
   useEffect(() => {
@@ -69,12 +73,18 @@ export default function EventDetails() {
   };
 
   const handleRegisterClick = () => {
+    if (isRegistered) {
+      toast.info("You're already registered for this event!");
+      return;
+    }
     if (event.registration_link) {
       window.open(event.registration_link, '_blank');
     } else {
       setIsRegisterOpen(true);
     }
   };
+
+  const isHackathon = event?.event_type === 'hackathon';
 
   const handleShare = async () => {
     try {
@@ -176,24 +186,45 @@ export default function EventDetails() {
               </div>
             </div>
 
-            <div className="mt-8 space-y-3">
-              <Button 
-                onClick={handleRegisterClick} 
-                className="w-full h-12 text-base md:text-lg font-bold bg-white text-black hover:bg-gray-200 transition-all hover:scale-[1.02]"
-              >
-                Register Now
-              </Button>
-              <Button variant="outline" onClick={handleShare} className="w-full border-white/10 hover:bg-white/5 text-gray-300">
-                <Share2 className="w-4 h-4 mr-2" /> Share Event
-              </Button>
-            </div>
+            {/* Already Registered or Register Button */}
+            {isRegistered ? (
+              <div className="mt-8">
+                <AlreadyRegisteredCard 
+                  eventId={event.id}
+                  eventTitle={event.title}
+                  eventType={event.event_type || 'normal'}
+                  isPaid={event.is_paid}
+                  registrationFee={event.registration_fee}
+                  currency={event.currency}
+                />
+              </div>
+            ) : (
+              <div className="mt-8 space-y-3">
+                <Button 
+                  onClick={handleRegisterClick} 
+                  className="w-full h-12 text-base md:text-lg font-bold bg-white text-black hover:bg-gray-200 transition-all hover:scale-[1.02]"
+                >
+                  {isHackathon && <Code className="w-4 h-4 mr-2" />}
+                  Register Now
+                </Button>
+                <Button variant="outline" onClick={handleShare} className="w-full border-white/10 hover:bg-white/5 text-gray-300">
+                  <Share2 className="w-4 h-4 mr-2" /> Share Event
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* The Registration Modal */}
-      {event && (
-        <EventRegistrationModal 
+      {/* Registration Modals */}
+      {event && isHackathon ? (
+        <HackathonRegistrationModal 
+          event={event} 
+          isOpen={isRegisterOpen} 
+          onOpenChange={setIsRegisterOpen} 
+        />
+      ) : event && (
+        <NormalEventRegistrationModal 
           event={event} 
           isOpen={isRegisterOpen} 
           onOpenChange={setIsRegisterOpen} 

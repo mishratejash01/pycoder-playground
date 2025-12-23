@@ -3,13 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Trophy, Users, ChevronRight, ChevronLeft, Clock, Sparkles, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Trophy, Users, ChevronRight, ChevronLeft, Clock, Sparkles, Loader2, Code, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
+import { InvitationBanner } from '@/components/events/InvitationBanner';
 import { Session } from '@supabase/supabase-js';
 
 interface Event {
@@ -27,6 +27,7 @@ interface Event {
   location: string;
   prize_pool: string;
   is_featured: boolean;
+  event_type: 'hackathon' | 'normal';
 }
 
 export default function Events() {
@@ -35,6 +36,7 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'hackathon' | 'normal'>('all');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auth state management
@@ -99,8 +101,9 @@ export default function Events() {
     );
   }
 
-  const featuredEvent = events.find(e => e.is_featured) || events[0];
-  const regularEvents = events.filter(e => e.id !== featuredEvent?.id);
+  const filteredEvents = filter === 'all' ? events : events.filter(e => e.event_type === filter);
+  const featuredEvent = filteredEvents.find(e => e.is_featured) || filteredEvents[0];
+  const regularEvents = filteredEvents.filter(e => e.id !== featuredEvent?.id);
 
   const getCountdownData = (event: Event) => {
     if (!event) return { text: "Closed", percent: 100 };
@@ -126,6 +129,9 @@ export default function Events() {
 
       <main className="max-w-7xl mx-auto pt-32 pb-20 px-6 md:px-12">
         
+        {/* Invitation Banner */}
+        <InvitationBanner />
+        
         {/* --- SECTION HEADER --- */}
         <div className="flex items-end justify-between mb-10">
           <div>
@@ -133,9 +139,30 @@ export default function Events() {
             <h1 className="text-4xl font-medium tracking-tight">Events</h1>
           </div>
           <div className="hidden md:flex bg-zinc-900/50 p-1 rounded-lg border border-zinc-800 backdrop-blur-md">
-            <Button variant="ghost" size="sm" className="text-xs h-8 bg-zinc-800 shadow-sm hover:bg-zinc-700">All Events</Button>
-            <Button variant="ghost" size="sm" className="text-xs h-8 text-zinc-400 hover:text-white">Hackathons</Button>
-            <Button variant="ghost" size="sm" className="text-xs h-8 text-zinc-400 hover:text-white">Workshops</Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={cn("text-xs h-8", filter === 'all' ? "bg-zinc-800 shadow-sm" : "text-zinc-400 hover:text-white")}
+              onClick={() => setFilter('all')}
+            >
+              All Events
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={cn("text-xs h-8", filter === 'hackathon' ? "bg-zinc-800 shadow-sm" : "text-zinc-400 hover:text-white")}
+              onClick={() => setFilter('hackathon')}
+            >
+              <Code className="w-3 h-3 mr-1" /> Hackathons
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={cn("text-xs h-8", filter === 'normal' ? "bg-zinc-800 shadow-sm" : "text-zinc-400 hover:text-white")}
+              onClick={() => setFilter('normal')}
+            >
+              <Zap className="w-3 h-3 mr-1" /> Tech Events
+            </Button>
           </div>
         </div>
 

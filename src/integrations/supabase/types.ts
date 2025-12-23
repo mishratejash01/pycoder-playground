@@ -104,6 +104,81 @@ export type Database = {
         }
         Relationships: []
       }
+      event_payments: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          currency: string | null
+          event_id: string
+          gateway_order_id: string | null
+          gateway_payment_id: string | null
+          gateway_signature: string | null
+          id: string
+          metadata: Json | null
+          payment_gateway: string | null
+          payment_method: string | null
+          payment_status: string | null
+          registration_id: string | null
+          transaction_id: string | null
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          event_id: string
+          gateway_order_id?: string | null
+          gateway_payment_id?: string | null
+          gateway_signature?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_gateway?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          registration_id?: string | null
+          transaction_id?: string | null
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          event_id?: string
+          gateway_order_id?: string | null
+          gateway_payment_id?: string | null
+          gateway_signature?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_gateway?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          registration_id?: string | null
+          transaction_id?: string | null
+          user_email?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_payments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_payments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           agreed_to_privacy: boolean
@@ -112,16 +187,20 @@ export type Database = {
           country_city: string
           created_at: string | null
           current_status: string
+          custom_answers: Json | null
           email: string
           event_id: string
           experience_level: string | null
           full_name: string
           github_link: string | null
           id: string
+          invitation_token: string | null
+          invited_by_registration_id: string | null
           linkedin_link: string | null
           mobile_number: string
           motivation_answer: string | null
           participation_type: string | null
+          payment_status: string | null
           preferred_track: string | null
           primary_languages: Json | null
           prior_experience: boolean | null
@@ -129,6 +208,7 @@ export type Database = {
           status: string | null
           team_members_data: Json | null
           team_name: string | null
+          team_role: string | null
           tech_stack_skills: Json | null
           updated_at: string | null
           user_id: string | null
@@ -140,16 +220,20 @@ export type Database = {
           country_city: string
           created_at?: string | null
           current_status: string
+          custom_answers?: Json | null
           email: string
           event_id: string
           experience_level?: string | null
           full_name: string
           github_link?: string | null
           id?: string
+          invitation_token?: string | null
+          invited_by_registration_id?: string | null
           linkedin_link?: string | null
           mobile_number: string
           motivation_answer?: string | null
           participation_type?: string | null
+          payment_status?: string | null
           preferred_track?: string | null
           primary_languages?: Json | null
           prior_experience?: boolean | null
@@ -157,6 +241,7 @@ export type Database = {
           status?: string | null
           team_members_data?: Json | null
           team_name?: string | null
+          team_role?: string | null
           tech_stack_skills?: Json | null
           updated_at?: string | null
           user_id?: string | null
@@ -168,16 +253,20 @@ export type Database = {
           country_city?: string
           created_at?: string | null
           current_status?: string
+          custom_answers?: Json | null
           email?: string
           event_id?: string
           experience_level?: string | null
           full_name?: string
           github_link?: string | null
           id?: string
+          invitation_token?: string | null
+          invited_by_registration_id?: string | null
           linkedin_link?: string | null
           mobile_number?: string
           motivation_answer?: string | null
           participation_type?: string | null
+          payment_status?: string | null
           preferred_track?: string | null
           primary_languages?: Json | null
           prior_experience?: boolean | null
@@ -185,6 +274,7 @@ export type Database = {
           status?: string | null
           team_members_data?: Json | null
           team_name?: string | null
+          team_role?: string | null
           tech_stack_skills?: Json | null
           updated_at?: string | null
           user_id?: string | null
@@ -201,69 +291,99 @@ export type Database = {
       }
       events: {
         Row: {
+          allow_solo: boolean | null
           category: string
           content: string | null
           created_at: string | null
+          currency: string | null
           current_participants: number | null
+          custom_questions: Json | null
           end_date: string
+          event_type: string | null
           id: string
           image_url: string | null
           is_featured: boolean | null
+          is_paid: boolean | null
           location: string | null
           max_participants: number | null
+          max_team_size: number | null
+          min_team_size: number | null
           mode: string
           prize_pool: string | null
           registration_deadline: string | null
+          registration_fee: number | null
           registration_link: string | null
+          rules_document_url: string | null
           short_description: string
           slug: string
           start_date: string
           status: string | null
           title: string
+          tracks: Json | null
           updated_at: string | null
         }
         Insert: {
+          allow_solo?: boolean | null
           category: string
           content?: string | null
           created_at?: string | null
+          currency?: string | null
           current_participants?: number | null
+          custom_questions?: Json | null
           end_date: string
+          event_type?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
+          is_paid?: boolean | null
           location?: string | null
           max_participants?: number | null
+          max_team_size?: number | null
+          min_team_size?: number | null
           mode: string
           prize_pool?: string | null
           registration_deadline?: string | null
+          registration_fee?: number | null
           registration_link?: string | null
+          rules_document_url?: string | null
           short_description: string
           slug: string
           start_date: string
           status?: string | null
           title: string
+          tracks?: Json | null
           updated_at?: string | null
         }
         Update: {
+          allow_solo?: boolean | null
           category?: string
           content?: string | null
           created_at?: string | null
+          currency?: string | null
           current_participants?: number | null
+          custom_questions?: Json | null
           end_date?: string
+          event_type?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
+          is_paid?: boolean | null
           location?: string | null
           max_participants?: number | null
+          max_team_size?: number | null
+          min_team_size?: number | null
           mode?: string
           prize_pool?: string | null
           registration_deadline?: string | null
+          registration_fee?: number | null
           registration_link?: string | null
+          rules_document_url?: string | null
           short_description?: string
           slug?: string
           start_date?: string
           status?: string | null
           title?: string
+          tracks?: Json | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1276,6 +1396,81 @@ export type Database = {
           },
         ]
       }
+      team_invitations: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          expires_at: string | null
+          id: string
+          invitee_email: string
+          invitee_mobile: string | null
+          invitee_name: string | null
+          inviter_email: string
+          inviter_name: string
+          inviter_user_id: string | null
+          message: string | null
+          registration_id: string | null
+          responded_at: string | null
+          role: string | null
+          status: string | null
+          team_name: string
+          token: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          expires_at?: string | null
+          id?: string
+          invitee_email: string
+          invitee_mobile?: string | null
+          invitee_name?: string | null
+          inviter_email: string
+          inviter_name: string
+          inviter_user_id?: string | null
+          message?: string | null
+          registration_id?: string | null
+          responded_at?: string | null
+          role?: string | null
+          status?: string | null
+          team_name: string
+          token: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          expires_at?: string | null
+          id?: string
+          invitee_email?: string
+          invitee_mobile?: string | null
+          invitee_name?: string | null
+          inviter_email?: string
+          inviter_name?: string
+          inviter_user_id?: string | null
+          message?: string | null
+          registration_id?: string | null
+          responded_at?: string | null
+          role?: string | null
+          status?: string | null
+          team_name?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_invitations_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       iitm_leaderboard: {
@@ -1310,6 +1505,18 @@ export type Database = {
         Args: { p_language: string; p_problem_id: string; p_runtime_ms: number }
         Returns: number
       }
+      check_user_registration: {
+        Args: { p_event_id: string; p_user_id: string }
+        Returns: {
+          is_registered: boolean
+          participation_type: string
+          payment_status: string
+          registration_id: string
+          team_name: string
+          team_role: string
+        }[]
+      }
+      generate_invitation_token: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
