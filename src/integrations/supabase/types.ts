@@ -828,6 +828,56 @@ export type Database = {
           },
         ]
       }
+      practice_execution_benchmarks: {
+        Row: {
+          id: string
+          language: string
+          memory_kb_p50: number | null
+          memory_kb_p90: number | null
+          memory_kb_p99: number | null
+          problem_id: string | null
+          runtime_ms_p50: number | null
+          runtime_ms_p90: number | null
+          runtime_ms_p99: number | null
+          total_submissions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          language: string
+          memory_kb_p50?: number | null
+          memory_kb_p90?: number | null
+          memory_kb_p99?: number | null
+          problem_id?: string | null
+          runtime_ms_p50?: number | null
+          runtime_ms_p90?: number | null
+          runtime_ms_p99?: number | null
+          total_submissions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          language?: string
+          memory_kb_p50?: number | null
+          memory_kb_p90?: number | null
+          memory_kb_p99?: number | null
+          problem_id?: string | null
+          runtime_ms_p50?: number | null
+          runtime_ms_p90?: number | null
+          runtime_ms_p99?: number | null
+          total_submissions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_execution_benchmarks_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       practice_notes: {
         Row: {
           content: string | null
@@ -1001,6 +1051,10 @@ export type Database = {
         Row: {
           code: string | null
           error_message: string | null
+          error_type: string | null
+          execution_time_ms: number | null
+          failed_test_index: number | null
+          feedback_message: string | null
           id: string
           language: string | null
           memory_kb: number | null
@@ -1014,10 +1068,15 @@ export type Database = {
           test_cases_passed: number | null
           test_cases_total: number | null
           user_id: string | null
+          verdict: string | null
         }
         Insert: {
           code?: string | null
           error_message?: string | null
+          error_type?: string | null
+          execution_time_ms?: number | null
+          failed_test_index?: number | null
+          feedback_message?: string | null
           id?: string
           language?: string | null
           memory_kb?: number | null
@@ -1031,10 +1090,15 @@ export type Database = {
           test_cases_passed?: number | null
           test_cases_total?: number | null
           user_id?: string | null
+          verdict?: string | null
         }
         Update: {
           code?: string | null
           error_message?: string | null
+          error_type?: string | null
+          execution_time_ms?: number | null
+          failed_test_index?: number | null
+          feedback_message?: string | null
           id?: string
           language?: string | null
           memory_kb?: number | null
@@ -1048,6 +1112,7 @@ export type Database = {
           test_cases_passed?: number | null
           test_cases_total?: number | null
           user_id?: string | null
+          verdict?: string | null
         }
         Relationships: [
           {
@@ -1234,7 +1299,14 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      calculate_memory_percentile: {
+        Args: { p_language: string; p_memory_kb: number; p_problem_id: string }
+        Returns: number
+      }
+      calculate_runtime_percentile: {
+        Args: { p_language: string; p_problem_id: string; p_runtime_ms: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

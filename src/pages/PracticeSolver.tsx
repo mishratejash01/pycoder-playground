@@ -8,48 +8,49 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
-import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
+import { useEnhancedCodeRunner, Language, EnhancedExecutionResult } from '@/hooks/useEnhancedCodeRunner';
 import { CodeEditor } from '@/components/CodeEditor';
-import { Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, Home, RefreshCw, CheckCircle2, XCircle, BookOpen, MessageSquare, History, Clock } from 'lucide-react';
+import { Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, Home, RefreshCw, CheckCircle2, BookOpen, MessageSquare, History, Beaker } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { ScoreDisplay } from '@/components/ScoreDisplay';
 import { BookmarkButton } from '@/components/practice/BookmarkButton';
 import { LikeDislikeButtons } from '@/components/practice/LikeDislikeButtons';
 import { HintsAccordion } from '@/components/practice/HintsAccordion';
 import { ProblemNotes } from '@/components/practice/ProblemNotes';
 import { SubmissionHistory } from '@/components/practice/SubmissionHistory';
 import { DiscussionTab } from '@/components/practice/DiscussionTab';
+import { JudgingLoader } from '@/components/practice/JudgingLoader';
+import { VerdictDisplay } from '@/components/practice/VerdictDisplay';
+import { PerformanceChart } from '@/components/practice/PerformanceChart';
+import { CustomTestSandbox } from '@/components/practice/CustomTestSandbox';
 
 export default function PracticeSolver() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { executeCode, loading } = useCodeRunner();
+  const { executeWithJudging, runSingleTest, judgingPhase, elapsedMs, resetJudging } = useEnhancedCodeRunner();
 
   const [activeLanguage, setActiveLanguage] = useState<Language>('python');
   const [code, setCode] = useState('');
   const [userId, setUserId] = useState<string | undefined>();
   
-  // Tab States
   const [descriptionTab, setDescriptionTab] = useState<'description' | 'editorial' | 'submissions' | 'discussion'>('description');
-  const [consoleTab, setConsoleTab] = useState<'testcase' | 'result'>('testcase');
+  const [consoleTab, setConsoleTab] = useState<'testcase' | 'custom' | 'result'>('testcase');
   const [activeTestCaseId, setActiveTestCaseId] = useState(0);
-  const [outputResult, setOutputResult] = useState<any>(null);
   
-  const [submitting, setSubmitting] = useState(false);
+  const [executionResult, setExecutionResult] = useState<EnhancedExecutionResult | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [submissionStats, setSubmissionStats] = useState<{ passed: number; total: number; time: number } | null>(null);
 
-  // Get user
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUserId(user?.id);
     });
   }, []);
 
-  // Fetch Problem
   const { data: problem, isLoading: problemLoading, error } = useQuery({
     queryKey: ['practice_problem', slug],
     queryFn: async () => {
@@ -65,7 +66,6 @@ export default function PracticeSolver() {
     retry: false
   });
 
-  // Check if user has attempted
   const { data: hasAttempted } = useQuery({
     queryKey: ['has_attempted', problem?.id, userId],
     queryFn: async () => {
@@ -114,52 +114,86 @@ export default function PracticeSolver() {
   const handleRun = async () => {
     if (!problem || testCases.length === 0) return;
     setConsoleTab('result');
-    setOutputResult({ status: 'running' });
-    setSubmissionStats(null); 
-    const activeCase = testCases[activeTestCaseId];
-    if (!activeCase) { setOutputResult({ status: 'error', message: 'Invalid test case.' }); return; }
-    const codeToRun = prepareCode(code, activeCase.input);
-    const result = await executeCode(activeLanguage, codeToRun, "");
-    const cleanOutput = result.output?.trim();
-    const expectedStr = String(activeCase.output || '').trim();
-    const passed = cleanOutput === expectedStr || (cleanOutput && cleanOutput.includes(expectedStr));
-    setOutputResult({ status: 'complete', passed, userOutput: cleanOutput, expected: expectedStr, input: String(activeCase.input), error: result.error });
+    setExecutionResult(null);
+    setIsRunning(true);
+    
+    const publicTests = testCases.filter(t => t.is_public);
+    const result = await executeWithJudging(
+      activeLanguage,
+      code,
+      publicTests.length > 0 ? publicTests : [testCases[activeTestCaseId]],
+      prepareCode
+    );
+    
+    setExecutionResult(result);
+    setIsRunning(false);
   };
 
   const handleSubmit = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast({ title: "Login Required", variant: "destructive" }); navigate('/auth'); return; }
-    setSubmitting(true);
-    setSubmissionStats(null);
-    setConsoleTab('result');
-    let passedCount = 0;
-    const totalCount = testCases.length;
-    for (const test of testCases) {
-      const codeToRun = prepareCode(code, test.input);
-      const result = await executeCode(activeLanguage, codeToRun, "");
-      const cleanOutput = result.output?.trim();
-      const expectedStr = String(test.output || '').trim();
-      if (cleanOutput === expectedStr || (cleanOutput && cleanOutput.includes(expectedStr))) passedCount++;
+    if (!user) { 
+      toast({ title: "Login Required", variant: "destructive" }); 
+      navigate('/auth'); 
+      return; 
     }
+    
+    setIsSubmitting(true);
+    setConsoleTab('result');
+    setExecutionResult(null);
+    
+    const result = await executeWithJudging(
+      activeLanguage,
+      code,
+      testCases,
+      prepareCode,
+      problem?.id
+    );
+    
+    setExecutionResult(result);
+    
     if (timerRef.current) clearInterval(timerRef.current);
-    setSubmissionStats({ passed: passedCount, total: totalCount, time: elapsedTime });
-    if (passedCount === totalCount) {
+    
+    if (result.passed && problem) {
       const pointsMap: Record<string, number> = { 'Easy': 10, 'Medium': 30, 'Hard': 50 };
       const points = pointsMap[problem.difficulty] || 10;
+      
       await supabase.from('practice_submissions').upsert({
-        user_id: user.id, problem_id: problem.id, score: points, status: 'completed',
-        code, language: activeLanguage, test_cases_passed: passedCount, test_cases_total: totalCount,
-        runtime_ms: Math.floor(Math.random() * 50) + 20, memory_kb: Math.floor(Math.random() * 5000) + 10000
+        user_id: user.id, 
+        problem_id: problem.id, 
+        score: points, 
+        status: 'completed',
+        code, 
+        language: activeLanguage, 
+        test_cases_passed: testCases.length, 
+        test_cases_total: testCases.length,
+        runtime_ms: result.runtime_ms, 
+        memory_kb: result.memory_kb,
+        verdict: result.verdict,
+        feedback_message: result.feedbackMessage
       }, { onConflict: 'user_id,problem_id' });
+      
       toast({ title: `Success! +${points} Points`, className: "bg-green-600 border-none text-white" });
     }
-    setSubmitting(false);
+    
+    setIsSubmitting(false);
+  };
+
+  const handleRunCustomTest = async (input: string) => {
+    const result = await runSingleTest(activeLanguage, code, input, prepareCode);
+    return result;
   };
 
   const handleSelectSubmission = (submittedCode: string, lang: string) => {
     setCode(submittedCode);
     setActiveLanguage(lang as Language);
     setDescriptionTab('description');
+  };
+
+  const handleRetry = () => {
+    setExecutionResult(null);
+    resetJudging();
+    setElapsedTime(0);
+    timerRef.current = setInterval(() => setElapsedTime(prev => prev + 1), 1000);
   };
 
   if (problemLoading) return (
@@ -175,6 +209,8 @@ export default function PracticeSolver() {
       <Button variant="outline" onClick={() => navigate('/practice-arena')}>Return to Arena</Button>
     </div>
   );
+
+  const isJudging = judgingPhase.status !== 'idle' && judgingPhase.status !== 'complete';
 
   return (
     <div className="h-screen flex flex-col bg-[#050505] text-white overflow-hidden">
@@ -212,11 +248,11 @@ export default function PracticeSolver() {
               <SelectItem value="cpp">C++</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="secondary" size="sm" onClick={handleRun} disabled={loading || submitting} className="h-8 text-xs bg-white/5 hover:bg-white/10 text-white border border-white/5">
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Play className="w-3.5 h-3.5 mr-2 fill-current"/>} Run
+          <Button variant="secondary" size="sm" onClick={handleRun} disabled={isRunning || isSubmitting || isJudging} className="h-8 text-xs bg-white/5 hover:bg-white/10 text-white border border-white/5">
+            {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Play className="w-3.5 h-3.5 mr-2 fill-current"/>} Run
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={submitting || loading} className="h-8 text-xs bg-green-600 hover:bg-green-500 text-white font-semibold border-0">
-            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Send className="w-3.5 h-3.5 mr-2"/>} Submit
+          <Button size="sm" onClick={handleSubmit} disabled={isSubmitting || isRunning || isJudging} className="h-8 text-xs bg-green-600 hover:bg-green-500 text-white font-semibold border-0">
+            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Send className="w-3.5 h-3.5 mr-2"/>} Submit
           </Button>
         </div>
       </header>
@@ -224,7 +260,7 @@ export default function PracticeSolver() {
       {/* Workspace */}
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Left Panel: Description/Editorial/Submissions/Discussion */}
+          {/* Left Panel */}
           <ResizablePanel defaultSize={40} minSize={25} className="bg-[#0a0a0a] flex flex-col border-r border-white/5">
             <Tabs value={descriptionTab} onValueChange={(v) => setDescriptionTab(v as any)} className="flex flex-col h-full">
               <div className="h-10 border-b border-white/5 flex items-center px-1 bg-[#0f0f0f] shrink-0">
@@ -298,23 +334,28 @@ export default function PracticeSolver() {
               </TabsContent>
             </Tabs>
 
-            {submissionStats && (
+            {/* Success panel overlay */}
+            {executionResult?.passed && (
               <div className="border-t border-white/10 bg-[#0c0c0e] p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-10">
-                <div className="flex items-center justify-between gap-6">
-                  <div className="shrink-0 scale-75 origin-left -my-4"><ScoreDisplay score={submissionStats.passed} maxScore={submissionStats.total} /></div>
-                  <div className="flex-1 flex flex-col gap-4">
-                    <h3 className="text-lg font-bold text-white">Submission Result</h3>
-                    <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
-                      <span className={cn("flex items-center gap-1.5", submissionStats.passed === submissionStats.total ? "text-green-400" : "text-red-400")}>
-                        {submissionStats.passed === submissionStats.total ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Bug className="w-3.5 h-3.5" />}
-                        {submissionStats.passed}/{submissionStats.total} Passed
-                      </span>
-                    </div>
-                    <div className="flex gap-2 mt-auto">
-                      <Button variant="outline" size="sm" onClick={() => setSubmissionStats(null)} className="h-8 text-xs border-white/10 bg-white/5"><RefreshCw className="w-3.5 h-3.5 mr-2" /> Retry</Button>
-                      <Button size="sm" onClick={() => navigate('/practice-arena')} className="h-8 text-xs bg-white text-black hover:bg-gray-200"><Home className="w-3.5 h-3.5 mr-2" /> Arena</Button>
-                    </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <PerformanceChart
+                      runtimePercentile={executionResult.runtimePercentile || 50}
+                      memoryPercentile={executionResult.memoryPercentile || 50}
+                      runtime_ms={executionResult.runtime_ms}
+                      memory_kb={executionResult.memory_kb}
+                      testsPassed={executionResult.testResults.length}
+                      testsTotal={executionResult.testResults.length}
+                    />
                   </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" size="sm" onClick={handleRetry} className="h-8 text-xs border-white/10 bg-white/5">
+                    <RefreshCw className="w-3.5 h-3.5 mr-2" /> Retry
+                  </Button>
+                  <Button size="sm" onClick={() => navigate('/practice-arena')} className="h-8 text-xs bg-white text-black hover:bg-gray-200">
+                    <Home className="w-3.5 h-3.5 mr-2" /> Arena
+                  </Button>
                 </div>
               </div>
             )}
@@ -322,7 +363,7 @@ export default function PracticeSolver() {
 
           <ResizableHandle withHandle className="bg-[#050505] w-1.5 border-l border-r border-white/5 hover:bg-white/10" />
 
-          {/* Right Panel: Editor & Terminal */}
+          {/* Right Panel */}
           <ResizablePanel defaultSize={60}>
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={60} className="flex flex-col bg-[#1e1e1e]">
@@ -336,9 +377,12 @@ export default function PracticeSolver() {
                       <TabsTrigger value="testcase" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white text-xs font-medium text-muted-foreground flex items-center gap-2 px-2">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Testcase
                       </TabsTrigger>
+                      <TabsTrigger value="custom" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent data-[state=active]:text-white text-xs font-medium text-muted-foreground flex items-center gap-2 px-2">
+                        <Beaker className="w-3.5 h-3.5" /> Custom
+                      </TabsTrigger>
                       <TabsTrigger value="result" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white text-xs font-medium text-muted-foreground flex items-center gap-2 px-2">
                         <Terminal className="w-3.5 h-3.5" /> Result
-                        {outputResult && <div className={cn("w-1.5 h-1.5 rounded-full ml-1.5", outputResult.passed ? "bg-green-500" : "bg-red-500")} />}
+                        {executionResult && <div className={cn("w-1.5 h-1.5 rounded-full ml-1.5", executionResult.passed ? "bg-green-500" : "bg-red-500")} />}
                       </TabsTrigger>
                     </TabsList>
                   </div>
@@ -362,26 +406,43 @@ export default function PracticeSolver() {
                         )}
                       </div>
                     </TabsContent>
+                    
+                    <TabsContent value="custom" className="mt-0 h-full">
+                      <CustomTestSandbox
+                        defaultInput={testCases[0]?.input ? String(testCases[0].input) : ''}
+                        onRunCustomTest={handleRunCustomTest}
+                        isRunning={judgingPhase.status === 'running'}
+                      />
+                    </TabsContent>
+                    
                     <TabsContent value="result" className="mt-0 h-full">
-                      {!outputResult ? (
-                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground space-y-3 opacity-40"><Terminal className="w-8 h-8" /><span className="text-xs">Run code to see results</span></div>
-                      ) : outputResult.status === 'running' ? (
-                        <div className="flex flex-col items-center justify-center h-full text-yellow-500 space-y-3"><Loader2 className="w-6 h-6 animate-spin"/><span className="text-xs font-mono animate-pulse">EXECUTING...</span></div>
-                      ) : (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                          <div className="flex items-center gap-2">
-                            <div className={cn("text-sm font-bold", outputResult.passed ? "text-green-400" : "text-red-400")}>{outputResult.passed ? "Accepted" : "Wrong Answer"}</div>
-                          </div>
-                          {outputResult.error ? (
-                            <div className="bg-red-950/20 p-4 rounded-lg border border-red-500/20 text-red-300 font-mono text-xs whitespace-pre-wrap">{outputResult.error}</div>
-                          ) : (
-                            <div className="grid grid-cols-1 gap-5 font-mono text-xs">
-                              <div className="space-y-1.5"><div className="text-[10px] text-gray-500 uppercase tracking-wider">Input</div><div className="p-3 rounded-lg bg-[#1a1a1a] border border-white/5 text-gray-300">{outputResult.input}</div></div>
-                              <div className="space-y-1.5"><div className="text-[10px] text-gray-500 uppercase tracking-wider">Output</div><div className={cn("p-3 rounded-lg border break-all", outputResult.passed ? "bg-[#1a1a1a] border-white/5 text-white" : "bg-red-900/10 border-red-500/20 text-red-200")}>{outputResult.userOutput || <span className="italic opacity-50">Empty</span>}</div></div>
-                              {!outputResult.passed && (<div className="space-y-1.5"><div className="text-[10px] text-gray-500 uppercase tracking-wider">Expected</div><div className="bg-green-900/10 p-3 rounded-lg text-green-200 border border-green-500/20 break-all">{outputResult.expected}</div></div>)}
-                            </div>
-                          )}
+                      {isJudging ? (
+                        <JudgingLoader phase={judgingPhase} elapsedMs={elapsedMs} />
+                      ) : !executionResult ? (
+                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground space-y-3 opacity-40">
+                          <Terminal className="w-8 h-8" />
+                          <span className="text-xs">Run code to see results</span>
                         </div>
+                      ) : executionResult.passed ? (
+                        <PerformanceChart
+                          runtimePercentile={executionResult.runtimePercentile || 50}
+                          memoryPercentile={executionResult.memoryPercentile || 50}
+                          runtime_ms={executionResult.runtime_ms}
+                          memory_kb={executionResult.memory_kb}
+                          testsPassed={executionResult.testResults.length}
+                          testsTotal={executionResult.testResults.length}
+                        />
+                      ) : (
+                        <VerdictDisplay
+                          verdict={executionResult.verdict}
+                          feedbackMessage={executionResult.feedbackMessage}
+                          feedbackSuggestion={executionResult.feedbackSuggestion}
+                          failedTestIndex={executionResult.failedTestIndex}
+                          testResults={executionResult.testResults}
+                          errorDetails={executionResult.errorDetails}
+                          runtime_ms={executionResult.runtime_ms}
+                          memory_kb={executionResult.memory_kb}
+                        />
                       )}
                     </TabsContent>
                   </div>
