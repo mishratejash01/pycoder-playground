@@ -4,9 +4,11 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CodeEditor } from '@/components/CodeEditor';
-import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
+import { Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
-import { TerminalView, TerminalMode } from '@/components/TerminalView';
+import { useJavaScriptRunner } from '@/hooks/useJavaScriptRunner';
+import { useInteractiveRunner } from '@/hooks/useInteractiveRunner';
+import { TerminalView } from '@/components/TerminalView';
 import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Lock, Square, Clock, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -95,29 +97,16 @@ int main() {
     return 0;
 }`;
     case 'javascript': 
-      return `// Node.js - Reading from stdin
-const readline = require('readline');
+      return `// Interactive JavaScript - uses prompt() for input
+const name = await prompt("Enter your name: ");
+const age = await prompt("Enter your age: ");
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+console.log(\`Hello, \${name}! You are \${age} years old.\`);
 
-const lines = [];
-
-rl.on('line', (line) => {
-    lines.push(line);
-});
-
-rl.on('close', () => {
-    // Your inputs are now in the lines[] array
-    // Example: First line is name, second is age
-    const name = lines[0] || 'World';
-    const age = lines[1] || '0';
-    
-    console.log(\`Hello, \${name}! You are \${age} years old.\`);
-});`;
+// Example: More operations
+const numbers = [1, 2, 3, 4, 5];
+console.log("Sum:", numbers.reduce((a, b) => a + b, 0));
+console.log("Max:", Math.max(...numbers));`;
     case 'sql': 
       return `-- SQLite Query Editor
 -- Create a sample table
@@ -205,30 +194,74 @@ const Compiler = () => {
   });
 
   const [lockedLanguages, setLockedLanguages] = useState<Record<string, boolean>>({});
-  const [collectedInputLines, setCollectedInputLines] = useState<string[]>([]);
-  const [terminalOutput, setTerminalOutput] = useState<string>('');
-  const [isError, setIsError] = useState(false);
   const [executionTime, setExecutionTime] = useState<number | null>(null);
-  const [isPistonRunning, setIsPistonRunning] = useState(false);
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  const { executeCode, loading: pistonLoading } = useCodeRunner();
+  // Python runner (Pyodide - true interactive)
   const { 
     runCode: runPython, 
     output: pythonOutput, 
     isRunning: pythonRunning, 
     isReady: pythonReady,
-    isWaitingForInput,
-    writeInputToWorker,
-    stopExecution,
+    isWaitingForInput: pythonWaitingForInput,
+    writeInputToWorker: writePythonInput,
+    stopExecution: stopPython,
     hasSharedArrayBuffer
   } = usePyodide();
 
+  // JavaScript runner (browser native - true interactive)
+  const {
+    runCode: runJS,
+    output: jsOutput,
+    isRunning: jsRunning,
+    isWaitingForInput: jsWaitingForInput,
+    writeInput: writeJSInput,
+    stopExecution: stopJS,
+  } = useJavaScriptRunner();
+
+  // Interactive runner for Java/C++/C/SQL/Bash (Piston with smart simulation)
+  const {
+    runCode: runInteractive,
+    output: interactiveOutput,
+    isRunning: interactiveRunning,
+    isWaitingForInput: interactiveWaitingForInput,
+    writeInput: writeInteractiveInput,
+    stopExecution: stopInteractive,
+  } = useInteractiveRunner(activeLanguage);
+
   const isPython = activeLanguage === 'python';
-  const terminalMode: TerminalMode = isPython ? 'interactive' : 'collect';
-  const isLoading = pistonLoading || pythonRunning || (isPython && !pythonReady);
-  const isExecuting = pistonLoading || pythonRunning || isPistonRunning;
+  const isJavaScript = activeLanguage === 'javascript';
+  
+  // Determine current runner's state based on active language
+  const getCurrentRunnerState = useCallback(() => {
+    if (isPython) {
+      return {
+        output: pythonOutput,
+        isRunning: pythonRunning,
+        isWaitingForInput: pythonWaitingForInput,
+        isReady: pythonReady,
+      };
+    } else if (isJavaScript) {
+      return {
+        output: jsOutput,
+        isRunning: jsRunning,
+        isWaitingForInput: jsWaitingForInput,
+        isReady: true,
+      };
+    } else {
+      return {
+        output: interactiveOutput,
+        isRunning: interactiveRunning,
+        isWaitingForInput: interactiveWaitingForInput,
+        isReady: true,
+      };
+    }
+  }, [isPython, isJavaScript, pythonOutput, pythonRunning, pythonWaitingForInput, pythonReady, jsOutput, jsRunning, jsWaitingForInput, interactiveOutput, interactiveRunning, interactiveWaitingForInput]);
+
+  const runnerState = getCurrentRunnerState();
+  const isLoading = runnerState.isRunning || (isPython && !pythonReady);
+  const isExecuting = runnerState.isRunning;
 
   // Execution timer
   useEffect(() => {
@@ -287,17 +320,11 @@ const Compiler = () => {
 
     setActiveLanguage(newLang);
     setCode(getStarterTemplate(newLang));
-    setTerminalOutput('');
-    setCollectedInputLines([]);
-    setIsError(false);
     setExecutionTime(null);
   };
 
   const handleReset = () => {
     setCode(getStarterTemplate(activeLanguage));
-    setTerminalOutput('');
-    setCollectedInputLines([]);
-    setIsError(false);
     setExecutionTime(null);
     toast({ title: "Reset", description: "Code reset to starter template.", duration: 2000 });
   };
@@ -314,39 +341,23 @@ const Compiler = () => {
     executionStartRef.current = Date.now();
 
     if (isPython) {
-      // Python: Use interactive Pyodide terminal
       runPython(code);
+    } else if (isJavaScript) {
+      runJS(code);
     } else {
-      // Non-Python: Use Piston API with collected inputs
-      setIsPistonRunning(true);
-      setTerminalOutput(''); // This will trigger terminal reset
-      setIsError(false);
-      
-      // Join collected input lines for Piston
-      const inputData = collectedInputLines.join('\n');
-      
-      const result = await executeCode(activeLanguage, code, inputData);
-      
-      if (!result.success) setIsError(true);
-      
-      // Format output for terminal display
-      const output = result.output || result.error || "Unknown Error";
-      setTerminalOutput(output);
-      
-      // Set final execution time
-      if (executionStartRef.current) {
-        setExecutionTime(Date.now() - executionStartRef.current);
-      }
-      
-      setIsPistonRunning(false);
+      runInteractive(code);
     }
   };
 
   const handleStop = () => {
     if (isPython) {
-      stopExecution();
-      toast({ title: "Stopped", description: "Program execution interrupted.", duration: 2000 });
+      stopPython();
+    } else if (isJavaScript) {
+      stopJS();
+    } else {
+      stopInteractive();
     }
+    toast({ title: "Stopped", description: "Program execution interrupted.", duration: 2000 });
   };
 
   const handleDownload = () => {
@@ -367,24 +378,27 @@ const Compiler = () => {
     }
   };
 
-  const handleCollectedInput = useCallback((lines: string[]) => {
-    setCollectedInputLines(lines);
-  }, []);
+  const handleTerminalInput = useCallback((char: string) => {
+    if (isPython) {
+      writePythonInput(char);
+    } else if (isJavaScript) {
+      writeJSInput(char);
+    } else {
+      writeInteractiveInput(char);
+    }
+  }, [isPython, isJavaScript, writePythonInput, writeJSInput, writeInteractiveInput]);
 
   const handleClearTerminal = () => {
     if (!isExecuting) {
       if (isPython) {
         runPython(''); // Empty run to clear
+      } else if (isJavaScript) {
+        runJS('');
       } else {
-        setTerminalOutput('');
-        setCollectedInputLines([]);
+        runInteractive('');
       }
     }
   };
-
-  // Determine which output to show in terminal
-  const currentOutput = isPython ? pythonOutput : terminalOutput;
-  const currentIsRunning = isPython ? pythonRunning : isPistonRunning;
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
@@ -453,8 +467,8 @@ const Compiler = () => {
             <span className="hidden md:inline ml-2">Save</span>
           </Button>
 
-          {/* Stop Button - Only show when running Python */}
-          {pythonRunning && isPython && (
+          {/* Stop Button - Show when running any language */}
+          {isExecuting && (
             <Button 
               onClick={handleStop}
               size="sm" 
@@ -506,12 +520,12 @@ const Compiler = () => {
 
           <ResizablePanel defaultSize={isMobile ? 40 : 30} minSize={15} className="bg-[#0c0c0e] flex flex-col min-h-[100px] relative">
             
-            {/* Unified Terminal for ALL languages */}
+            {/* Unified Interactive Terminal for ALL languages */}
             <div className="flex-1 flex flex-col min-h-0 relative">
               <div className="flex items-center justify-between px-3 md:px-4 border-b border-white/10 bg-black/20 h-9 md:h-10 shrink-0">
                 <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">
                   <TerminalIcon className="w-3 h-3" /> 
-                  {isPython ? 'Interactive Terminal' : 'Terminal'}
+                  Interactive Terminal
                 </div>
                 <div className="flex items-center gap-3">
                   {/* SharedArrayBuffer status for Python */}
@@ -521,22 +535,15 @@ const Compiler = () => {
                     </span>
                   )}
                   
-                  {/* Non-Python: Show input hint when not running */}
-                  {!isPython && !currentIsRunning && (
-                    <span className="text-[8px] md:text-[10px] text-muted-foreground font-mono">
-                      Type inputs, then Run
-                    </span>
-                  )}
-                  
-                  {/* Running indicator */}
-                  {currentIsRunning && (
+                  {/* Running/Waiting indicator */}
+                  {isExecuting && (
                     <div className="flex items-center gap-2">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                       </span>
                       <span className="text-[8px] md:text-[10px] text-green-400 font-mono">
-                        {isPython && isWaitingForInput ? 'WAITING FOR INPUT' : 'RUNNING'}
+                        {runnerState.isWaitingForInput ? 'WAITING FOR INPUT' : 'RUNNING'}
                       </span>
                     </div>
                   )}
@@ -566,13 +573,11 @@ const Compiler = () => {
                   </div>
                 ) : (
                   <TerminalView 
-                    output={currentOutput} 
-                    onInput={writeInputToWorker}
-                    isWaitingForInput={isWaitingForInput}
-                    mode={terminalMode}
+                    output={runnerState.output} 
+                    onInput={handleTerminalInput}
+                    isWaitingForInput={runnerState.isWaitingForInput}
                     language={activeLanguage}
-                    onCollectedInput={handleCollectedInput}
-                    isRunning={currentIsRunning}
+                    isRunning={runnerState.isRunning}
                   />
                 )}
               </div>
