@@ -3,15 +3,11 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
-export type TerminalMode = 'interactive' | 'collect';
-
 interface TerminalViewProps {
   output: string;
   onInput: (text: string) => void;
   isWaitingForInput?: boolean;
-  mode?: TerminalMode;
   language?: string;
-  onCollectedInput?: (lines: string[]) => void;
   isRunning?: boolean;
 }
 
@@ -19,9 +15,7 @@ export const TerminalView = ({
   output, 
   onInput, 
   isWaitingForInput = false, 
-  mode = 'interactive',
   language = 'python',
-  onCollectedInput,
   isRunning = false
 }: TerminalViewProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,8 +24,6 @@ export const TerminalView = ({
   const writtenCharsRef = useRef<number>(0);
   const currentLineRef = useRef<string>("");
   const isInitializedRef = useRef(false);
-  const collectedLinesRef = useRef<string[]>([]);
-  const promptWrittenRef = useRef(false);
 
   const getCommandPrompt = useCallback(() => {
     switch(language) {
@@ -99,77 +91,42 @@ export const TerminalView = ({
       }
     });
 
-    // Handle user input
+    // Handle user input - ALL languages use interactive mode
     term.onData((data) => {
-      if (mode === 'interactive') {
-        // Enter key
-        if (data === '\r') {
-          term.write('\r\n');
-          onInput('\r');
-          currentLineRef.current = "";
-        } 
-        // Backspace
-        else if (data === '\x7f' || data === '\b') {
-          if (currentLineRef.current.length > 0) {
-            currentLineRef.current = currentLineRef.current.slice(0, -1);
-            term.write('\b \b');
-            onInput('\b');
-          }
+      // Enter key
+      if (data === '\r') {
+        term.write('\r\n');
+        onInput('\r');
+        currentLineRef.current = "";
+      } 
+      // Backspace
+      else if (data === '\x7f' || data === '\b') {
+        if (currentLineRef.current.length > 0) {
+          currentLineRef.current = currentLineRef.current.slice(0, -1);
+          term.write('\b \b');
+          onInput('\b');
         }
-        // Ctrl+C
-        else if (data === '\x03') {
-          term.write('^C\r\n');
-          onInput('\x03');
-          currentLineRef.current = "";
-        }
-        // Ctrl+D (EOF)
-        else if (data === '\x04') {
-          onInput('\r'); // Send what we have
-          currentLineRef.current = "";
-        }
-        // Arrow keys and other escape sequences - ignore
-        else if (data.startsWith('\x1b')) {
-          return;
-        }
-        // Regular printable characters
-        else if (data >= ' ' || data === '\t') {
-          term.write(data);
-          currentLineRef.current += data;
-          onInput(data);
-        }
-      } else if (mode === 'collect') {
-        // In collect mode, user types inputs before running
-        // Only allow input when NOT running
-        if (isRunning) return;
-        
-        // Enter key - save line and start new one
-        if (data === '\r') {
-          collectedLinesRef.current.push(currentLineRef.current);
-          currentLineRef.current = "";
-          term.write('\r\n\x1b[38;5;242m> \x1b[0m');
-          onCollectedInput?.(collectedLinesRef.current);
-        }
-        // Backspace
-        else if (data === '\x7f' || data === '\b') {
-          if (currentLineRef.current.length > 0) {
-            currentLineRef.current = currentLineRef.current.slice(0, -1);
-            term.write('\b \b');
-          }
-        }
-        // Ctrl+C - clear current line
-        else if (data === '\x03') {
-          currentLineRef.current = "";
-          term.write('^C\r\n\x1b[38;5;242m> \x1b[0m');
-        }
-        // Arrow keys and other escape sequences - ignore
-        else if (data.startsWith('\x1b')) {
-          return;
-        }
-        // Regular printable characters
-        else if (data >= ' ' || data === '\t') {
-          term.write(data);
-          currentLineRef.current += data;
-        }
+      }
+      // Ctrl+C
+      else if (data === '\x03') {
+        term.write('^C\r\n');
+        onInput('\x03');
+        currentLineRef.current = "";
+      }
+      // Ctrl+D (EOF)
+      else if (data === '\x04') {
+        onInput('\r'); // Send what we have
+        currentLineRef.current = "";
+      }
+      // Arrow keys and other escape sequences - ignore
+      else if (data.startsWith('\x1b')) {
+        return;
+      }
+      // Regular printable characters
+      else if (data >= ' ' || data === '\t') {
+        term.write(data);
+        currentLineRef.current += data;
+        onInput(data);
       }
     });
 
@@ -198,7 +155,7 @@ export const TerminalView = ({
       resizeObserver.disconnect();
       isInitializedRef.current = false;
     };
-  }, [onInput, mode, isRunning, onCollectedInput]);
+  }, [onInput]);
 
   // Handle output changes
   useEffect(() => {
@@ -211,14 +168,6 @@ export const TerminalView = ({
       term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
       writtenCharsRef.current = 0;
       currentLineRef.current = "";
-      promptWrittenRef.current = true;
-      
-      // For collect mode, also reset collected lines and show input prompt
-      if (mode === 'collect' && !isRunning) {
-        collectedLinesRef.current = [];
-        term.write('\x1b[38;5;242m[Enter your inputs, one per line]\x1b[0m\r\n');
-        term.write('\x1b[38;5;242m> \x1b[0m');
-      }
       return;
     }
     
@@ -228,7 +177,6 @@ export const TerminalView = ({
       term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
       writtenCharsRef.current = 0;
       currentLineRef.current = "";
-      promptWrittenRef.current = true;
     }
 
     // Write new content
@@ -237,26 +185,18 @@ export const TerminalView = ({
       term.write(newText);
       writtenCharsRef.current = output.length;
     }
-  }, [output, mode, isRunning, getCommandPrompt]);
+  }, [output, getCommandPrompt]);
 
-  // Focus terminal when waiting for input
+  // Focus terminal when waiting for input or running
   useEffect(() => {
-    if (isWaitingForInput && terminalRef.current) {
+    if ((isWaitingForInput || isRunning) && terminalRef.current) {
       terminalRef.current.focus();
     }
-  }, [isWaitingForInput]);
+  }, [isWaitingForInput, isRunning]);
 
-  // Focus terminal in collect mode when not running (to allow input)
+  // Reset current line when language changes
   useEffect(() => {
-    if (mode === 'collect' && !isRunning && terminalRef.current) {
-      terminalRef.current.focus();
-    }
-  }, [mode, isRunning]);
-
-  // Reset collected inputs when language changes
-  useEffect(() => {
-    collectedLinesRef.current = [];
-    promptWrittenRef.current = false;
+    currentLineRef.current = "";
   }, [language]);
 
   return (
