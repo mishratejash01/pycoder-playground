@@ -3,19 +3,47 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
+export type TerminalMode = 'interactive' | 'collect';
+
 interface TerminalViewProps {
   output: string;
   onInput: (text: string) => void;
   isWaitingForInput?: boolean;
+  mode?: TerminalMode;
+  language?: string;
+  onCollectedInput?: (lines: string[]) => void;
+  isRunning?: boolean;
 }
 
-export const TerminalView = ({ output, onInput, isWaitingForInput = false }: TerminalViewProps) => {
+export const TerminalView = ({ 
+  output, 
+  onInput, 
+  isWaitingForInput = false, 
+  mode = 'interactive',
+  language = 'python',
+  onCollectedInput,
+  isRunning = false
+}: TerminalViewProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const writtenCharsRef = useRef<number>(0);
   const currentLineRef = useRef<string>("");
   const isInitializedRef = useRef(false);
+  const collectedLinesRef = useRef<string[]>([]);
+  const promptWrittenRef = useRef(false);
+
+  const getCommandPrompt = useCallback(() => {
+    switch(language) {
+      case 'java': return '$ java Main.java';
+      case 'cpp': return '$ ./main.cpp';
+      case 'c': return '$ ./main.c';
+      case 'javascript': return '$ node index.js';
+      case 'bash': return '$ bash script.sh';
+      case 'sql': return '$ sqlite3';
+      default: return '$ python main.py';
+    }
+  }, [language]);
 
   // Initialize terminal once
   useEffect(() => {
@@ -73,40 +101,75 @@ export const TerminalView = ({ output, onInput, isWaitingForInput = false }: Ter
 
     // Handle user input
     term.onData((data) => {
-      // Enter key
-      if (data === '\r') {
-        term.write('\r\n');
-        onInput('\r');
-        currentLineRef.current = "";
-      } 
-      // Backspace
-      else if (data === '\x7f' || data === '\b') {
-        if (currentLineRef.current.length > 0) {
-          currentLineRef.current = currentLineRef.current.slice(0, -1);
-          term.write('\b \b');
-          onInput('\b');
+      if (mode === 'interactive') {
+        // Enter key
+        if (data === '\r') {
+          term.write('\r\n');
+          onInput('\r');
+          currentLineRef.current = "";
+        } 
+        // Backspace
+        else if (data === '\x7f' || data === '\b') {
+          if (currentLineRef.current.length > 0) {
+            currentLineRef.current = currentLineRef.current.slice(0, -1);
+            term.write('\b \b');
+            onInput('\b');
+          }
         }
-      }
-      // Ctrl+C
-      else if (data === '\x03') {
-        term.write('^C\r\n');
-        onInput('\x03');
-        currentLineRef.current = "";
-      }
-      // Ctrl+D (EOF)
-      else if (data === '\x04') {
-        onInput('\r'); // Send what we have
-        currentLineRef.current = "";
-      }
-      // Arrow keys and other escape sequences - ignore
-      else if (data.startsWith('\x1b')) {
-        return;
-      }
-      // Regular printable characters
-      else if (data >= ' ' || data === '\t') {
-        term.write(data);
-        currentLineRef.current += data;
-        onInput(data);
+        // Ctrl+C
+        else if (data === '\x03') {
+          term.write('^C\r\n');
+          onInput('\x03');
+          currentLineRef.current = "";
+        }
+        // Ctrl+D (EOF)
+        else if (data === '\x04') {
+          onInput('\r'); // Send what we have
+          currentLineRef.current = "";
+        }
+        // Arrow keys and other escape sequences - ignore
+        else if (data.startsWith('\x1b')) {
+          return;
+        }
+        // Regular printable characters
+        else if (data >= ' ' || data === '\t') {
+          term.write(data);
+          currentLineRef.current += data;
+          onInput(data);
+        }
+      } else if (mode === 'collect') {
+        // In collect mode, user types inputs before running
+        // Only allow input when NOT running
+        if (isRunning) return;
+        
+        // Enter key - save line and start new one
+        if (data === '\r') {
+          collectedLinesRef.current.push(currentLineRef.current);
+          currentLineRef.current = "";
+          term.write('\r\n\x1b[38;5;242m> \x1b[0m');
+          onCollectedInput?.(collectedLinesRef.current);
+        }
+        // Backspace
+        else if (data === '\x7f' || data === '\b') {
+          if (currentLineRef.current.length > 0) {
+            currentLineRef.current = currentLineRef.current.slice(0, -1);
+            term.write('\b \b');
+          }
+        }
+        // Ctrl+C - clear current line
+        else if (data === '\x03') {
+          currentLineRef.current = "";
+          term.write('^C\r\n\x1b[38;5;242m> \x1b[0m');
+        }
+        // Arrow keys and other escape sequences - ignore
+        else if (data.startsWith('\x1b')) {
+          return;
+        }
+        // Regular printable characters
+        else if (data >= ' ' || data === '\t') {
+          term.write(data);
+          currentLineRef.current += data;
+        }
       }
     });
 
@@ -135,7 +198,7 @@ export const TerminalView = ({ output, onInput, isWaitingForInput = false }: Ter
       resizeObserver.disconnect();
       isInitializedRef.current = false;
     };
-  }, [onInput]);
+  }, [onInput, mode, isRunning, onCollectedInput]);
 
   // Handle output changes
   useEffect(() => {
@@ -145,18 +208,27 @@ export const TerminalView = ({ output, onInput, isWaitingForInput = false }: Ter
     // Detect reset (new run) - output cleared means start fresh
     if (output.length === 0) {
       term.reset();
-      term.write('\x1b[38;5;242m$ python main.py\x1b[0m\r\n');
+      term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
       writtenCharsRef.current = 0;
       currentLineRef.current = "";
+      promptWrittenRef.current = true;
+      
+      // For collect mode, also reset collected lines and show input prompt
+      if (mode === 'collect' && !isRunning) {
+        collectedLinesRef.current = [];
+        term.write('\x1b[38;5;242m[Enter your inputs, one per line]\x1b[0m\r\n');
+        term.write('\x1b[38;5;242m> \x1b[0m');
+      }
       return;
     }
     
     // If output is shorter than what we've written, reset
     if (output.length < writtenCharsRef.current) {
       term.reset();
-      term.write('\x1b[38;5;242m$ python main.py\x1b[0m\r\n');
+      term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
       writtenCharsRef.current = 0;
       currentLineRef.current = "";
+      promptWrittenRef.current = true;
     }
 
     // Write new content
@@ -165,7 +237,7 @@ export const TerminalView = ({ output, onInput, isWaitingForInput = false }: Ter
       term.write(newText);
       writtenCharsRef.current = output.length;
     }
-  }, [output]);
+  }, [output, mode, isRunning, getCommandPrompt]);
 
   // Focus terminal when waiting for input
   useEffect(() => {
@@ -173,6 +245,19 @@ export const TerminalView = ({ output, onInput, isWaitingForInput = false }: Ter
       terminalRef.current.focus();
     }
   }, [isWaitingForInput]);
+
+  // Focus terminal in collect mode when not running (to allow input)
+  useEffect(() => {
+    if (mode === 'collect' && !isRunning && terminalRef.current) {
+      terminalRef.current.focus();
+    }
+  }, [mode, isRunning]);
+
+  // Reset collected inputs when language changes
+  useEffect(() => {
+    collectedLinesRef.current = [];
+    promptWrittenRef.current = false;
+  }, [language]);
 
   return (
     <div 

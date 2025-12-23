@@ -4,14 +4,8 @@
  * This worker runs Python code in isolation and handles interactive input()
  * by blocking with Atomics.wait() until the main thread provides input.
  * 
- * Protocol:
- * - Main thread sends: { type: 'INIT', sharedBuffer, textBuffer }
- * - Main thread sends: { type: 'RUN', code: string }
- * - Worker sends: { type: 'OUTPUT', text: string }
- * - Worker sends: { type: 'INPUT_REQUEST' } when waiting for input
- * - Worker sends: { type: 'READY' } when initialized
- * - Worker sends: { type: 'FINISHED' } when code execution completes
- * - Worker sends: { type: 'ERROR', message: string } on errors
+ * KEY FIX: Uses raw stdout mode for real-time character-by-character output
+ * so that input() prompts appear BEFORE blocking for input.
  */
 
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
@@ -34,16 +28,19 @@ async function initPyodide() {
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
     });
     
-    // Configure stdout to send to main thread character by character
+    // CRITICAL: Use RAW mode for character-by-character output
+    // This ensures prompts like "Enter your name: " appear BEFORE input() blocks
     pyodide.setStdout({
-      batched: (text) => {
-        self.postMessage({ type: 'OUTPUT', text: text + '\n' });
+      raw: (byte) => {
+        const char = String.fromCharCode(byte);
+        self.postMessage({ type: 'OUTPUT', text: char });
       }
     });
     
     pyodide.setStderr({
-      batched: (text) => {
-        self.postMessage({ type: 'OUTPUT', text: text + '\n' });
+      raw: (byte) => {
+        const char = String.fromCharCode(byte);
+        self.postMessage({ type: 'OUTPUT', text: char });
       }
     });
     
