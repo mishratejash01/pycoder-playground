@@ -22,6 +22,29 @@ const STATUS_WAITING = 0;
 const STATUS_INPUT_READY = 1;
 const STATUS_INTERRUPT = -1;
 
+const CLEAR_GLOBALS_CODE = `
+import sys
+# Clear user-defined variables
+for name in list(globals().keys()):
+    if not name.startswith('_') and name not in ['__builtins__', '__name__', '__doc__']:
+        del globals()[name]
+`;
+
+function extractMissingModuleName(message) {
+  const msg = String(message || "");
+  const patterns = [
+    /No module named ['"]([^'"]+)['"]/,
+    /No module named ([A-Za-z0-9_\.]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = msg.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+
+  return null;
+}
+
 async function initPyodide() {
   try {
     pyodide = await loadPyodide({
@@ -130,31 +153,57 @@ self.onmessage = async (event) => {
     }
     
     try {
-      // Clear previous globals for a fresh run
-      await pyodide.runPythonAsync(`
-import sys
-# Clear user-defined variables
-for name in list(globals().keys()):
-    if not name.startswith('_') and name not in ['__builtins__', '__name__', '__doc__']:
-        del globals()[name]
-`);
-      
-      // Run the user's code
-      await pyodide.runPythonAsync(code);
-      
+      const runWithFreshGlobals = async () => {
+        await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
+        await pyodide.runPythonAsync(code);
+      };
+
+      await runWithFreshGlobals();
+
     } catch (err) {
       let errorMessage = err.message || String(err);
-      
+
+      // If a module is missing, try to auto-load it from Pyodide's package repo
+      const missingModule = extractMissingModuleName(errorMessage);
+      if (missingModule) {
+        const pkg = missingModule.split('.')[0];
+        let packageLoaded = false;
+
+        try {
+          self.postMessage({ type: 'OUTPUT', text: `\nLoading Python package '${pkg}'...\n` });
+          await pyodide.loadPackage(pkg);
+          packageLoaded = true;
+
+          // Retry after loading
+          await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
+          await pyodide.runPythonAsync(code);
+          return;
+        } catch (loadOrRetryErr) {
+          // If load succeeded but the retry failed, show the retry error instead
+          if (packageLoaded) {
+            errorMessage = loadOrRetryErr.message || String(loadOrRetryErr);
+          } else {
+            const details = loadOrRetryErr?.message ? `\nDetails: ${loadOrRetryErr.message}` : '';
+            errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
+              `💡 '${pkg}' couldn't be loaded in this browser-based Python environment.${details}\n` +
+              `Tip: Only Pyodide-supported packages can be used here.`;
+          }
+        }
+      }
+
       // Make errors more user-friendly
       if (errorMessage.includes('EOFError')) {
         errorMessage = 'EOFError: Not enough input provided.\n💡 Type your input in the terminal and press Enter.';
       } else if (errorMessage.includes('KeyboardInterrupt')) {
         errorMessage = 'Program interrupted by user (Ctrl+C)';
       } else if (errorMessage.includes('ModuleNotFoundError') || errorMessage.includes('No module named')) {
-        const moduleName = errorMessage.match(/No module named '([^']+)'/)?.[1] || 'unknown';
-        errorMessage = `ModuleNotFoundError: '${moduleName}'\n💡 This module is not available in the browser. Try using Python standard library modules.`;
+        const moduleName = extractMissingModuleName(errorMessage) || 'unknown';
+        const pkg = moduleName.split('.')[0];
+        errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
+          `💡 This package isn't available here (or failed to download).\n` +
+          `Tip: Browser Python supports only Pyodide packages.`;
       }
-      
+
       self.postMessage({ type: 'OUTPUT', text: '\n' + errorMessage + '\n' });
     } finally {
       self.postMessage({ type: 'FINISHED' });
