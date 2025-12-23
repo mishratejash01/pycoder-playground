@@ -62,6 +62,12 @@ export const useJavaScriptRunner = (): JSRunnerResult => {
   }, []);
 
   const runCode = useCallback((code: string) => {
+    // Handle empty code (clear terminal)
+    if (!code.trim()) {
+      setOutput("");
+      return;
+    }
+    
     setIsRunning(true);
     setOutput("");
     inputLineRef.current = "";
@@ -69,7 +75,7 @@ export const useJavaScriptRunner = (): JSRunnerResult => {
     abortControllerRef.current = new AbortController();
     const abortSignal = abortControllerRef.current.signal;
 
-    // Create custom console and prompt for the sandbox
+    // Create custom console for the sandbox
     const customConsole = {
       log: (...args: any[]) => {
         const text = args.map(arg => 
@@ -115,23 +121,19 @@ export const useJavaScriptRunner = (): JSRunnerResult => {
     // Execute the code asynchronously
     const executeAsync = async () => {
       try {
-        // Wrap code to use our custom console and async prompt
-        // We need to handle both sync code and potential async patterns
-        const wrappedCode = `
-          (async function() {
-            const console = __customConsole__;
-            const prompt = __asyncPrompt__;
-            const alert = (msg) => console.log(msg);
-            
-            ${code}
-          })();
-        `;
-
-        // Create a function with our custom globals
+        // Create the async function body - the code can use await directly
         const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-        const fn = new AsyncFunction('__customConsole__', '__asyncPrompt__', `return ${wrappedCode}`);
         
-        await fn(customConsole, asyncPrompt);
+        // Create a function that has console and prompt in scope
+        const fn = new AsyncFunction(
+          'console', 
+          'prompt', 
+          'alert',
+          code
+        );
+        
+        // Execute with our custom console and prompt
+        await fn(customConsole, asyncPrompt, (msg: any) => customConsole.log(msg));
         
       } catch (error: any) {
         if (abortSignal.aborted) {
