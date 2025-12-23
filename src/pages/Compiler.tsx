@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,12 @@ import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
 import { TerminalView } from '@/components/TerminalView';
-import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard, Lock, ChevronUp, ChevronDown } from 'lucide-react';
+import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard, Lock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LANGUAGES_CONFIG = [
   { id: 'python', name: 'Python' },
@@ -25,15 +26,152 @@ const LANGUAGES_CONFIG = [
   { id: 'bash', name: 'Bash' },
 ] as const;
 
+// Comprehensive starter templates showing how to handle input/output
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
-    case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
-    case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}';
-    case 'c': return '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
-    case 'javascript': return 'console.log("Hello, World!");';
-    case 'sql': return '-- Write your SQL Query here\nCREATE TABLE demo (id INTEGER, message TEXT);\nINSERT INTO demo VALUES (1, "Hello World");\nSELECT * FROM demo;';
-    case 'bash': return '#!/bin/bash\necho "Hello, World!"';
-    default: return '# Python 3\n# Inputs are read directly from the terminal below!\nname = input("Enter your name: ")\nprint(f"Hello, {name}!")';
+    case 'java': 
+      return `import java.util.*;
+import java.io.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        
+        // Example: Read a string and an integer
+        System.out.print("Enter your name: ");
+        String name = sc.nextLine();
+        
+        System.out.print("Enter your age: ");
+        int age = sc.nextInt();
+        
+        // Output the result
+        System.out.println("Hello, " + name + "! You are " + age + " years old.");
+        
+        sc.close();
+    }
+}`;
+    case 'cpp': 
+      return `#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+int main() {
+    // Example: Read a string and an integer
+    string name;
+    int age;
+    
+    cout << "Enter your name: ";
+    getline(cin, name);
+    
+    cout << "Enter your age: ";
+    cin >> age;
+    
+    // Output the result
+    cout << "Hello, " << name << "! You are " << age << " years old." << endl;
+    
+    return 0;
+}`;
+    case 'c': 
+      return `#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+int main() {
+    // Example: Read a string and an integer
+    char name[100];
+    int age;
+    
+    printf("Enter your name: ");
+    fgets(name, sizeof(name), stdin);
+    name[strcspn(name, "\\n")] = 0; // Remove newline
+    
+    printf("Enter your age: ");
+    scanf("%d", &age);
+    
+    // Output the result
+    printf("Hello, %s! You are %d years old.\\n", name, age);
+    
+    return 0;
+}`;
+    case 'javascript': 
+      return `// Node.js - Reading from stdin
+const readline = require('readline');
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
+
+const lines = [];
+
+rl.on('line', (line) => {
+    lines.push(line);
+});
+
+rl.on('close', () => {
+    // Your inputs are now in the lines[] array
+    // Example: First line is name, second is age
+    const name = lines[0] || 'World';
+    const age = lines[1] || '0';
+    
+    console.log(\`Hello, \${name}! You are \${age} years old.\`);
+});`;
+    case 'sql': 
+      return `-- SQLite Query Editor
+-- Create a sample table
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    age INTEGER,
+    email TEXT
+);
+
+-- Insert some sample data
+INSERT INTO users (name, age, email) VALUES 
+    ('Alice', 25, 'alice@example.com'),
+    ('Bob', 30, 'bob@example.com'),
+    ('Charlie', 22, 'charlie@example.com');
+
+-- Query the data
+SELECT * FROM users WHERE age >= 25;
+
+-- Aggregate functions
+SELECT AVG(age) as average_age FROM users;`;
+    case 'bash': 
+      return `#!/bin/bash
+
+# Example: Read input and process
+echo "Enter your name:"
+read name
+
+echo "Enter your age:"
+read age
+
+# Output
+echo "Hello, $name! You are $age years old."
+
+# Example: Loop and conditions
+for i in {1..3}; do
+    echo "Count: $i"
+done`;
+    default: 
+      return `# Python 3
+# The terminal below is interactive - just run and type!
+
+name = input("Enter your name: ")
+age = int(input("Enter your age: "))
+
+print(f"Hello, {name}! You are {age} years old.")
+
+# Example: Common operations
+numbers = [1, 2, 3, 4, 5]
+print(f"Sum: {sum(numbers)}")
+print(f"Max: {max(numbers)}")`;
   }
 };
 
@@ -46,6 +184,26 @@ const getFileName = (lang: Language) => {
     case 'sql': return 'query.sql';
     case 'bash': return 'script.sh';
     default: return 'main.py';
+  }
+};
+
+// Detect if code uses input functions
+const detectsInput = (code: string, language: Language): boolean => {
+  switch(language) {
+    case 'python': 
+      return /\binput\s*\(/.test(code);
+    case 'java': 
+      return /Scanner|BufferedReader|System\.in|InputStreamReader/.test(code);
+    case 'cpp': 
+      return /\bcin\b|scanf|getline\s*\(.*cin/.test(code);
+    case 'c': 
+      return /\bscanf\b|\bgets\b|\bfgets\b|\bgetchar\b/.test(code);
+    case 'javascript': 
+      return /readline|prompt|process\.stdin/.test(code);
+    case 'bash': 
+      return /\bread\b/.test(code);
+    default: 
+      return false;
   }
 };
 
@@ -79,6 +237,14 @@ const Compiler = () => {
   } = usePyodide();
 
   const isLoading = pistonLoading || pythonRunning || (activeLanguage === 'python' && !pythonReady);
+  
+  // Detect if code needs input and show warning
+  const codeNeedsInput = useMemo(() => {
+    if (activeLanguage === 'python') return false; // Python is interactive
+    return detectsInput(code, activeLanguage);
+  }, [code, activeLanguage]);
+  
+  const inputIsEmpty = inputData.trim() === '';
 
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -283,8 +449,17 @@ const Compiler = () => {
                     <TabsTrigger value="output" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-purple-500 data-[state=active]:text-purple-400 rounded-none h-9 md:h-10 px-1.5 md:px-2 text-[10px] md:text-xs uppercase tracking-wider font-bold text-muted-foreground">
                       <TerminalIcon className="w-3 h-3 mr-1.5 md:mr-2" /> Output
                     </TabsTrigger>
-                    <TabsTrigger value="input" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-400 rounded-none h-9 md:h-10 px-1.5 md:px-2 text-[10px] md:text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                    <TabsTrigger value="input" className={cn(
+                      "data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-green-500 data-[state=active]:text-green-400 rounded-none h-9 md:h-10 px-1.5 md:px-2 text-[10px] md:text-xs uppercase tracking-wider font-bold text-muted-foreground relative",
+                      codeNeedsInput && inputIsEmpty && "animate-pulse"
+                    )}>
                       <Keyboard className="w-3 h-3 mr-1.5 md:mr-2" /> Input
+                      {codeNeedsInput && inputIsEmpty && (
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                      )}
                     </TabsTrigger>
                   </TabsList>
                   <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setOutput('// Output cleared.')}>
@@ -292,7 +467,17 @@ const Compiler = () => {
                   </Button>
                 </div>
 
-                <TabsContent value="output" className="flex-1 p-0 m-0 overflow-hidden relative group">
+                {/* Input warning banner */}
+                {codeNeedsInput && inputIsEmpty && activeTab === 'output' && (
+                  <Alert className="mx-2 mt-2 mb-0 py-2 bg-amber-500/10 border-amber-500/30 text-amber-300">
+                    <AlertTriangle className="h-3 w-3" />
+                    <AlertDescription className="text-[10px] md:text-xs">
+                      Your code uses input! Switch to the <button onClick={() => setActiveTab('input')} className="underline font-bold hover:text-amber-200">Input tab</button> to add your inputs before running.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <TabsContent value="output" className={cn("flex-1 p-0 m-0 overflow-hidden relative group", codeNeedsInput && inputIsEmpty && activeTab === 'output' && "pt-0")}>
                   <div className="absolute inset-0 p-3 md:p-4 font-mono text-xs md:text-sm overflow-auto custom-scrollbar">
                     <pre className={cn("whitespace-pre-wrap font-mono", isError ? "text-red-400" : "text-blue-300")}>
                       {output || (!pistonLoading && <span className="text-white/20 italic">Run code to see output...</span>)}
@@ -300,12 +485,17 @@ const Compiler = () => {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="input" className="flex-1 p-0 m-0 overflow-hidden">
+                <TabsContent value="input" className="flex-1 p-0 m-0 overflow-hidden flex flex-col">
+                  <div className="px-3 pt-2 pb-1">
+                    <p className="text-[9px] md:text-[10px] text-muted-foreground">
+                      Enter each input on a new line, in the order your program expects them.
+                    </p>
+                  </div>
                   <Textarea 
                     value={inputData}
                     onChange={(e) => setInputData(e.target.value)}
-                    placeholder="Enter input here..."
-                    className="w-full h-full bg-[#1e1e20] text-white border-none resize-none rounded-none p-3 md:p-4 font-mono text-xs md:text-sm focus-visible:ring-0"
+                    placeholder={`Example:\nJohn\n25\n3.14`}
+                    className="flex-1 bg-[#1e1e20] text-white border-none resize-none rounded-none p-3 md:p-4 font-mono text-xs md:text-sm focus-visible:ring-0"
                   />
                 </TabsContent>
               </Tabs>
