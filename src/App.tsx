@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
-import { Home, Code2, Trophy, Terminal } from "lucide-react";
+// Added Calendar and User icons here
+import { Home, Code2, Calendar, User } from "lucide-react"; 
 
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { AppRoutes } from "./routes";
@@ -24,7 +25,6 @@ const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Track user time on platform
   useTimeTracking();
 
   useEffect(() => {
@@ -38,36 +38,20 @@ const AppContent = () => {
     }
   }, []);
 
-  // --- AUTOMATIC ROUTE SYNC LOGIC (DEBUG VERSION) ---
   useEffect(() => {
     const syncRoutes = async () => {
-      console.log("🚀 Starting Route Sync...");
-      
       const routeData = AppRoutes.map(route => ({
         path: route.path,
         name: route.name,
         last_seen_at: new Date().toISOString()
       }));
 
-      // Check if we can reach Supabase
-      const { error } = await supabase
+      await supabase
         .from('app_routes')
         .upsert(routeData, { onConflict: 'path' });
-
-      if (error) {
-        console.error("❌ Sync Error:", error);
-        toast.error(`Route Sync Failed: ${error.message}`);
-      } else {
-        console.log("✅ Sync Success!");
-        // Only show success toast once to confirm it works, then you can comment this out
-        // toast.success("Routes synced to Database!"); 
-      }
     };
-
-    // Run immediately on load
     syncRoutes();
   }, []);
-  // --------------------------------------------------
 
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
   const showDock = !hideDockRoutes.some(path => 
@@ -80,6 +64,7 @@ const AppContent = () => {
   const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
+  // UPDATED DOCK ITEMS
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
     { 
@@ -88,11 +73,10 @@ const AppContent = () => {
       onClick: () => navigate('/degree') 
     },
     { icon: <Code2 size={20} />, label: 'Practice', onClick: () => navigate('/practice-arena') },
-    { icon: <Terminal size={20} />, label: 'Compiler', onClick: () => navigate('/compiler') },
-    { icon: <Trophy size={20} />, label: 'Ranks', onClick: () => navigate('/leaderboard') },
+    { icon: <Calendar size={20} />, label: 'Events', onClick: () => navigate('/events') }, // Replaced Compiler
+    { icon: <User size={20} />, label: 'Profile', onClick: () => navigate('/profile') }, // Replaced Ranks
   ];
 
-  // Map routes to their section keys for availability checking
   const getSectionKey = (path: string): string | null => {
     if (path.startsWith('/degree') || path === '/exam' || path.startsWith('/exam/')) return 'iitm_bs';
     if (path === '/practice-arena' || path.startsWith('/practice-arena/') || path === '/practice' || path.startsWith('/practice/')) return 'practice';
@@ -100,18 +84,16 @@ const AppContent = () => {
     if (path === '/compiler') return 'compiler';
     if (path === '/leaderboard') return 'leaderboard';
     if (path === '/about') return 'about';
-    return null; // No section restriction for other routes
+    return null;
   };
 
   return (
     <AvailabilityGuard sectionKey="main_website">
       <AnnouncementBanner />
-
       <Routes>
         {AppRoutes.map((route) => {
           const sectionKey = getSectionKey(route.path);
           const RouteElement = <route.component />;
-          
           return (
             <Route 
               key={route.path} 
@@ -127,7 +109,6 @@ const AppContent = () => {
           );
         })}
       </Routes>
-
       {showFooter && <Footer />}
       {showDock && <Dock items={dockItems} baseItemSize={45} magnification={60} />}
     </AvailabilityGuard>
