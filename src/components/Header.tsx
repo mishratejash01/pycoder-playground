@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-// Explicitly importing Calendar here
-import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal, Calendar, LayoutDashboard } from 'lucide-react'; 
+// Only importing icons used in the mobile bar or dropdowns
+import { LogIn, LogOut, Home, User, Code2, Trophy, LayoutDashboard } from 'lucide-react'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,6 @@ export function Header({ session, onLogout }: HeaderProps) {
   
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
-  // Hide header elements on practice/exam/compiler pages
   const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam') || location.pathname.includes('/compiler');
 
   useEffect(() => {
@@ -89,23 +88,19 @@ export function Header({ session, onLogout }: HeaderProps) {
               </Link>
 
               <Link to="/practice-arena" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                <Code2 className="w-4 h-4" /> Practice
+                Practice
               </Link>
 
-              {/* --- EVENTS LINK WITH ICON --- */}
               <Link to="/events" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                <Calendar className="w-4 h-4" /> Events
+                Events
               </Link>
-              {/* --------------------------- */}
 
               <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">
-                <Terminal className="w-4 h-4" /> Compiler
+                Compiler
               </Link>
+              
               <Link to="/leaderboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                <Trophy className="w-4 h-4" /> Leaderboard
-              </Link>
-              <Link to="/about" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                <Info className="w-4 h-4" /> About
+                Leaderboard
               </Link>
             </div>
 
@@ -149,7 +144,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Bottom Bar */}
+      {/* Mobile Bottom Bar remains unchanged as it relies on NavItem with icons */}
       <div className={cn(
         "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
         (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
@@ -158,8 +153,7 @@ export function Header({ session, onLogout }: HeaderProps) {
           <div className="flex justify-between items-end px-2">
             <div className="flex gap-4">
               <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
-              {/* --- EVENTS LINK (Mobile) --- */}
-              <NavItem to="/events" icon={Calendar} label="Events" active={location.pathname.startsWith("/events")} />
+              <NavItem to="/events" icon={Code2} label="Events" active={location.pathname.startsWith("/events")} />
             </div>
             <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
                <NavItem to="/practice-arena" icon={Code2} label="Practice" active={location.pathname.startsWith("/practice-arena")} size="large" />
