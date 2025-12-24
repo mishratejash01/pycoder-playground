@@ -5,16 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Sheet,
   SheetContent,
   SheetTrigger,
-  SheetClose,
   SheetTitle,
   SheetDescription
 } from "@/components/ui/sheet";
@@ -24,26 +17,32 @@ import {
   Linkedin, 
   Globe, 
   Edit2, 
-  Share,
+  Share2, 
   MapPin, 
-  Check,
+  Check, 
   Loader2,
-  MessageSquareText,
-  Phone,
-  ArrowRight,
-  Link as LinkIcon,
-  Copy,
-  LayoutTemplate,
-  X,
-  UserCog,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  Save,
-  AlertCircle,
-  Calendar,
-  Ticket,
-  Users
+  MessageSquareText, 
+  Copy, 
+  LayoutTemplate, 
+  X, 
+  UserCog, 
+  ChevronLeft, 
+  ChevronRight, 
+  User, 
+  Save, 
+  AlertCircle, 
+  Calendar, 
+  Ticket, 
+  Users,
+  Code2,
+  GraduationCap,
+  Sparkles,
+  Terminal,
+  Shield,
+  Zap,
+  ExternalLink,
+  Cpu,
+  Activity
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -51,7 +50,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
-// --- Types ---
+// ----------------------------------------------------------------------
+// 1. TYPES & INTERFACES
+// ----------------------------------------------------------------------
+
 interface ProfileData {
   id: string;
   username: string;
@@ -86,27 +88,27 @@ interface Registration {
     };
 }
 
-// --- Constants: Premium Abstract Covers ---
+// ----------------------------------------------------------------------
+// 2. ASSETS & CONSTANTS
+// ----------------------------------------------------------------------
+
 const COVER_TEMPLATES = [
   "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2064&auto=format&fit=crop", 
+  "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=2068&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=2074&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop", 
-  "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1506318137071-a8bcbf6755dd?q=80&w=2070&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1492321936769-b49830bc1d1e?q=80&w=1974&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=1974&auto=format&fit=crop", 
   "https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?q=80&w=2070&auto=format&fit=crop", 
 ];
 
-const getLinkedInUsername = (url?: string) => {
-  if (!url) return null;
-  const match = url.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
-  return match ? match[1] : null;
-};
+// ----------------------------------------------------------------------
+// 3. SUB-COMPONENTS
+// ----------------------------------------------------------------------
 
 const SocialEditBlock = ({ 
   icon: Icon, 
@@ -134,47 +136,67 @@ const SocialEditBlock = ({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#121214] border border-white/5 hover:border-white/10 transition-all group">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors", colorClass, "bg-white/5 text-gray-400 group-hover:text-white")}>
-        <Icon className="w-6 h-6" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Input 
-              value={tempValue} 
-              onChange={(e) => setTempValue(e.target.value)} 
-              className="h-8 bg-black/50 border-white/20 text-sm focus-visible:ring-primary/50"
-              placeholder={`Enter ${label}...`}
-              autoFocus
-            />
-            <Button size="icon" className="h-8 w-8 bg-green-600 hover:bg-green-700" onClick={handleSave}><Check className="w-4 h-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-white/10" onClick={() => setIsEditing(false)}><X className="w-4 h-4" /></Button>
-          </div>
-        ) : (
-          <p className="text-sm text-white font-medium truncate font-mono">{value || <span className="text-white/20 italic">Not connected</span>}</p>
+    <div className="relative group overflow-hidden rounded-xl border border-white/5 bg-[#0a0a0c]/50 transition-all duration-300 hover:border-white/10 hover:bg-[#0a0a0c]">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+      
+      <div className="flex items-center gap-4 p-4 relative z-10">
+        <div className={cn(
+          "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300", 
+          colorClass, 
+          "bg-white/5 text-gray-400 group-hover:scale-110 shadow-inner"
+        )}>
+          <Icon className="w-5 h-5" />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5 flex items-center gap-2">
+            {label}
+            {value && <Check className="w-3 h-3 text-green-500" />}
+          </p>
+          
+          {isEditing ? (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+              <Input 
+                value={tempValue} 
+                onChange={(e) => setTempValue(e.target.value)} 
+                className="h-8 bg-black/50 border-white/20 text-xs font-mono text-white focus-visible:ring-cyan-500/50"
+                placeholder={`https://...`}
+                autoFocus
+              />
+              <Button size="icon" className="h-8 w-8 bg-green-600 hover:bg-green-700 shadow-[0_0_10px_rgba(22,163,74,0.4)]" onClick={handleSave}>
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-white/10 text-zinc-400" onClick={() => setIsEditing(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-300 font-mono truncate cursor-pointer hover:text-white transition-colors" onClick={() => setIsEditing(true)}>
+              {value || <span className="text-zinc-600 text-xs italic">Link not connected</span>}
+            </p>
+          )}
+        </div>
+        
+        {!isEditing && (
+          <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-600 hover:text-white hover:bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all" onClick={() => setIsEditing(true)}>
+            <Edit2 className="w-3.5 h-3.5" />
+          </Button>
         )}
       </div>
-      {!isEditing && (
-        <Button size="icon" variant="ghost" className="h-9 w-9 text-white/30 hover:text-white hover:bg-white/10" onClick={() => setIsEditing(true)}>
-          <Edit2 className="w-4 h-4" />
-        </Button>
-      )}
     </div>
   );
 };
 
+// --- THE GOD-LEVEL PROFILE ARTIFACT ---
 const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData, isOwner: boolean, onEdit?: () => void }) => {
-  const [isLinkCopied, setIsLinkCopied] = useState(false);
-  const navigate = useNavigate();
-
+  const [isCopied, setIsCopied] = useState(false);
+  
   const handleShare = async () => {
     const url = `${window.location.origin}/u/${profile.username}`;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${profile.full_name} | Codevo Profile`,
+          title: `${profile.full_name} | Codevo Identity`,
           text: `Check out ${profile.full_name}'s developer profile on Codevo.`,
           url: url
         });
@@ -183,169 +205,243 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
       }
     } else {
       navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard!");
+      toast.success("Identity Link Copied", {
+        description: "Share this link to show off your profile.",
+        className: "bg-[#0a0a0c] border border-white/10 text-white"
+      });
     }
   };
 
-  const handleLinkClick = () => {
-    const url = `${window.location.origin}/u/${profile.username}`;
-    navigator.clipboard.writeText(url);
-    setIsLinkCopied(true);
-    toast.success("Link copied!");
-    setTimeout(() => setIsLinkCopied(false), 2000);
+  const copyLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const displayUrl = `${window.location.host}/u/${profile.username}`;
-  const linkedInUser = getLinkedInUsername(profile.linkedin_url);
-  
-  const avatarSources = [
-    profile.avatar_url,
-    linkedInUser ? `https://unavatar.io/linkedin/${linkedInUser}` : null,
-    `https://ui-avatars.com/api/?name=${profile.full_name}&background=random`
-  ].filter(Boolean) as string[];
+  const getLinkedInUsername = (url?: string) => {
+    if (!url) return null;
+    const match = url.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
+    return match ? match[1] : null;
+  };
 
   return (
-    <div className="h-full w-full bg-[#0c0c0e] text-white rounded-2xl shadow-2xl overflow-hidden flex flex-col font-sans border border-white/10 relative">
-      <div className="flex-1 overflow-y-auto relative no-scrollbar">
-        <div className="relative h-48 bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }}>
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
-          <div className="absolute inset-x-0 top-0 p-5 flex justify-between items-start text-white z-10">
-            <div className="flex items-center mt-1">
-              <span className="font-neuropol font-bold text-lg tracking-widest text-white/90 drop-shadow-md">
-                COD<span className="text-[1.2em] lowercase relative -top-[1px] mx-[1px] inline-block text-white">é</span>VO
-              </span>
-            </div>
-            <div className="flex gap-2">
-              {isOwner && onEdit && (
-                <button onClick={onEdit} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md border border-white/10">
-                  <Edit2 className="w-4 h-4 text-white" />
-                </button>
-              )}
-              <button onClick={handleShare} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md border border-white/10">
-                <Share className="w-4 h-4 text-white" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-6 pb-8 relative">
-          <div className="-mt-16 mb-4 relative z-20 flex justify-center">
-            <Avatar className="w-32 h-32 border-[4px] border-[#0c0c0e] shadow-2xl ring-1 ring-white/10 bg-[#1a1a1c]">
-              {avatarSources.map((src) => <AvatarImage key={src} src={src} className="object-cover" />)}
-              <AvatarFallback className="bg-[#1a1a1c] text-4xl font-bold text-white/40">{profile.full_name?.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-          </div>
-
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">{profile.full_name}</h1>
-            <div onClick={handleLinkClick} className="mt-2 inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer group">
-              {isLinkCopied ? <Check className="w-3 h-3 text-green-400" /> : <LinkIcon className="w-3 h-3 text-white/50 group-hover:text-white" />}
-              <span className="text-sm font-medium text-white/70 group-hover:text-white truncate max-w-[200px]">{displayUrl}</span>
-              <Copy className="w-3 h-3 text-white/30 group-hover:text-white/70 ml-1" />
-            </div>
-            {profile.country && (
-              <div className="mt-2 flex items-center justify-center gap-1.5 text-gray-500 text-xs font-medium uppercase tracking-wider">
-                <MapPin className="w-3 h-3" /><span>{profile.country}</span>
+    <div className="relative w-full max-w-md mx-auto group perspective-1000">
+      
+      {/* 1. Ambient God-Rays */}
+      <div className="absolute -inset-0.5 bg-gradient-to-b from-cyan-500/20 via-purple-500/20 to-blue-500/20 rounded-[2.5rem] blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-1000" />
+      
+      {/* 2. The Artifact Container */}
+      <div className="relative bg-[#050505]/90 backdrop-blur-2xl border border-white/[0.08] rounded-[2rem] overflow-hidden shadow-2xl transition-transform duration-500 hover:scale-[1.01] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]">
+        
+        {/* Cinematic Header (Parallax) */}
+        <div className="h-48 relative overflow-hidden">
+           <div 
+             className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" 
+             style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }} 
+           />
+           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-[#050505]" />
+           
+           {/* Glass Header Bar */}
+           <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-start z-20">
+              <div className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
+                 <span className="text-[10px] font-bold text-white tracking-widest uppercase">Operative</span>
               </div>
-            )}
-            {profile.bio && <div className="mt-5 text-gray-400 text-sm leading-relaxed text-center px-2 line-clamp-4"><p>{profile.bio}</p></div>}
-          </div>
-
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {profile.github_handle && (
-              <a href={`https://github.com/${profile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 hover:bg-[#24292e] hover:text-white hover:border-transparent transition-all shadow-sm"><Github className="w-6 h-6" /></a>
-            )}
-            {profile.linkedin_url && (
-              <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 hover:bg-[#0077b5] hover:text-white hover:border-transparent transition-all shadow-sm"><Linkedin className="w-6 h-6" /></a>
-            )}
-            {profile.portfolio_url && (
-              <a href={profile.portfolio_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-gray-400 hover:bg-emerald-600 hover:text-white hover:border-transparent transition-all shadow-sm"><Globe className="w-6 h-6" /></a>
-            )}
-          </div>
+              
+              <div className="flex gap-2">
+                {isOwner && onEdit && (
+                  <button onClick={onEdit} className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all shadow-lg">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={handleShare} className="p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white/80 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all shadow-lg">
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
+           </div>
         </div>
 
-        <div className="px-8"><div className="w-full h-px bg-white/5" /></div>
+        {/* Identity Core */}
+        <div className="relative px-8 pb-10 -mt-20">
+           <div className="flex flex-col items-center">
+              
+              {/* Avatar Shield Mechanism */}
+              <div className="relative mb-6 group/avatar">
+                 {/* Rotating Rings */}
+                 <div className="absolute -inset-1 rounded-full border border-dashed border-white/20 animate-spin-slow opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-700" />
+                 <div className="absolute -inset-1 bg-gradient-to-tr from-cyan-500 via-violet-500 to-fuchsia-500 rounded-full blur opacity-20 group-hover/avatar:opacity-60 transition-opacity duration-500" />
+                 
+                 <Avatar className="w-32 h-32 border-[6px] border-[#050505] relative z-10 shadow-2xl bg-[#1a1a1c]">
+                    <AvatarImage src={profile.avatar_url} className="object-cover" />
+                    <AvatarFallback className="bg-zinc-900 text-4xl font-black text-white">{profile.full_name?.[0]}</AvatarFallback>
+                 </Avatar>
+                 
+                 {/* Level Badge */}
+                 <div className="absolute -bottom-2 -right-2 z-20 bg-[#0a0a0c] text-white px-3 py-1 rounded-full border border-white/10 shadow-[0_5px_20px_-5px_rgba(0,0,0,1)] flex items-center gap-1.5">
+                    <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                    <span className="text-[10px] font-bold tracking-wider">LVL 1</span>
+                 </div>
+              </div>
 
-        {profile.institute_name && (
-          <div className="p-6 text-center">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-3">Education</h2>
-            <div className="inline-block text-center">
-              <p className="font-bold text-cyan-400 text-base leading-tight">{profile.institute_name}</p>
-              <p className="text-xs text-gray-400 mt-1 font-medium">{profile.degree} • {profile.branch}</p>
-              <p className="text-[10px] text-gray-600 mt-1.5">{profile.start_year} - {profile.end_year}</p>
-            </div>
-          </div>
-        )}
+              {/* Name Data */}
+              <div className="text-center space-y-2 mb-8 w-full">
+                 <h1 className="text-3xl font-black text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/60">
+                   {profile.full_name}
+                 </h1>
+                 
+                 <div className="flex items-center justify-center gap-2">
+                    <div 
+                      onClick={copyLink}
+                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 cursor-pointer transition-all group/link"
+                    >
+                       <span className="text-xs font-mono text-zinc-400 group-hover/link:text-cyan-400 transition-colors">@{profile.username}</span>
+                       {isCopied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-zinc-600 group-hover/link:text-white transition-colors" />}
+                    </div>
+                    {profile.country && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/5 text-xs font-medium text-zinc-400">
+                        <MapPin className="w-3 h-3" /> {profile.country}
+                      </div>
+                    )}
+                 </div>
+              </div>
+
+              {/* Holographic Stats Grid */}
+              <div className="w-full grid grid-cols-2 gap-3 mb-8">
+                 {profile.institute_name && (
+                   <div className="relative overflow-hidden bg-white/[0.02] rounded-2xl p-4 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] transition-colors">
+                      <div className="p-2 rounded-full bg-purple-500/10 mb-2 group-hover/stat:scale-110 transition-transform">
+                        <GraduationCap className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest mb-1">Affiliation</div>
+                      <div className="text-xs font-bold text-white leading-tight line-clamp-2">{profile.institute_name}</div>
+                   </div>
+                 )}
+                 {profile.degree && (
+                   <div className="relative overflow-hidden bg-white/[0.02] rounded-2xl p-4 border border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] transition-colors">
+                      <div className="p-2 rounded-full bg-cyan-500/10 mb-2 group-hover/stat:scale-110 transition-transform">
+                        <Terminal className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <div className="text-[9px] uppercase font-bold text-zinc-500 tracking-widest mb-1">Focus</div>
+                      <div className="text-xs font-bold text-white leading-tight line-clamp-2">{profile.degree}</div>
+                   </div>
+                 )}
+              </div>
+
+              {/* Narrative Bio */}
+              {profile.bio && (
+                <div className="w-full bg-[#0a0a0c] rounded-2xl p-5 border border-white/5 mb-8 relative overflow-hidden shadow-inner">
+                   <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-500 via-blue-500 to-purple-500" />
+                   <p className="text-sm text-zinc-300 leading-relaxed font-light text-left pl-2">
+                     {profile.bio}
+                   </p>
+                </div>
+              )}
+
+              {/* Connection Hub */}
+              <div className="w-full space-y-3">
+                 <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest text-center mb-1">Establish Connection</div>
+                 <div className="flex gap-3 justify-center">
+                    {profile.github_handle && (
+                      <a href={`https://github.com/${profile.github_handle.replace('@','')}`} target="_blank" className="h-12 w-12 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-black hover:border-white/30 transition-all hover:-translate-y-1 shadow-lg group/icon">
+                        <Github className="w-6 h-6 group-hover/icon:scale-110 transition-transform" />
+                      </a>
+                    )}
+                    {profile.linkedin_url && (
+                      <a href={profile.linkedin_url} target="_blank" className="h-12 w-12 rounded-xl bg-[#0077b5]/10 border border-[#0077b5]/20 flex items-center justify-center text-[#0077b5] hover:bg-[#0077b5] hover:text-white hover:border-[#0077b5] transition-all hover:-translate-y-1 shadow-lg group/icon">
+                        <Linkedin className="w-6 h-6 group-hover/icon:scale-110 transition-transform" />
+                      </a>
+                    )}
+                    {profile.portfolio_url && (
+                      <a href={profile.portfolio_url} target="_blank" className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all hover:-translate-y-1 shadow-lg group/icon">
+                        <Globe className="w-6 h-6 group-hover/icon:scale-110 transition-transform" />
+                      </a>
+                    )}
+                 </div>
+              </div>
+
+           </div>
+        </div>
+
+        {/* Footer Brand Seal */}
+        <div className="h-12 bg-black/60 border-t border-white/5 flex items-center justify-between px-8 backdrop-blur-md">
+           <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]" />
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Network Active</span>
+           </div>
+           <div className="text-[10px] font-black text-zinc-700 font-neuropol uppercase tracking-[0.2em]">
+              CODEVO <span className="text-zinc-500">ID</span>
+           </div>
+        </div>
+
       </div>
     </div>
   );
 };
 
+// ----------------------------------------------------------------------
+// 4. "HIT ME UP" WIDGET (EXPORTED)
+// ----------------------------------------------------------------------
+
 export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
   const [session, setSession] = useState<any>(null);
   const navigate = useNavigate();
 
-  useEffect(() => { supabase.auth.getSession().then(({ data: { session } }) => setSession(session)); }, []);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      let query = supabase.from("profiles").select("*");
-      if (session?.user?.id) query = query.eq("id", session.user.id);
-      else query = query.eq("username", defaultUsername);
-      // FIXED: Use maybeSingle instead of single
-      const { data } = await query.maybeSingle();
-      if (data) setProfile(data as ProfileData);
-    };
-    fetchProfile();
-  }, [session, defaultUsername]);
-
-  useEffect(() => {
-    const handleScroll = () => setIsVisible(window.scrollY > window.innerHeight * 0.6);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+  useEffect(() => { 
+    supabase.auth.getSession().then(({ data }) => setSession(data.session)); 
   }, []);
 
-  if (!profile) return null;
+  useEffect(() => {
+    const fetch = async () => {
+      const q = session?.user?.id 
+        ? supabase.from("profiles").select("*").eq("id", session.user.id) 
+        : supabase.from("profiles").select("*").eq("username", defaultUsername);
+      const { data } = await q.maybeSingle();
+      if (data) setProfile(data as ProfileData);
+    };
+    fetch();
+  }, [session, defaultUsername]);
 
-  const isProfileComplete = !!(profile.bio && profile.institute_name);
+  if (!profile) return null;
   const isOwner = session?.user?.id === profile.id;
 
   return (
-    <div className={cn("hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[9999] font-sans transition-all duration-500 ease-in-out transform", isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none")}>
+    <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[50]">
       <Sheet>
         <SheetTrigger asChild>
-          <Button className="h-auto py-8 pl-1 pr-1 rounded-l-2xl rounded-r-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(37,99,235,0.4)] border-y border-l border-white/20 transition-all hover:pr-3" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-            <div className="flex items-center justify-center gap-3 py-2 rotate-180"><MessageSquareText className="w-5 h-5 -rotate-90" /><span className="text-sm font-bold tracking-[0.15em] whitespace-nowrap">HIT ME UP</span></div>
+          <Button className="h-auto py-8 pl-1 pr-2 rounded-l-2xl rounded-r-none bg-[#0a0a0c] border-l border-y border-white/20 hover:bg-black text-white shadow-[0_0_40px_-10px_rgba(255,255,255,0.15)] transition-all hover:pr-4 group relative overflow-hidden">
+            {/* Neon Glow Line */}
+            <div className="absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-cyan-500 via-purple-500 to-blue-500" />
+            
+            <div className="flex flex-col items-center gap-4 py-2">
+               <div className="writing-mode-vertical text-[10px] font-black tracking-[0.3em] text-zinc-500 group-hover:text-white transition-colors rotate-180 uppercase">
+                 Identity
+               </div>
+               <div className="p-2 rounded-full bg-white/5 border border-white/10 group-hover:border-cyan-500/50 transition-colors">
+                 <User className="w-4 h-4 text-zinc-400 group-hover:text-cyan-400 transition-colors" />
+               </div>
+            </div>
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="bg-transparent border-none shadow-none w-[380px] p-0 z-[10000] flex items-center h-full mr-4 [&>button]:hidden focus:outline-none">
-           <SheetTitle className="sr-only">Profile Preview</SheetTitle>
-           <SheetDescription className="sr-only">
-             Profile details for {profile.full_name || 'User'}
-           </SheetDescription>
-           
-           <div className="w-full h-[80vh] relative flex flex-col">
-             <ProfileCardContent profile={profile} isOwner={false} />
-             
-             <div className="mt-4">
-               {isOwner && !isProfileComplete ? (
-                 <Button onClick={() => navigate('/profile')} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-lg hover:shadow-orange-500/20">
-                   <UserCog className="w-4 h-4 mr-2" /> Complete Profile
-                 </Button>
-               ) : (
-                 <Button onClick={() => navigate(`/u/${profile.username}`)} className="w-full h-12 rounded-xl bg-white text-black font-bold hover:bg-gray-200">
-                   View Full Profile <ArrowRight className="w-4 h-4 ml-2" />
-                 </Button>
-               )}
+        <SheetContent side="right" className="w-[450px] p-0 bg-transparent border-none shadow-none flex items-center mr-6 focus:outline-none">
+           <div className="w-full relative">
+             {/* Close Button Decor */}
+             <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+                <div className="w-1 h-1 rounded-full bg-white/20" />
+                <div className="w-1 h-2 rounded-full bg-white/40" />
+                <div className="w-1 h-1 rounded-full bg-white/20" />
              </div>
+             <ProfileCardContent profile={profile} isOwner={isOwner} onEdit={() => navigate('/profile')} />
            </div>
         </SheetContent>
       </Sheet>
     </div>
   );
 };
+
+// ----------------------------------------------------------------------
+// 5. MAIN PROFILE PAGE
+// ----------------------------------------------------------------------
 
 const Profile = () => {
   const { username } = useParams();
@@ -355,157 +451,94 @@ const Profile = () => {
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  
   const [isSaving, setIsSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  
   const sliderRef = useRef<HTMLDivElement>(null);
 
+  // --- DATA FETCHING ---
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getSession().then(res => res.data);
       
       if (!username) {
-        if (!currentUser) { navigate("/auth"); return; }
+        // --- EDIT MODE (My Profile) ---
+        if (!user) { navigate("/auth"); return; }
         
-        // FIXED: maybeSingle to handle missing profiles
-        const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
+        const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
         
-        const defaultProfile: ProfileData = {
-            id: currentUser.id,
-            username: myProfile?.username || "", 
-            full_name: myProfile?.full_name || currentUser.user_metadata?.full_name || "User",
-            institute_name: myProfile?.institute_name || "",
-            degree: myProfile?.degree || "",
-            branch: myProfile?.branch || "",
-            start_year: myProfile?.start_year || new Date().getFullYear(),
-            end_year: myProfile?.end_year || new Date().getFullYear() + 4,
-            country: myProfile?.country || "",
-            github_handle: myProfile?.github_handle || "",
-            linkedin_url: myProfile?.linkedin_url || "",
-            portfolio_url: myProfile?.portfolio_url || "",
-            bio: myProfile?.bio || "",
-            avatar_url: myProfile?.avatar_url || currentUser.user_metadata?.avatar_url || "",
-            contact_no: myProfile?.contact_no || "",
-            cover_url: myProfile?.cover_url || ""
+        const def: ProfileData = {
+            id: user.id,
+            username: data?.username || "", 
+            full_name: data?.full_name || user.user_metadata?.full_name || "Agent",
+            institute_name: data?.institute_name || "",
+            degree: data?.degree || "",
+            branch: data?.branch || "",
+            start_year: data?.start_year || new Date().getFullYear(),
+            end_year: data?.end_year || new Date().getFullYear() + 4,
+            country: data?.country || "",
+            github_handle: data?.github_handle || "",
+            linkedin_url: data?.linkedin_url || "",
+            portfolio_url: data?.portfolio_url || "",
+            bio: data?.bio || "",
+            avatar_url: data?.avatar_url || user.user_metadata?.avatar_url || "",
+            contact_no: data?.contact_no || "",
+            cover_url: data?.cover_url || ""
         };
-
-        setProfile(defaultProfile);
-        setOriginalProfile(defaultProfile);
-        setIsOwner(true);
-
-        const { data: regs } = await supabase
-            .from('event_registrations')
-            .select(`
-                id,
-                status,
-                participation_type,
-                team_name,
-                created_at,
-                event:events (
-                    title,
-                    slug,
-                    image_url,
-                    start_date,
-                    location
-                )
-            `)
-            .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: false });
         
+        setProfile(def); 
+        setOriginalProfile(def); 
+        setIsOwner(true);
+        
+        // Fetch Events
+        const { data: regs } = await supabase.from('event_registrations')
+          .select(`*, event:events(*)`)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+          
         if (regs) setRegistrations(regs as any);
         setLoading(false);
-        return;
-      }
-
-      // FIXED: maybeSingle to resolve 406 Not Acceptable error
-      const { data, error } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
-      
-      if (error || !data) { 
-        if (currentUser) {
-             navigate("/profile"); 
-             return;
+      } else {
+        // --- PUBLIC MODE (View Profile) ---
+        const { data, error } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
+        
+        if (error || !data) { 
+          toast.error("User Identity Not Found"); 
+          navigate("/"); 
+          return; 
         }
-        toast.error("Profile not found"); 
-        navigate("/"); 
-        return; 
+        
+        setProfile(data as ProfileData);
+        if (user && data.id === user.id) { 
+          setIsOwner(true); 
+          setOriginalProfile(data as ProfileData); 
+        }
+        setLoading(false);
       }
-      
-      setProfile(data as ProfileData);
-      setOriginalProfile(data as ProfileData);
-      if (currentUser && data.id === currentUser.id) setIsOwner(true);
-      setLoading(false);
     };
     init();
   }, [username, navigate]);
 
-  useEffect(() => {
-    if (!profile || !originalProfile) return;
-
-    if (profile.username !== originalProfile.username && profile.username.length > 2) {
-      const checkAvailability = async () => {
-        setIsCheckingUsername(true);
-        const { data } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("username", profile.username)
-          .neq("id", profile.id)
-          .maybeSingle();
-        
-        setIsCheckingUsername(false);
-        
-        if (data) {
-          setUsernameError("Username already taken");
-        } else {
-          setUsernameError(null);
-        }
-      };
-
-      const timer = setTimeout(checkAvailability, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setUsernameError(null);
-    }
-  }, [profile?.username, originalProfile?.username, profile?.id]);
-
-  const updateLocalState = (field: keyof ProfileData, value: string) => {
-    if (!profile) return;
-    setProfile(prev => prev ? ({ ...prev, [field]: value }) : null);
-  };
-
+  // --- SAVE HANDLER ---
   const handleSave = async () => {
     if (!profile) return;
-    if (usernameError) {
-      toast.error("Please fix username errors before saving.");
-      return;
-    }
-
     setIsSaving(true);
     try { 
         const { error } = await supabase.from("profiles").upsert({ 
-            id: profile.id, 
-            username: profile.username,
-            full_name: profile.full_name,
-            bio: profile.bio,
-            github_handle: profile.github_handle,
-            linkedin_url: profile.linkedin_url,
-            portfolio_url: profile.portfolio_url,
-            cover_url: profile.cover_url,
-            updated_at: new Date().toISOString()
+          ...profile, 
+          updated_at: new Date().toISOString() 
         }); 
-
+        
         if (error) throw error;
-
-        toast.success("Profile saved successfully"); 
+        
+        toast.success("Identity Protocol Updated", {
+          className: "bg-[#0a0a0c] text-white border-green-500/30"
+        }); 
         setOriginalProfile(profile);
-    } catch (error: any) { 
-        console.error(error);
-        toast.error("Failed to save: " + error.message); 
-    } finally {
-        setIsSaving(false);
-    }
+    } catch (e: any) { 
+        toast.error("Update Failed: " + e.message); 
+    } 
+    finally { setIsSaving(false); }
   };
 
   const scrollSlider = (direction: 'left' | 'right') => {
@@ -515,200 +548,331 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+      <Loader2 className="w-12 h-12 text-cyan-500 animate-spin" />
+      <p className="text-xs font-mono text-zinc-500 animate-pulse">DECRYPTING IDENTITY...</p>
+    </div>
+  );
+  
   if (!profile) return null;
 
+  // ----------------------------------------------------------------------
+  // 6. PUBLIC VIEW RENDER (Marketing Page)
+  // ----------------------------------------------------------------------
+  
   if (!isOwner) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
-        <div className="w-full max-w-sm"><ProfileCardContent profile={profile} isOwner={false} /></div>
+      <div className="min-h-screen bg-[#020202] flex flex-col relative overflow-hidden font-sans text-white">
+        
+        {/* --- DEEP SPACE BACKGROUND --- */}
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.07] pointer-events-none" />
+        <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-purple-900/10 rounded-full blur-[150px] animate-pulse duration-[8000ms]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] bg-cyan-900/10 rounded-full blur-[150px] animate-pulse duration-[10000ms]" />
+        
+        {/* Navigation */}
+        <div className="relative z-10 p-8 flex justify-between items-center max-w-7xl mx-auto w-full">
+           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all">
+                <ChevronLeft className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-300 transition-colors">Return to Base</span>
+                <span className="text-lg font-black font-neuropol text-white">CODEVO</span>
+              </div>
+           </div>
+           
+           <Button onClick={() => navigate('/auth')} className="h-11 px-6 rounded-full bg-cyan-600/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 hover:text-cyan-300 hover:border-cyan-500/50 transition-all shadow-[0_0_20px_-5px_rgba(6,182,212,0.3)]">
+             Initialize Your ID <ChevronRight className="w-4 h-4 ml-2" />
+           </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10 w-full max-w-7xl mx-auto">
+           <div className="mb-12 text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                 <Globe className="w-3 h-3 text-cyan-400" />
+                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Public Neural Link</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-2xl">
+                Developer <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">Identity</span>
+              </h1>
+           </div>
+           
+           <div className="w-full flex justify-center">
+             <ProfileCardContent profile={profile} isOwner={false} />
+           </div>
+        </div>
       </div>
     );
   }
 
-  const isDirty = JSON.stringify(profile) !== JSON.stringify(originalProfile);
+  // ----------------------------------------------------------------------
+  // 7. EDIT VIEW RENDER (Dashboard)
+  // ----------------------------------------------------------------------
+  
+  const isProfileDirty = JSON.stringify(profile) !== JSON.stringify(originalProfile);
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 md:px-8 lg:px-12">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative">
-        <div className="lg:col-span-7 xl:col-span-8 space-y-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="min-h-screen bg-[#020202] text-white pt-24 pb-20 font-sans selection:bg-cyan-500/30 relative overflow-hidden">
+      
+      {/* Background Ambience */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-900/5 rounded-full blur-[120px]" />
+         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-900/5 rounded-full blur-[120px]" />
+         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
+        
+        {/* --- LEFT COLUMN: EDITOR --- */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-12">
+          
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/5">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Edit Profile</h1>
-              <p className="text-muted-foreground">Customize your public presence.</p>
+              <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3">
+                <UserCog className="w-8 h-8 text-cyan-500" /> Identity Config
+              </h1>
+              <p className="text-zinc-400 text-sm">Manage your public-facing developer persona.</p>
             </div>
             <Button 
               onClick={handleSave} 
-              disabled={!isDirty || isSaving || isCheckingUsername || !!usernameError}
+              disabled={!isProfileDirty || isSaving} 
               className={cn(
-                "min-w-[140px] font-bold shadow-lg transition-all",
-                isDirty ? "bg-primary hover:bg-primary/90 text-white" : "bg-white/10 text-muted-foreground hover:bg-white/15"
+                "h-12 px-8 rounded-xl font-bold tracking-wide transition-all shadow-lg",
+                isProfileDirty 
+                  ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-500/20" 
+                  : "bg-zinc-900 text-zinc-500 border border-white/5"
               )}
             >
-              {isSaving ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
-              ) : isCheckingUsername ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Checking...</>
-              ) : (
-                <><Save className="w-4 h-4 mr-2" /> Save Changes</>
-              )}
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+              {isSaving ? "SYNCING..." : "SAVE CHANGES"}
             </Button>
           </div>
-          
-          <div className="space-y-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><User className="w-4 h-4" /> Identity</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-               <div className="grid gap-2">
-                 <Label className="text-xs text-muted-foreground uppercase tracking-wider">Full Name</Label>
-                 <Input 
-                   value={profile.full_name} 
-                   onChange={(e) => updateLocalState('full_name', e.target.value)} 
-                   className="bg-white/5 border-white/10"
-                 />
-               </div>
-               <div className="grid gap-2">
-                 <Label className="text-xs text-muted-foreground uppercase tracking-wider">Username</Label>
-                 <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-muted-foreground">@</span>
-                    <Input 
-                      value={profile.username} 
-                      onChange={(e) => updateLocalState('username', e.target.value)} 
-                      className={cn(
-                        "bg-white/5 border-white/10 pl-8 transition-colors",
-                        usernameError && "border-red-500 focus-visible:ring-red-500"
-                      )}
-                    />
-                 </div>
-                 {usernameError && (
-                   <p className="text-xs text-red-400 flex items-center gap-1 mt-1">
-                     <AlertCircle className="w-3 h-3" /> {usernameError}
-                   </p>
-                 )}
-               </div>
-            </div>
-          </div>
 
+          {/* Core Data Form */}
           <div className="space-y-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Visuals</h2>
-            <div className="relative rounded-2xl overflow-hidden border border-white/10 group">
-              <div className="h-64 w-full bg-cover bg-center transition-all duration-500" style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }}>
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
-              </div>
-              <div className="absolute bottom-6 left-8 flex items-end gap-6 z-20">
-                <Avatar className="w-32 h-32 border-4 border-[#09090b] shadow-2xl">
-                  <AvatarImage src={profile.avatar_url} className="object-cover" />
-                  <AvatarFallback className="bg-[#1a1a1c] text-3xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                
-                <div className="mb-4 bg-black/70 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 shadow-2xl">
-                   <h2 className="text-3xl font-bold text-white tracking-tight mb-0.5">{profile.full_name}</h2>
-                   <p className="text-gray-300 font-medium text-sm tracking-wide">@{profile.username || 'username'}</p>
+             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+               <Sparkles className="w-4 h-4 text-purple-500"/> Core Data
+             </h2>
+             <div className="grid md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                   <Label className="text-xs text-zinc-400 uppercase tracking-wider">Full Name</Label>
+                   <Input 
+                     value={profile.full_name} 
+                     onChange={(e) => setProfile({...profile, full_name: e.target.value})} 
+                     className="bg-[#0a0a0c] border-white/10 h-12 rounded-xl focus:border-cyan-500/50 focus:ring-0 transition-colors text-white" 
+                   />
                 </div>
-              </div>
-            </div>
+                <div className="space-y-2">
+                   <Label className="text-xs text-zinc-400 uppercase tracking-wider">Username</Label>
+                   <div className="relative">
+                      <span className="absolute left-4 top-3.5 text-zinc-500">@</span>
+                      <Input 
+                        value={profile.username} 
+                        onChange={(e) => setProfile({...profile, username: e.target.value})} 
+                        className="bg-[#0a0a0c] border-white/10 h-12 rounded-xl pl-8 focus:border-cyan-500/50 focus:ring-0 transition-colors text-white" 
+                      />
+                   </div>
+                </div>
+             </div>
+             <div className="space-y-2">
+                <Label className="text-xs text-zinc-400 uppercase tracking-wider">Bio / Directive</Label>
+                <Textarea 
+                  value={profile.bio || ''} 
+                  onChange={(e) => setProfile({...profile, bio: e.target.value})} 
+                  className="bg-[#0a0a0c] border-white/10 min-h-[120px] rounded-xl focus:border-cyan-500/50 focus:ring-0 transition-colors text-white leading-relaxed p-4 resize-none" 
+                  placeholder="Brief description of your skills and mission..." 
+                />
+             </div>
           </div>
 
+          {/* Visual Assets Selector */}
           <div className="space-y-6">
              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><LayoutTemplate className="w-4 h-4" /> Cover Templates</h2>
+                <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <LayoutTemplate className="w-4 h-4 text-blue-500"/> Cover Artifact
+                </h2>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={() => scrollSlider('left')} className="h-8 w-8 rounded-full border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4" /></Button>
-                    <Button variant="outline" size="icon" onClick={() => scrollSlider('right')} className="h-8 w-8 rounded-full border-white/10 hover:bg-white/10"><ChevronRight className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => scrollSlider('left')} className="h-8 w-8 rounded-full border border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => scrollSlider('right')} className="h-8 w-8 rounded-full border border-white/10 hover:bg-white/10"><ChevronRight className="w-4 h-4" /></Button>
                 </div>
              </div>
              
-             <div 
-               ref={sliderRef}
-               className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-2"
-             >
+             {/* Main Preview */}
+             <div className="relative h-56 rounded-2xl overflow-hidden border border-white/10 group cursor-pointer shadow-2xl">
+                <div className="absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-105" style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }} />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                   <div className="px-4 py-2 rounded-full bg-black/50 border border-white/20 text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                     <Edit2 className="w-3 h-3" /> Change Cover
+                   </div>
+                </div>
+                
+                {/* Avatar Overlay */}
+                <div className="absolute bottom-6 left-8 flex items-end gap-6 z-20">
+                  <Avatar className="w-24 h-24 border-4 border-[#020202] shadow-2xl">
+                    <AvatarImage src={profile.avatar_url} className="object-cover" />
+                    <AvatarFallback className="bg-[#1a1a1c] text-2xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </div>
+             </div>
+
+             {/* Thumbnail Slider */}
+             <div ref={sliderRef} className="flex gap-3 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
                 {COVER_TEMPLATES.map((url, i) => (
-                  <div 
-                    key={i} 
-                    onClick={() => updateLocalState('cover_url', url)} 
-                    className={cn(
-                        "flex-shrink-0 w-64 aspect-video rounded-lg bg-cover bg-center cursor-pointer border-2 transition-all hover:scale-105", 
-                        profile.cover_url === url ? "border-primary shadow-lg ring-2 ring-primary/20" : "border-transparent opacity-70 hover:opacity-100"
-                    )} 
-                    style={{ backgroundImage: `url('${url}')` }} 
-                  />
+                   <div 
+                     key={i} 
+                     onClick={() => setProfile({...profile, cover_url: url})} 
+                     className={cn(
+                       "flex-shrink-0 w-32 aspect-video rounded-xl bg-cover bg-center cursor-pointer border-2 transition-all hover:scale-105 snap-start", 
+                       profile.cover_url === url ? "border-cyan-500 shadow-[0_0_15px_-3px_rgba(6,182,212,0.5)] scale-105" : "border-transparent opacity-60 hover:opacity-100"
+                     )} 
+                     style={{ backgroundImage: `url('${url}')` }} 
+                   />
                 ))}
              </div>
           </div>
 
+          {/* Social Connections */}
           <div className="space-y-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Social & Links</h2>
-            <div className="grid gap-4">
-              <SocialEditBlock icon={Github} label="GitHub Profile" value={profile.github_handle || ''} onChange={(v) => updateLocalState('github_handle', v)} colorClass="group-hover:bg-[#24292e] group-hover:text-white" />
-              <SocialEditBlock icon={Linkedin} label="LinkedIn URL" value={profile.linkedin_url || ''} onChange={(v) => updateLocalState('linkedin_url', v)} colorClass="group-hover:bg-[#0077b5] group-hover:text-white" />
-              <SocialEditBlock icon={Globe} label="Portfolio URL" value={profile.portfolio_url || ''} onChange={(v) => updateLocalState('portfolio_url', v)} colorClass="group-hover:bg-emerald-600 group-hover:text-white" />
-            </div>
+             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+               <Share2 className="w-4 h-4 text-green-500"/> Uplink Connections
+             </h2>
+             <div className="grid gap-3">
+                <SocialEditBlock 
+                  icon={Github} label="GitHub" 
+                  value={profile.github_handle} 
+                  onChange={(v: string) => setProfile({...profile, github_handle: v})} 
+                  colorClass="bg-zinc-900 group-hover:bg-white group-hover:text-black" 
+                />
+                <SocialEditBlock 
+                  icon={Linkedin} label="LinkedIn" 
+                  value={profile.linkedin_url} 
+                  onChange={(v: string) => setProfile({...profile, linkedin_url: v})} 
+                  colorClass="bg-[#0077b5]/10 text-[#0077b5] group-hover:bg-[#0077b5] group-hover:text-white" 
+                />
+                <SocialEditBlock 
+                  icon={Globe} label="Portfolio" 
+                  value={profile.portfolio_url} 
+                  onChange={(v: string) => setProfile({...profile, portfolio_url: v})} 
+                  colorClass="bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white" 
+                />
+             </div>
           </div>
 
+          {/* Education & Academic */}
           <div className="space-y-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">About You</h2>
-            <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateLocalState('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
+             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+               <GraduationCap className="w-4 h-4 text-yellow-500"/> Academic Records
+             </h2>
+             <div className="grid md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                   <Label className="text-xs text-zinc-400 uppercase tracking-wider">Institution</Label>
+                   <Input value={profile.institute_name} onChange={(e) => setProfile({...profile, institute_name: e.target.value})} className="bg-[#0a0a0c] border-white/10 h-11 transition-colors" />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-xs text-zinc-400 uppercase tracking-wider">Degree</Label>
+                   <Input value={profile.degree} onChange={(e) => setProfile({...profile, degree: e.target.value})} className="bg-[#0a0a0c] border-white/10 h-11 transition-colors" />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-xs text-zinc-400 uppercase tracking-wider">Branch / Major</Label>
+                   <Input value={profile.branch} onChange={(e) => setProfile({...profile, branch: e.target.value})} className="bg-[#0a0a0c] border-white/10 h-11 transition-colors" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                      <Label className="text-xs text-zinc-400 uppercase tracking-wider">Start Year</Label>
+                      <Input type="number" value={profile.start_year} onChange={(e) => setProfile({...profile, start_year: parseInt(e.target.value)})} className="bg-[#0a0a0c] border-white/10 h-11 transition-colors" />
+                   </div>
+                   <div className="space-y-2">
+                      <Label className="text-xs text-zinc-400 uppercase tracking-wider">End Year</Label>
+                      <Input type="number" value={profile.end_year} onChange={(e) => setProfile({...profile, end_year: parseInt(e.target.value)})} className="bg-[#0a0a0c] border-white/10 h-11 transition-colors" />
+                   </div>
+                </div>
+             </div>
           </div>
 
-          <div className="space-y-6 pb-20 border-t border-white/10 pt-10">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                <Ticket className="w-4 h-4" /> Active Event Registrations
-            </h2>
-            
-            {registrations.length === 0 ? (
-                <div className="text-center p-8 border border-dashed border-white/10 rounded-2xl bg-white/5">
-                    <p className="text-gray-400">No active registrations found.</p>
-                    <Button variant="link" onClick={() => navigate('/events')} className="text-purple-400">Explore Events</Button>
-                </div>
-            ) : (
-                <div className="grid gap-4">
-                    {registrations.map((reg) => (
-                        <div key={reg.id} className="relative overflow-hidden rounded-xl border border-white/10 bg-[#121214] p-4 flex flex-col md:flex-row gap-4 hover:border-purple-500/30 transition-all group">
-                            <div className="w-full md:w-32 h-32 md:h-auto rounded-lg overflow-hidden shrink-0">
-                                <img src={reg.event.image_url} alt={reg.event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+          {/* Event History */}
+          <div className="pt-10 border-t border-white/10 space-y-6">
+             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <Ticket className="w-4 h-4 text-orange-500" /> Mission Log (Events)
+             </h2>
+             
+             {registrations.length > 0 ? (
+               <div className="grid gap-3">
+                 {registrations.map(r => (
+                   <div key={r.id} className="relative overflow-hidden bg-[#0a0a0c] p-4 rounded-xl border border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 group hover:border-white/10 transition-all">
+                      <div className="flex items-center gap-4 w-full md:w-auto">
+                         <div className="w-16 h-12 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
+                            <img src={r.event.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="" />
+                         </div>
+                         <div>
+                            <div className="font-bold text-white text-sm group-hover:text-cyan-400 transition-colors">{r.event.title}</div>
+                            <div className="text-xs text-zinc-500 flex items-center gap-2 mt-1">
+                               <Calendar className="w-3 h-3" />
+                               {format(new Date(r.event.start_date), 'MMM d, yyyy')}
                             </div>
-                            <div className="flex-1 py-1">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <Badge variant="outline" className="mb-2 border-white/10 text-xs">{reg.participation_type}</Badge>
-                                        <h3 className="text-lg font-bold text-white mb-1">{reg.event.title}</h3>
-                                        <div className="flex items-center gap-3 text-xs text-gray-400">
-                                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3"/> {format(new Date(reg.event.start_date), 'MMM d, yyyy')}</span>
-                                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {reg.event.location}</span>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className={cn("px-2 py-1 rounded text-[10px] font-bold uppercase", 
-                                            reg.status === 'verified' ? "bg-green-500/10 text-green-400" : "bg-yellow-500/10 text-yellow-400"
-                                        )}>
-                                            {reg.status}
-                                        </div>
-                                    </div>
-                                </div>
-                                {reg.participation_type === 'Team' && reg.team_name && (
-                                    <div className="mt-4 flex items-center gap-2 text-sm text-gray-300 bg-white/5 p-2 rounded-lg w-fit">
-                                        <Users className="w-4 h-4 text-purple-400"/> 
-                                        <span>Team: <span className="font-bold text-white">{reg.team_name}</span></span>
-                                    </div>
-                                )}
-                            </div>
-                            <Button variant="ghost" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => navigate(`/events/${reg.event.slug}`)}>
-                                <ArrowRight className="w-4 h-4"/>
-                            </Button>
-                        </div>
-                    ))}
+                         </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                         {r.participation_type === 'Team' && (
+                           <div className="text-xs text-zinc-500 flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded">
+                              <Users className="w-3 h-3" /> Team: <span className="text-white">{r.team_name}</span>
+                           </div>
+                         )}
+                         <Badge variant="outline" className={cn(
+                           "border-white/10",
+                           r.status === 'verified' ? "text-green-400 bg-green-500/10" : "text-yellow-400 bg-yellow-500/10"
+                         )}>
+                           {r.status}
+                         </Badge>
+                      </div>
+                   </div>
+                 ))}
+               </div>
+             ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-zinc-500 bg-[#0a0a0c] rounded-2xl border border-dashed border-white/10">
+                   <Ticket className="w-8 h-8 opacity-20 mb-2" />
+                   <p className="text-sm">No active mission registrations found.</p>
+                   <Button variant="link" onClick={() => navigate('/events')} className="text-cyan-500">Explore Events</Button>
                 </div>
-            )}
+             )}
           </div>
         </div>
 
-        <div className="lg:col-span-5 xl:col-span-4 relative hidden lg:block">
+        {/* --- RIGHT COLUMN: LIVE PREVIEW --- */}
+        <div className="lg:col-span-5 xl:col-span-4 hidden lg:block">
           <div className="sticky top-28 space-y-8">
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live Preview</h2>
-              <div className="transform transition-transform hover:scale-[1.02] duration-500"><ProfileCardContent profile={profile} isOwner={true} /></div>
+            <div className="flex items-center justify-between">
+               <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                  </span>
+                  Live Artifact Preview
+               </h2>
+            </div>
+            
+            <div className="transform transition-transform hover:scale-[1.02] duration-700">
+               <ProfileCardContent profile={profile} isOwner={true} />
+            </div>
+            
+            <div className="bg-blue-500/5 border border-blue-500/20 p-5 rounded-2xl flex gap-4 items-start relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+               <div className="p-2.5 bg-blue-500/20 rounded-xl text-blue-400 shrink-0">
+                 <Shield className="w-5 h-5" />
+               </div>
+               <div>
+                  <h4 className="text-sm font-bold text-blue-100 mb-1">Optimization Tip</h4>
+                  <p className="text-xs text-blue-200/60 leading-relaxed">
+                    Connect your GitHub and LinkedIn to increase your "Trust Score". Verified profiles receive priority access to Hackathons.
+                  </p>
+               </div>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
