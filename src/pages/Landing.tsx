@@ -1,22 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Code2, 
-  ArrowRight, 
-  ChevronsDown, 
-  Terminal, 
-  LayoutGrid, 
-  Play, 
-  Server, 
-  Activity,
-  Rocket,
-  Share2,
-  Trophy,
-  GraduationCap,
-  Zap,
-  Users
-} from 'lucide-react';
+import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -25,15 +10,20 @@ import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
-import { HitMeUpWidget } from '@/pages/Profile'; 
 
-// --- Typewriter Hook (Preserved) ---
+// --- NEW IMPORT ---
+import { HitMeUpWidget } from '@/pages/Profile'; 
+// -------------------
+
+// --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    const delayTimer = setTimeout(() => setStarted(true), startDelay);
+    const delayTimer = setTimeout(() => {
+      setStarted(true);
+    }, startDelay);
     return () => clearTimeout(delayTimer);
   }, [startDelay]);
 
@@ -54,7 +44,7 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   return displayText;
 };
 
-// Filtered Tech Stack (Preserved)
+// Filtered Tech Stack
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
@@ -66,203 +56,508 @@ const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg",
 ];
 
+// --- Animation Scenario ---
+const DEMO_SCENARIO = {
+  question: "How do I fast-track my coding career?",
+  code: `import codevo
+
+def start_journey():
+    # 1. Pick a skill
+    skill = "Python"
+    
+    # 2. Practice daily
+    result = codevo.practice(skill)
+    
+    # 3. Get Hired
+    if result.score > 90:
+        return "SUCCESS!"
+
+print(start_journey())`
+};
+
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
-  
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+
   // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
+  const helloWorldText = useTypewriter("Hello World", 150, 1500);
 
-  // --- CRITICAL: YOUR SCROLL ANIMATION LOGIC (PRESERVED) ---
+  // --- Showcase Animation States ---
+  const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
+  const [typedCode, setTypedCode] = useState('');
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  
+  // Ref for auto-scrolling the terminal
+  const codeScrollRef = useRef<HTMLDivElement>(null);
+
+  // Framer Motion Scroll Logic
   const { scrollY } = useScroll();
   const rawScale = useTransform(scrollY, [0, 500], [1, 0.90]);
   const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.2 });
   const rawRadius = useTransform(scrollY, [0, 500], [0, 32]);
   const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.2 });
 
+  // Animation Loop
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    let timeoutId: NodeJS.Timeout;
+    let charIndex = 0;
+
+    const animate = () => {
+      setShowcasePhase('question');
+      setTypedCode('');
+      setActiveKey(null);
+
+      timeoutId = setTimeout(() => {
+        setShowcasePhase('terminal');
+        const typeChar = () => {
+          if (charIndex < DEMO_SCENARIO.code.length) {
+            const char = DEMO_SCENARIO.code[charIndex];
+            setTypedCode(prev => prev + char);
+            setActiveKey(char); 
+            const delay = Math.random() * 30 + 30; 
+            charIndex++;
+            timeoutId = setTimeout(typeChar, delay);
+          } else {
+            setActiveKey(null);
+            timeoutId = setTimeout(() => {
+              charIndex = 0;
+              animate();
+            }, 5000);
+          }
+        };
+        timeoutId = setTimeout(typeChar, 800);
+      }, 3500);
+    };
+
+    animate();
+    return () => clearTimeout(timeoutId);
   }, []);
 
-  const handleShareProfile = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/profile`);
-    toast({ description: "Profile link copied!" });
+  useEffect(() => {
+    if (activeKey) {
+      const t = setTimeout(() => setActiveKey(null), 150);
+      return () => clearTimeout(t);
+    }
+  }, [activeKey, typedCode]);
+
+  // Auto-scroll effect for terminal
+  useEffect(() => {
+    if (codeScrollRef.current) {
+      codeScrollRef.current.scrollTop = codeScrollRef.current.scrollHeight;
+    }
+  }, [typedCode]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session && window.location.hash && window.location.hash.includes('access_token')) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setSession(session));
+    return () => subscription.unsubscribe();
+  }, [toast]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    toast({ description: "Logged out successfully" });
+  };
+
+  const scrollToContent = () => {
+    const element = document.getElementById('laptop-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handlePracticeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setButtonPosition({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
+    setIsNavigating(true);
+    setTimeout(() => {
+      session ? navigate('/practice') : navigate('/auth');
+    }, 800);
   };
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
       
+      {/* --- ADD WIDGET HERE --- */}
+      <HitMeUpWidget />
+      {/* ----------------------- */}
+
       <style>{`
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .animate-marquee { animation: marquee 30s linear infinite; }
+        @keyframes scroll-arrow-move {
+          0% { transform: translateY(0); opacity: 0.5; }
+          25% { transform: translateY(-4px); opacity: 0.8; }
+          75% { transform: translateY(4px); opacity: 0.8; }
+          100% { transform: translateY(0); opacity: 0.5; }
+        }
+        .animate-scroll-arrow {
+          animation: scroll-arrow-move 2s ease-in-out infinite;
+        }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
+        .animate-marquee:hover {
+          animation-play-state: paused;
+        }
+        @keyframes code-blink { 50% { opacity: 0; } }
+        .cursor-blink {
+          display: inline-block;
+          width: 8px;
+          height: 15px;
+          background-color: #3b82f6;
+          animation: blink 1s step-end infinite;
+          vertical-align: middle;
+          margin-left: 2px;
+        }
       `}</style>
 
-      <HitMeUpWidget />
+      {/* Page Transition Overlay */}
+      <AnimatePresence>
+        {isNavigating && (
+          <motion.div
+            initial={{ 
+              position: 'fixed', top: buttonPosition.y, left: buttonPosition.x, width: buttonPosition.width, height: buttonPosition.height, borderRadius: '0.75rem', backgroundColor: '#7c3aed', zIndex: 9999,
+            }}
+            animate={{ 
+              top: 0, left: 0, width: '100vw', height: '100vh', borderRadius: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+            }}
+            className="flex items-center justify-center"
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-white font-neuropol text-4xl">
+              INITIALIZING_ENV...
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
-      <Header session={session} onLogout={() => supabase.auth.signOut()} />
+      <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full bg-[#09090b]">
         
-        {/* --- HERO SECTION WITH STICKY SCROLLING ANIMATION --- */}
+        {/* --- HERO SECTION --- */}
         <div className="relative w-full h-[115vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <motion.div 
-              className="relative w-full h-full bg-[#09090b] overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
+              className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
               style={{
-                scale: smoothScale, // This makes the section shrink on scroll
+                scale: smoothScale, 
                 transformOrigin: 'top center', 
-                borderBottomLeftRadius: smoothRadius, // This rounds the corners
+                borderBottomLeftRadius: smoothRadius,
                 borderBottomRightRadius: smoothRadius,
               }}
             >
-              <div className="absolute inset-0 z-0 w-full h-full">
-                <DarkVeil />
-                <div className="absolute inset-0 bg-black/60" />
-              </div>
+              <div className="absolute inset-0 z-0 w-full h-full"><DarkVeil /><div className="absolute inset-0 bg-black/60" /></div>
 
-              {/* NEW GRID LAYOUT INSIDE THE ANIMATED CONTAINER */}
-              <div className="container mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center h-full pt-20">
-                
-                {/* LEFT: Branding & 100k Community */}
-                <section className="lg:col-span-5 flex flex-col justify-center space-y-8 text-left">
-                  <div className="space-y-4">
-                    <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight">
-                      <span className="text-primary">Start with</span><br/>
-                      <span className="text-white">CODEVO</span>
-                    </h1>
-                    <p className="font-mono text-green-400 text-sm md:text-lg">
-                      <span className="text-gray-500 mr-2">$</span>{taglineText}
-                    </p>
-                  </div>
-
-                  {/* Community Metric (Preserved) */}
-                  <div className="flex items-center gap-4 py-2 px-4 w-fit rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-                    <div className="flex -space-x-3">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="w-8 h-8 rounded-full border-2 border-[#09090b] bg-gray-800" />
-                      ))}
-                    </div>
-                    <p className="text-xs font-medium text-gray-400">
-                      Trusted by <span className="text-white font-bold">100k+</span> community users
-                    </p>
-                  </div>
-
-                  {/* Recommendations Card */}
-                  <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-emerald-400"></div>
-                    <h2 className="text-xl font-bold text-white mb-2">Get personalized recommendations!</h2>
-                    <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                      Complete your profile to see tailored career goals and upcoming events.
-                    </p>
-                    <Button 
-                      onClick={() => navigate('/profile')}
-                      className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 shadow-lg shadow-primary/20"
-                    >
-                      Complete my profile
-                    </Button>
-                    <Rocket className="absolute bottom-[-10px] right-[-10px] w-24 h-24 text-white opacity-5 transform rotate-12" />
-                  </div>
-                </section>
-
-                {/* RIGHT: Feature Card Grid */}
-                <section className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div onClick={() => navigate('/practice-arena')} className="group cursor-pointer bg-[#072825] border border-emerald-900/50 rounded-2xl p-5 h-44 flex justify-between items-center relative overflow-hidden shadow-lg hover:border-emerald-500/50 transition-all">
-                    <div className="flex flex-col h-full justify-between z-10 text-left">
-                      <h3 className="text-2xl font-bold text-white">Practice</h3>
-                      <p className="text-emerald-300 text-sm mt-1 leading-tight">Refine Skills Daily</p>
-                    </div>
-                    <Zap className="w-16 h-16 text-emerald-500/10 absolute right-4 top-4" />
-                  </div>
-
-                  <div onClick={() => navigate('/compiler')} className="group cursor-pointer bg-[#321c15] border border-orange-900/50 rounded-2xl p-5 h-44 flex justify-between items-center relative overflow-hidden shadow-lg hover:border-orange-500/50 transition-all">
-                    <div className="flex flex-col h-full justify-between z-10 text-left">
-                      <h3 className="text-2xl font-bold text-white">Compiler</h3>
-                      <p className="text-orange-200 text-sm mt-1 leading-tight">Run Code Instantly</p>
-                      <div className="bg-emerald-900/30 w-fit px-2 py-0.5 rounded-full flex items-center gap-1.5 border border-emerald-800/50">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        <span className="text-[10px] font-medium text-emerald-200 uppercase">Online</span>
+              <div className="container mx-auto px-4 md:px-6 relative z-10 flex flex-col items-center justify-center h-full pb-20">
+                <div className="max-w-7xl mx-auto space-y-8 md:space-y-10 text-center">
+                  <div className="flex justify-center mb-6">
+                    <div className="relative group cursor-default">
+                      <div className="absolute -inset-1 bg-green-500/20 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000" />
+                      <div className="relative bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-4 md:px-6 py-2 md:py-3 shadow-2xl flex items-center gap-3">
+                        <div className="flex gap-1.5"><div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-red-500/50" /><div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-yellow-500/50" /><div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-green-500/50" /></div>
+                        <div className="h-3 md:h-4 w-px bg-white/10 mx-1" />
+                        <p className="font-mono text-xs md:text-lg text-green-400 font-medium tracking-wide break-words max-w-[280px] md:max-w-none"><span className="text-gray-500 mr-2 md:mr-3 select-none">$</span>{taglineText}</p>
                       </div>
                     </div>
-                    <Terminal className="w-16 h-16 text-orange-500/10 absolute right-4 top-4" />
                   </div>
 
-                  <div onClick={() => navigate('/events')} className="group cursor-pointer bg-[#131633] border border-blue-900/50 rounded-2xl p-5 h-44 flex justify-between items-center relative overflow-hidden shadow-lg hover:border-blue-500/50 transition-all">
-                    <div className="flex flex-col h-full justify-between z-10 text-left">
-                      <h3 className="text-2xl font-bold text-white">Events</h3>
-                      <p className="text-blue-200 text-sm mt-1 leading-tight">Battle For Excellence</p>
-                    </div>
-                    <Trophy className="w-16 h-16 text-blue-500/10 absolute right-4 top-4" />
-                  </div>
-
-                  <div onClick={() => navigate('/degree')} className="group cursor-pointer bg-[#200f45] border border-purple-900/50 rounded-2xl p-5 h-44 flex justify-between items-center relative overflow-hidden shadow-lg hover:border-purple-500/50 transition-all">
-                    <div className="flex flex-col h-full justify-between z-10 text-left">
-                      <h3 className="text-xl font-bold text-white leading-tight">IIT Madras Zone</h3>
-                      <p className="text-purple-200 text-xs mt-1">Exclusive Access</p>
-                    </div>
-                    <GraduationCap className="w-16 h-16 text-purple-500/10 absolute right-4 top-4" />
-                  </div>
-
-                  <div onClick={() => navigate('/leaderboard')} className="group cursor-pointer bg-[#321f0e] border border-yellow-900/50 rounded-2xl p-5 h-44 flex justify-between items-center relative overflow-hidden shadow-lg hover:border-yellow-500/50 transition-all">
-                    <div className="flex flex-col h-full justify-between z-10 text-left">
-                      <h3 className="text-2xl font-bold text-white">Ranking</h3>
-                      <p className="text-yellow-200 text-sm mt-1 leading-tight">See Where You Stand</p>
-                    </div>
-                    <div className="flex items-end gap-1 h-10 absolute right-6 bottom-6 opacity-30">
-                      <div className="w-2 h-4 bg-yellow-600 rounded-t" /><div className="w-2 h-10 bg-yellow-500 rounded-t" /><div className="w-2 h-7 bg-yellow-400 rounded-t" />
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-2xl md:text-5xl text-white font-bold tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">Évolve from</span>
+                    <div className="flex flex-wrap items-baseline justify-center gap-2 md:gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
+                      <span className="font-mono text-primary text-3xl md:text-8xl font-bold drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">{helloWorldText}</span>
+                      <span className="text-xl md:text-4xl text-muted-foreground/60 font-light">to</span>
+                      <span className="text-4xl md:text-8xl font-extrabold text-[#1a1a1a] transition-colors duration-700 hover:text-white cursor-default" title="Keep coding to reveal">Hired</span>
                     </div>
                   </div>
 
-                  <div className="group bg-[#3f1025] border border-pink-900/50 rounded-2xl p-5 h-44 flex justify-between items-center relative overflow-hidden shadow-lg">
-                    <div className="flex flex-col h-full justify-between z-10 text-left">
-                      <h3 className="text-xl font-bold text-white">Share Profile</h3>
-                      <p className="text-pink-200 text-sm mt-1 leading-tight">Build Network</p>
+                  <div className="flex flex-wrap items-center justify-center gap-4 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+                    <div className="flex items-center -space-x-4">
+                      {[{ src: "https://images.unsplash.com/photo-1628157588553-5eeea00af15c?w=150&h=150&fit=crop", rotate: "-rotate-6", zIndex: "z-0" }, { src: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&h=150&fit=crop", rotate: "rotate-3", zIndex: "z-10" }, { src: "https://images.unsplash.com/photo-1619895862022-09114b41f16f?w=150&h=150&fit=crop", rotate: "-rotate-3", zIndex: "z-20" }, { src: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=150&h=150&fit=crop", rotate: "rotate-6", zIndex: "z-30" }].map((item, i) => (
+                        <div key={i} className={cn("relative w-10 h-10 md:w-12 md:h-14 rounded-xl border-[2px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:!z-50 hover:border-white/40 hover:shadow-2xl bg-gray-800", item.rotate, item.zIndex)}>
+                          <img src={item.src} alt="User" className="w-full h-full object-cover opacity-90 hover:opacity-100" />
+                        </div>
+                      ))}
                     </div>
-                    <Button 
-                      size="icon" 
-                      onClick={handleShareProfile}
-                      className="w-12 h-12 bg-pink-600 hover:bg-pink-500 rounded-2xl shadow-lg transform rotate-6 hover:rotate-0 transition-transform absolute right-5 bottom-5"
-                    >
-                      <Share2 className="text-white w-6 h-6" />
-                    </Button>
+                    <p className="text-[10px] md:text-sm font-medium text-muted-foreground/80 tracking-wide border-l border-white/10 pl-4 h-full flex items-center">Trusted by <span className="text-white font-semibold mx-1">100K+</span> community users</p>
                   </div>
-                </section>
+                </div>
               </div>
 
-              {/* Your Animated Scroll Arrow */}
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={() => document.getElementById('tech-marquee')?.scrollIntoView({ behavior: 'smooth' })}>
-                <div className="w-[30px] h-[54px] md:w-[36px] md:h-[64px] border border-white/30 rounded-full flex justify-center items-center bg-black/20 backdrop-blur-sm hover:border-white/60 transition-colors">
-                  <div className="animate-bounce"><ChevronsDown className="w-4 h-4 md:w-5 md:h-5 text-white/90" /></div>
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000" onClick={scrollToContent}>
+                <div className="w-[30px] h-[54px] md:w-[36px] md:h-[64px] border border-white/30 rounded-full flex justify-center items-center bg-black/20 backdrop-blur-sm hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                  <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 md:w-5 md:h-5 text-white/90" /></div>
                 </div>
               </div>
             </motion.div>
           </div>
         </div>
 
-        {/* --- TECH MARQUEE SECTION --- */}
-        <section id="tech-marquee" className="w-full bg-[#09090b] py-12 border-t border-white/5 relative z-20">
-          <div className="container mx-auto px-6">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-8 text-center opacity-70 font-mono">
-              // POWERED BY MODERN TECHNOLOGIES
-            </p>
-            <div className="w-full overflow-hidden relative">
-              <div className="flex gap-12 animate-marquee whitespace-nowrap items-center">
-                {[...TECH_STACK, ...TECH_STACK].map((src, i) => (
-                  <div key={i} className="flex-shrink-0 w-10 h-10 opacity-50 hover:opacity-100 transition-all grayscale hover:grayscale-0 cursor-pointer">
-                    <img src={src} alt="tech" className="w-full h-full object-contain" />
+        {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
+        <section id="laptop-section" className="w-full bg-[#09090b] py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+          
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+              
+              {/* LEFT: Text & Button */}
+              <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase">
+                    <Activity className="w-3 h-3 animate-pulse" />
+                    System::Online
                   </div>
-                ))}
+                  <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
+                    EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
+                  </h2>
+                  <p className="font-mono text-xs md:text-base text-gray-400 w-full max-w-[90vw] md:max-w-lg mx-auto lg:mx-0 leading-relaxed break-words px-2 md:px-0">
+                    A fully functional development environment right in your browser. <br/>
+                    <span className="text-white">Write. Run. Debug. Succeed.</span>
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-center lg:items-start gap-8">
+                  <Button 
+                    onClick={handlePracticeClick}
+                    className="group relative h-12 md:h-14 px-8 md:px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-base md:text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      Start Coding
+                      <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1 opacity-0 group-hover:opacity-100 -ml-4 group-hover:ml-0" />
+                    </span>
+                  </Button>
+
+                  <div className="w-full max-w-md">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left opacity-70 font-mono">
+                      // POWERED BY MODERN TECHNOLOGIES
+                    </p>
+                    <div className="w-full overflow-hidden relative mask-gradient-x">
+                      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
+                      <div className="flex gap-6 animate-marquee whitespace-nowrap items-center">
+                        {[...TECH_STACK, ...TECH_STACK, ...TECH_STACK].map((src, i) => (
+                          <div key={i} className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 opacity-50 hover:opacity-100 transition-all grayscale hover:grayscale-0 cursor-pointer">
+                            <img src={src} alt="tech" className="w-full h-full object-contain" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT: 3D Laptop Mockup */}
+              <div className="flex-1 w-full max-w-full lg:max-w-none perspective-1000 px-2 md:px-0">
+                <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
+                  <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
+                    <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-700 rounded-full z-20" />
+                    <div className="bg-[#09090b] rounded-t-md border border-white/5 overflow-hidden aspect-[16/10] relative group">
+                      <div className="absolute inset-0 flex flex-col font-mono text-[9px] md:text-[10px] text-gray-400">
+                        <div className="h-6 border-b border-white/10 flex items-center px-3 justify-between bg-[#0c0c0e]">
+                          <div className="flex gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-red-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-green-500/50" /></div>
+                          <div className="text-xs text-white/40">codevo_practice.py</div>
+                          <div className="w-10 h-3 bg-white/5 rounded" />
+                        </div>
+                        <div className="flex-1 flex overflow-hidden">
+                          <div className="w-8 md:w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
+                            <LayoutGrid className="w-3 h-3 text-primary" />
+                            <Code2 className="w-3 h-3 opacity-50" />
+                            <Server className="w-3 h-3 opacity-50" />
+                          </div>
+                          <div className="flex-1 p-2 md:p-3 relative bg-[#09090b] overflow-hidden">
+                            <div className="text-blue-400">def optimize_route(nodes):</div>
+                            <div className="text-gray-500 pl-4"># Initialize dynamic programming table</div>
+                            <div className="text-purple-400 pl-4">dp = [float('inf')] * len(nodes)</div>
+                            <div className="text-white pl-4">dp[0] = 0</div>
+                            <div className="text-white pl-4 mt-1">
+                              for i in range(1, len(nodes)):
+                              <span className="inline-block w-1 h-2.5 bg-primary ml-0.5 animate-[code-blink_1s_infinite]" />
+                            </div>
+                            <div className="absolute bottom-3 right-3 bg-green-900/30 text-green-400 border border-green-500/30 px-2 py-0.5 rounded text-[8px] flex items-center gap-1 shadow-lg">
+                              <Play className="w-2 h-2 fill-current" /> EXECUTE
+                            </div>
+                          </div>
+                          <div className="w-1/3 border-l border-white/10 bg-black/60 p-2 font-mono hidden sm:block">
+                            <div className="text-green-500 mb-1">➜  ~ running tests...</div>
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1 text-green-400">✓ Case 1 Passed</div>
+                              <div className="flex items-center gap-1 text-green-400">✓ Case 2 Passed</div>
+                              <div className="flex items-center gap-1 text-red-400">✗ Case 3 Failed</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="h-2.5 md:h-3.5 bg-[#1f1f1f] rounded-b-lg border-t border-black/50 shadow-2xl relative z-10 mx-[1px]">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-b-[2px]" />
+                  </div>
+                  <div className="absolute -bottom-10 left-4 right-4 h-8 bg-black/40 blur-xl rounded-full transform scale-y-50" />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* --- PLAY N CODE (Asteroid Game) --- */}
+        {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
+        <section className="py-12 md:py-24 relative overflow-hidden bg-[#09090b] border-t border-white/5">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
+              {/* LEFT: Terminal */}
+              <div className="relative order-2 lg:order-1 h-[300px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
+                <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  <div className="ml-4 text-xs text-muted-foreground font-mono opacity-50 flex-1 text-center">
+                    {showcasePhase === 'question' ? 'challenge.md' : 'solution.py'}
+                  </div>
+                </div>
+
+                <div className="flex-1 relative p-6 md:p-8 font-mono text-sm md:text-base overflow-hidden">
+                  <div className={cn("absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out", showcasePhase === 'question' ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-10 scale-95 pointer-events-none")}>
+                    <div className="relative mb-8 group/icon">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl group-hover/icon:bg-blue-500/30 transition-all duration-700" />
+                      <div className="relative w-20 h-20 bg-[#1a1a1a] border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-md">
+                        <Code2 className="w-10 h-10 text-white/90 group-hover/icon:text-blue-400 transition-colors duration-300" />
+                      </div>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight">Codevo Challenge</h3>
+                    <p className="text-muted-foreground max-w-md leading-relaxed text-sm md:text-lg">"{DEMO_SCENARIO.question}"</p>
+                  </div>
+
+                  <div className={cn("absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 ease-in-out flex flex-col", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none")}>
+                    <div className="flex items-center gap-2 text-muted-foreground mb-4 opacity-50 text-xs shrink-0">
+                      <Terminal className="w-4 h-4" />
+                      <span>user@codevo:~/workspace $ code main.py</span>
+                    </div>
+                    <div 
+                      ref={codeScrollRef}
+                      className="font-mono text-blue-400 whitespace-pre-wrap leading-relaxed text-xs md:text-sm overflow-y-auto flex-1 pr-2 no-scrollbar"
+                    >
+                      {typedCode}<span className="cursor-blink" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT: Keyboard */}
+              <div className="relative order-1 lg:order-2 w-full">
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
+                <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  Real-time Interaction
+                </h3>
+                <div className="w-full">
+                  <VirtualKeyboard activeChar={activeKey} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* --- SECTION 4: CODE ON CODEVO --- */}
+        <section className="w-full bg-[#050505] py-12 md:py-24 relative overflow-hidden border-t border-white/5">
+          <div className="container mx-auto px-6 max-w-7xl">
+            
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
+              <div className="max-w-xl">
+                <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-[1.1]">
+                  Code on <span className="font-neuropol text-white">CODéVO</span>
+                </h2>
+              </div>
+              <div className="max-w-sm">
+                <p className="text-base md:text-lg text-gray-400 leading-relaxed">
+                  Experience the future of coding. Featuring frontier capabilities in real-time execution, secure proctoring, and global competition.
+                </p>
+              </div>
+            </div>
+
+            {/* Screens Container */}
+            <div className="relative w-full h-[450px] md:h-[700px] mt-12">
+              
+              {/* Desktop IDE View */}
+              <div className="absolute left-0 top-0 w-[95%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
+                 <div className="w-full h-full flex flex-col bg-[#0c0c0e] rounded-xl border border-white/5 overflow-hidden">
+                    <div className="h-12 border-b border-white/5 flex items-center px-4 md:px-6 justify-between bg-[#151517]">
+                       <div className="flex gap-2">
+                          <div className="w-3 h-3 rounded-full bg-white/10" />
+                          <div className="w-3 h-3 rounded-full bg-white/10" />
+                          <div className="w-3 h-3 rounded-full bg-white/10" />
+                       </div>
+                       <div className="text-xs md:text-sm text-gray-500 font-mono">codevo_ide_v2.tsx</div>
+                       <div className="w-16 md:w-20 h-8 bg-white/5 rounded-md" />
+                    </div>
+                    <div className="flex-1 p-4 md:p-8 font-mono text-xs md:text-base text-gray-400 space-y-2 md:space-y-4">
+                       <div className="flex gap-4">
+                          <span className="text-gray-600 select-none w-4">1</span>
+                          <span><span className="text-purple-400">import</span> <span className="text-white">React</span> <span className="text-purple-400">from</span> <span className="text-green-400">'react'</span>;</span>
+                       </div>
+                       <div className="flex gap-4">
+                          <span className="text-gray-600 select-none w-4">2</span>
+                          <span><span className="text-blue-400">const</span> <span className="text-yellow-200">App</span> = () <span className="text-blue-400">=&gt;</span> {'{'}</span>
+                       </div>
+                       <div className="flex gap-4">
+                          <span className="text-gray-600 select-none w-4">3</span>
+                          <span className="pl-4 md:pl-8 text-pink-400">return</span> (
+                       </div>
+                       <div className="flex gap-4">
+                          <span className="text-gray-600 select-none w-4">4</span>
+                          <span className="pl-8 md:pl-12 text-gray-300">&lt;<span className="text-blue-300">CodevoEnvironment</span> /&gt;</span>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Mobile Phone Overlay */}
+              <div className="absolute right-[2%] md:right-[5%] bottom-[10px] md:bottom-[-20px] w-[120px] md:w-[300px] aspect-[9/19] bg-black rounded-[1.5rem] md:rounded-[3rem] border-[4px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-4 md:h-7 bg-black rounded-b-xl z-40" />
+                 <div className="h-full w-full bg-[#0c0c0e] pt-8 md:pt-12 px-2 md:px-5 pb-4 md:pb-8 flex flex-col relative">
+                    <div className="flex justify-between items-center mb-4 md:mb-6">
+                       <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white/10" />
+                       <div className="w-12 md:w-20 h-3 md:h-4 bg-white/10 rounded-full" />
+                    </div>
+                    <div className="bg-white/5 rounded-xl md:rounded-2xl p-2 md:p-4 mb-2 md:mb-3 border border-white/5 backdrop-blur-md">
+                       <div className="h-2 w-1/2 bg-blue-500/40 rounded mb-2" />
+                       <div className="h-2 w-3/4 bg-white/10 rounded mb-1" />
+                       <div className="h-2 w-full bg-white/10 rounded" />
+                    </div>
+                    <div className="mt-auto w-full h-8 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-[8px] md:text-sm shadow-lg">
+                       Start
+                    </div>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
         <section className="w-full bg-[#000000] py-12 md:py-20 relative overflow-hidden border-t border-white/5">
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
+
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-12 tracking-tight">Play n Codé</h2>
-            <AsteroidGameFrame />
+            <div className="text-left mb-12">
+              <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-sans [mask-image:linear-gradient(to_bottom,white_40%,transparent_100%)]">
+                Play n Codé
+              </h2>
+            </div>
+
+            <div className="w-full"> 
+              <AsteroidGameFrame />
+            </div>
           </div>
         </section>
 
