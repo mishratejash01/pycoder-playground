@@ -2,11 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
-import { motion } from 'framer-motion';
-import { Calendar, MapPin, Trophy, Users, ChevronRight, ChevronLeft, Clock, Sparkles, Loader2, Code, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Calendar, MapPin, Trophy, ChevronRight, ChevronLeft, 
+  Clock, Sparkles, Loader2, Code, Zap, ArrowUpRight, Flame 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
 import { InvitationBanner } from '@/components/events/InvitationBanner';
@@ -54,7 +56,6 @@ export default function Events() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !session) {
       navigate('/auth');
@@ -92,11 +93,10 @@ export default function Events() {
     }
   };
 
-  // Show loading while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="animate-spin h-8 w-8 text-purple-500" />
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <Loader2 className="animate-spin h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -124,180 +124,254 @@ export default function Events() {
   const featuredStats = featuredEvent ? getCountdownData(featuredEvent) : { text: "", percent: 0 };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-purple-500/30 font-inter">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 font-inter relative overflow-x-hidden">
+      
+      {/* Ambient Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] opacity-30 animate-pulse delay-700" />
+        <div className="absolute bottom-[10%] left-[-10%] w-[30%] h-[30%] bg-primary/10 rounded-full blur-[100px] opacity-20" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+      </div>
+
       <Header session={session} onLogout={handleLogout} />
 
-      <main className="max-w-7xl mx-auto pt-32 pb-20 px-6 md:px-12">
+      <main className="relative z-10 pt-24 pb-20 px-4 md:px-8 max-w-[1600px] mx-auto space-y-12">
         
-        {/* Invitation Banner */}
         <InvitationBanner />
         
-        {/* --- SECTION HEADER --- */}
-        <div className="flex items-end justify-between mb-10">
+        {/* Header & Filter Bar */}
+        <div className="flex flex-col md:flex-row items-end justify-between gap-6 border-b border-white/5 pb-8">
           <div>
-            <h2 className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 font-bold mb-2">Featured Opportunity</h2>
-            <h1 className="text-4xl font-medium tracking-tight">Events</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="h-px w-8 bg-primary/50"></span>
+              <span className="text-[10px] uppercase tracking-[0.4em] text-primary/80 font-bold glow-text">Global Events</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/50">
+              Discover <span className="text-white">Events</span>
+            </h1>
           </div>
-          <div className="hidden md:flex bg-zinc-900/50 p-1 rounded-lg border border-zinc-800 backdrop-blur-md">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={cn("text-xs h-8", filter === 'all' ? "bg-zinc-800 shadow-sm" : "text-zinc-400 hover:text-white")}
-              onClick={() => setFilter('all')}
+          
+          <div className="flex p-1 rounded-full bg-white/5 border border-white/5 backdrop-blur-md">
+            {[
+              { id: 'all', label: 'All Events', icon: Sparkles },
+              { id: 'hackathon', label: 'Hackathons', icon: Code },
+              { id: 'normal', label: 'Workshops', icon: Zap }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setFilter(item.id as any)}
+                className={cn(
+                  "relative px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all duration-300",
+                  filter === item.id 
+                    ? "text-black" 
+                    : "text-muted-foreground hover:text-white hover:bg-white/5"
+                )}
+              >
+                {filter === item.id && (
+                  <motion.div 
+                    layoutId="filter-pill"
+                    className="absolute inset-0 bg-white rounded-full"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <item.icon className={cn("w-3.5 h-3.5", filter === item.id ? "text-black" : "text-current")} />
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* --- HERO: Featured Event --- */}
+        <AnimatePresence mode='wait'>
+          {loading ? (
+             <div className="w-full h-[500px] rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
+          ) : featuredEvent && (
+            <motion.div 
+              key={featuredEvent.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="relative w-full rounded-[2.5rem] overflow-hidden border border-white/10 group cursor-pointer"
+              onClick={() => navigate(`/events/${featuredEvent.slug}`)}
             >
-              All Events
+              {/* Background Image & Overlay */}
+              <div className="absolute inset-0">
+                <img 
+                  src={featuredEvent.image_url} 
+                  className="w-full h-full object-cover transition-transform duration-[1.5s] ease-in-out group-hover:scale-105"
+                  alt={featuredEvent.title}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 p-8 md:p-16 flex flex-col justify-between min-h-[500px] md:min-h-[600px]">
+                
+                {/* Top Badge */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 backdrop-blur-md shadow-[0_0_15px_-3px_rgba(var(--primary),0.5)]">
+                      <Flame className="w-3 h-3 fill-current animate-pulse" /> Featured
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-white/5 text-white/80 border border-white/10 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">
+                      {featuredEvent.category}
+                    </span>
+                  </div>
+                  
+                  <div className="hidden md:flex flex-col items-end">
+                     <span className="text-4xl font-mono font-bold text-white/20 tracking-tighter">01</span>
+                     <span className="text-[10px] uppercase tracking-widest text-white/40">Featured Selection</span>
+                  </div>
+                </div>
+
+                {/* Main Text */}
+                <div className="max-w-3xl space-y-6 mt-10 md:mt-0">
+                  <h2 className="text-4xl md:text-7xl font-bold leading-[0.9] tracking-tighter text-white drop-shadow-2xl">
+                    {featuredEvent.title}
+                  </h2>
+                  <p className="text-lg text-white/60 leading-relaxed max-w-xl line-clamp-3">
+                    {featuredEvent.short_description}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-8 pt-4">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold">Prize Pool</div>
+                      <div className="text-2xl font-mono text-white flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        {featuredEvent.prize_pool || "N/A"}
+                      </div>
+                    </div>
+                    <div className="w-px h-10 bg-white/10 hidden sm:block" />
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold">Deadline</div>
+                      <div className="text-2xl font-mono text-white flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-blue-400" />
+                        {featuredStats.text}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Actions */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-10 border-t border-white/10 mt-10">
+                  <div className="w-full sm:w-auto">
+                     <div className="flex items-center justify-between mb-2">
+                       <span className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Registration</span>
+                       <span className="text-[10px] font-mono text-primary">{featuredStats.percent.toFixed(0)}%</span>
+                     </div>
+                     <div className="h-1.5 w-full sm:w-64 bg-white/10 rounded-full overflow-hidden">
+                       <motion.div 
+                         initial={{ width: 0 }} 
+                         animate={{ width: `${featuredStats.percent}%` }} 
+                         transition={{ duration: 1.5, ease: "easeOut" }}
+                         className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" 
+                       />
+                     </div>
+                  </div>
+
+                  <Button className="w-full sm:w-auto h-14 px-8 rounded-full bg-white text-black font-bold text-sm tracking-wide hover:bg-zinc-200 transition-all group/btn">
+                    Register Now <ArrowUpRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                  </Button>
+                </div>
+
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* --- CAROUSEL HEADER --- */}
+        <div className="flex items-center justify-between pt-8">
+          <h3 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <span className="w-2 h-8 bg-primary rounded-full mr-2" />
+            Upcoming Opportunities
+          </h3>
+          <div className="flex gap-2">
+            <Button onClick={() => scroll('left')} variant="outline" size="icon" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20">
+              <ChevronLeft className="w-5 h-5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={cn("text-xs h-8", filter === 'hackathon' ? "bg-zinc-800 shadow-sm" : "text-zinc-400 hover:text-white")}
-              onClick={() => setFilter('hackathon')}
-            >
-              <Code className="w-3 h-3 mr-1" /> Hackathons
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={cn("text-xs h-8", filter === 'normal' ? "bg-zinc-800 shadow-sm" : "text-zinc-400 hover:text-white")}
-              onClick={() => setFilter('normal')}
-            >
-              <Zap className="w-3 h-3 mr-1" /> Tech Events
+            <Button onClick={() => scroll('right')} variant="outline" size="icon" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20">
+              <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
-        {/* --- MAIN FEATURED CARD --- */}
-        {loading ? (
-          <Skeleton className="w-full h-[500px] rounded-2xl bg-zinc-900" />
-        ) : featuredEvent && (
-          <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-2xl overflow-hidden flex flex-col lg:flex-row transition-all hover:border-zinc-700 mb-20 group">
-            
-            {/* Poster Slot */}
-            <div className="lg:w-[380px] shrink-0 bg-[#161616] border-r border-[#1F1F1F] relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 to-transparent opacity-60 z-10" />
-              <img 
-                src={featuredEvent.image_url} 
-                className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100" 
-              />
-              <div className="absolute bottom-8 left-8 right-8 z-20">
-                <div className="text-[10px] font-black tracking-[0.3em] uppercase text-white/50 mb-1">Genesis Edition</div>
-                <div className="text-xl font-bold tracking-tighter">BUILD THE FUTURE</div>
-              </div>
-            </div>
-
-            {/* Content Area */}
-            <div className="p-8 lg:p-14 flex-grow flex flex-col justify-between">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-10">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase py-1.5 px-3 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md">
-                      <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
-                      Registration Open
-                    </span>
-                    <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-500">{featuredEvent.category}</span>
-                  </div>
-                  <h2 className="text-4xl md:text-6xl font-bold tracking-tighter leading-none">{featuredEvent.title}</h2>
-                  <p className="text-zinc-400 text-base leading-relaxed max-w-xl">{featuredEvent.short_description}</p>
+        {/* --- CAROUSEL SCROLL --- */}
+        <div 
+          ref={scrollRef}
+          className="flex gap-6 overflow-x-auto pb-12 pt-4 px-1 no-scrollbar snap-x snap-mandatory"
+        >
+          {loading ? [1,2,3,4].map(i => (
+             <div key={i} className="min-w-[350px] h-[420px] rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
+          )) : regularEvents.map((event, idx) => (
+            <motion.div 
+              key={event.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              onClick={() => navigate(`/events/${event.slug}`)}
+              className="min-w-[320px] md:min-w-[400px] snap-start group relative rounded-[2rem] bg-[#0c0c0e] border border-white/10 overflow-hidden cursor-pointer hover:border-white/20 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]"
+            >
+              {/* Image Area */}
+              <div className="h-56 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] to-transparent z-10" />
+                <img 
+                  src={event.image_url} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0" 
+                  alt={event.title}
+                />
+                
+                {/* Floating Date Badge */}
+                <div className="absolute top-4 left-4 z-20 bg-black/50 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 flex flex-col items-center text-center min-w-[60px]">
+                  <span className="text-[10px] uppercase text-white/60 font-bold">{format(new Date(event.start_date), 'MMM')}</span>
+                  <span className="text-xl font-bold text-white leading-none">{format(new Date(event.start_date), 'dd')}</span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 shrink-0 md:text-right">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-1">Prize Pool</p>
-                    <p className="text-2xl font-bold text-white tracking-tight">{featuredEvent.prize_pool || "Recognition"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-1">Platform</p>
-                    <p className="text-sm font-semibold">{featuredEvent.mode} / {featuredEvent.location}</p>
-                  </div>
+                {/* Category Tag */}
+                <div className="absolute top-4 right-4 z-20">
+                   <Badge className="bg-white/10 hover:bg-white/20 backdrop-blur-md border-white/10 text-[10px] uppercase tracking-wider font-bold">
+                      {event.category}
+                   </Badge>
                 </div>
               </div>
 
-              <div className="mt-12 pt-10 border-t border-zinc-900/50 flex flex-col md:flex-row items-center justify-between gap-10">
-                <div className="w-full md:w-72 space-y-4">
-                  <div className="flex justify-between text-[10px] font-black tracking-widest uppercase">
-                    <span className="text-zinc-500">Registration Status</span>
-                    <span className="text-purple-400">{featuredStats.text}</span>
-                  </div>
-                  <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${featuredStats.percent}%` }} className="h-full bg-purple-500" />
-                  </div>
-                  <p className="text-[11px] text-zinc-600 font-bold uppercase tracking-wider">450+ Innovators Registered</p>
-                </div>
+              {/* Content Area */}
+              <div className="p-6 relative z-20 -mt-6">
+                 <h4 className="text-xl font-bold text-white mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                   {event.title}
+                 </h4>
+                 
+                 <div className="flex items-center gap-4 text-xs text-white/40 font-mono mb-4">
+                    <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3" /> {event.mode}</span>
+                    <span className="w-1 h-1 bg-white/20 rounded-full" />
+                    <span className="flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {event.prize_pool || "Certificate"}</span>
+                 </div>
 
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="hidden sm:flex flex-col items-end mr-6">
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-0.5">Starting</p>
-                    <p className="text-sm font-bold">{format(new Date(featuredEvent.start_date), 'MMM d, yyyy')}</p>
-                  </div>
-                  <Button onClick={() => navigate(`/events/${featuredEvent.slug}`)} className="flex-grow md:flex-grow-0 h-14 px-10 bg-white text-black font-black hover:bg-zinc-200 transition-transform active:scale-95">
-                    Register Now
-                  </Button>
-                  <Button variant="outline" onClick={() => navigate(`/events/${featuredEvent.slug}`)} className="h-14 px-8 border-zinc-800 text-zinc-300 font-bold hover:bg-zinc-900 transition-colors">
-                    Details
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                 <p className="text-sm text-white/50 line-clamp-2 leading-relaxed mb-6 h-10">
+                   {event.short_description}
+                 </p>
 
-        {/* --- EXPLORE ROW (Carousel) --- */}
-        <div className="space-y-8">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-500" /> Explore More
-            </h3>
-            <div className="flex items-center gap-3">
-              <Button onClick={() => scroll('left')} variant="outline" size="icon" className="rounded-full w-10 h-10 border-zinc-800 hover:bg-zinc-900">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button onClick={() => scroll('right')} variant="outline" size="icon" className="rounded-full w-10 h-10 border-zinc-800 hover:bg-zinc-900">
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-              <div className="w-px h-6 bg-zinc-800 mx-2" />
-              <Button variant="link" className="text-purple-400 font-bold uppercase tracking-widest text-[10px] hover:text-purple-300">
-                View All Events
-              </Button>
-            </div>
-          </div>
-
-          <div 
-            ref={scrollRef}
-            className="flex gap-6 overflow-x-auto pb-6 no-scrollbar snap-x snap-mandatory"
-          >
-            {loading ? [1,2,3].map(i => <Skeleton key={i} className="min-w-[350px] h-[400px] rounded-xl bg-zinc-900" />) : 
-              regularEvents.map((event) => (
-                <div 
-                  key={event.id}
-                  onClick={() => navigate(`/events/${event.slug}`)}
-                  className="min-w-[320px] md:min-w-[380px] snap-start bg-[#0A0A0A] border border-[#1F1F1F] rounded-xl overflow-hidden hover:border-zinc-700 transition-all cursor-pointer group"
-                >
-                  <div className="h-48 relative">
-                    <img src={event.image_url} className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 transition-all duration-500" />
-                    <div className="absolute top-4 left-4">
-                      <Badge className="bg-black/60 border-zinc-800 text-[9px] uppercase font-bold tracking-widest backdrop-blur-md">
-                        {event.category}
-                      </Badge>
+                 <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                    <div className="flex -space-x-2">
+                       {[1,2,3].map((_, i) => (
+                         <div key={i} className="w-6 h-6 rounded-full bg-zinc-800 border border-[#0c0c0e] flex items-center justify-center text-[8px] text-white/40">
+                           <Users className="w-3 h-3" />
+                         </div>
+                       ))}
+                       <div className="w-6 h-6 rounded-full bg-zinc-800 border border-[#0c0c0e] flex items-center justify-center text-[8px] text-white/60 font-bold pl-1">
+                         +
+                       </div>
                     </div>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <p className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-                      {format(new Date(event.start_date), 'MMM d, yyyy')}
-                    </p>
-                    <h4 className="text-xl font-bold tracking-tight line-clamp-1 group-hover:text-purple-400 transition-colors">{event.title}</h4>
-                    <p className="text-zinc-500 text-xs line-clamp-2 leading-relaxed">{event.short_description}</p>
-                    <div className="pt-4 flex items-center justify-between border-t border-zinc-900">
-                      <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-bold uppercase">
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {event.mode}</span>
-                        <span className="flex items-center gap-1"><Trophy className="w-3 h-3" /> {event.prize_pool || "Cert."}</span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-white transition-colors" />
+                    
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all duration-300">
+                      <ChevronRight className="w-4 h-4" />
                     </div>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
+                 </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </main>
     </div>
