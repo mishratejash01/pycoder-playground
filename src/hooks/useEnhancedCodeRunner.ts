@@ -180,36 +180,44 @@ const getTierBadge = (percentile: number): { tier: string; emoji: string; messag
 };
 
 /**
- * Compare two outputs with fuzzy matching for cross-language compatibility
+ * Compare two outputs STRICTLY.
+ * Removed fuzzy .includes() matching which caused false positives.
  */
 const compareOutputs = (actual: string, expected: string): boolean => {
-  // Exact match
-  if (actual === expected) return true;
+  // 1. Trim whitespace from ends (standard for all OJs)
+  const cleanActual = actual.trim();
+  const cleanExpected = expected.trim();
+
+  // 2. Exact match check
+  if (cleanActual === cleanExpected) return true;
+
+  // 3. Line-by-line mismatch check (ignoring trailing whitespace per line)
+  const actualLines = cleanActual.split('\n').map(l => l.trimEnd());
+  const expectedLines = cleanExpected.split('\n').map(l => l.trimEnd());
   
-  // Try parsing as JSON and comparing
+  if (actualLines.length !== expectedLines.length) return false;
+  
+  for (let i = 0; i < actualLines.length; i++) {
+    if (actualLines[i] !== expectedLines[i]) return false;
+  }
+
+  // 4. Fallback: Try parsing as JSON for array/object equality
   try {
-    const actualParsed = JSON.parse(actual.replace(/'/g, '"'));
-    const expectedParsed = JSON.parse(expected.replace(/'/g, '"'));
+    const actualParsed = JSON.parse(cleanActual.replace(/'/g, '"'));
+    const expectedParsed = JSON.parse(cleanExpected.replace(/'/g, '"'));
     return JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
   } catch {
-    // Not JSON, continue with string comparison
+    // Not JSON, and string compare failed
   }
   
-  // Remove all whitespace and compare
-  const normalizedActual = actual.replace(/\s/g, '');
-  const normalizedExpected = expected.replace(/\s/g, '');
-  if (normalizedActual === normalizedExpected) return true;
-  
-  // Handle numeric comparison (floating point tolerance)
-  const actualNum = parseFloat(actual);
-  const expectedNum = parseFloat(expected);
+  // 5. Numeric tolerance for floats
+  const actualNum = parseFloat(cleanActual);
+  const expectedNum = parseFloat(cleanExpected);
   if (!isNaN(actualNum) && !isNaN(expectedNum)) {
     return Math.abs(actualNum - expectedNum) < 1e-6;
   }
-  
-  // Check if output contains expected (for multi-line or formatted output)
-  return normalizedActual.includes(normalizedExpected) || 
-         normalizedExpected.includes(normalizedActual);
+
+  return false;
 };
 
 export const useEnhancedCodeRunner = () => {
@@ -278,6 +286,11 @@ export const useEnhancedCodeRunner = () => {
     const testResults: TestResult[] = [];
     let totalRuntime = 0;
     let totalMemory = 0;
+    
+    // Variables to track first failure
+    let firstFailureIndex = -1;
+    let firstFailureVerdict: Verdict | null = null;
+    let firstFailureError: { type: string, rawError: string } | undefined = undefined;
 
     try {
       // Phase 1: Compiling
@@ -289,7 +302,7 @@ export const useEnhancedCodeRunner = () => {
 
       const config = getLanguageConfig(language);
 
-      // Phase 2: Running tests
+      // Phase 2: Running tests (Run ALL tests to populate results)
       for (let i = 0; i < testCases.length; i++) {
         setJudgingPhase({ 
           status: 'running', 
@@ -300,6 +313,8 @@ export const useEnhancedCodeRunner = () => {
 
         const test = testCases[i];
         const codeToRun = prepareCode(code, test.input);
+        
+        // Execute code
         const result = await runPiston(config.name, config.version, codeToRun, "");
 
         totalRuntime += result.executionTime;
@@ -308,7 +323,7 @@ export const useEnhancedCodeRunner = () => {
         const cleanOutput = normalizeOutput(result.output || '');
         const expectedStr = normalizeOutput(String(test.output || ''));
         
-        // Use normalized comparison for better cross-language support
+        // Strict comparison
         const passed = compareOutputs(cleanOutput, expectedStr);
 
         testResults.push({
@@ -319,59 +334,53 @@ export const useEnhancedCodeRunner = () => {
           testIndex: i
         });
 
-        // Check for errors
-        if (result.error && !passed) {
-          const { type, verdict } = detectErrorType(result.error);
-          const feedback = generateFeedback(verdict, type, result.error);
+        // If this test failed and it's the first failure, record it
+        if (!passed && firstFailureIndex === -1) {
+          firstFailureIndex = i;
           
-          clearInterval(timer);
-          setJudgingPhase({ status: 'complete', verdict });
-          
-          return {
-            verdict,
-            passed: false,
-            output: cleanOutput,
-            expected: expectedStr,
-            runtime_ms: Math.round(totalRuntime / (i + 1)),
-            memory_kb: Math.round(totalMemory / (i + 1)),
-            feedbackMessage: feedback.message,
-            feedbackSuggestion: feedback.suggestion,
-            errorDetails: { type, rawError: result.error },
-            testResults,
-            failedTestIndex: i
-          };
-        }
-
-        // Check for wrong answer
-        if (!passed) {
-          const feedback = generateFeedback('WA');
-          
-          clearInterval(timer);
-          setJudgingPhase({ status: 'complete', verdict: 'WA' });
-          
-          return {
-            verdict: 'WA',
-            passed: false,
-            output: cleanOutput,
-            expected: expectedStr,
-            runtime_ms: Math.round(totalRuntime / (i + 1)),
-            memory_kb: Math.round(totalMemory / (i + 1)),
-            feedbackMessage: feedback.message,
-            feedbackSuggestion: feedback.suggestion,
-            testResults,
-            failedTestIndex: i
-          };
+          if (result.error) {
+             // It's a runtime/compile/limit error
+             const { type, verdict } = detectErrorType(result.error);
+             firstFailureVerdict = verdict;
+             firstFailureError = { type, rawError: result.error };
+          } else {
+             // It ran successfully but output was wrong
+             firstFailureVerdict = 'WA';
+          }
         }
       }
 
-      // Phase 3: Comparing
+      // Phase 3: Comparing / Finalizing
       setJudgingPhase({ 
         status: 'comparing', 
         message: getRandomMessage('comparing') 
       });
       await new Promise(r => setTimeout(r, 300));
+      clearInterval(timer);
 
-      // All tests passed!
+      // If there was a failure, return that verdict
+      if (firstFailureIndex !== -1) {
+        const verdict = firstFailureVerdict || 'WA';
+        const feedback = generateFeedback(verdict, firstFailureError?.type, firstFailureError?.rawError);
+        
+        setJudgingPhase({ status: 'complete', verdict });
+        
+        return {
+          verdict,
+          passed: false,
+          output: testResults[firstFailureIndex].actual,
+          expected: testResults[firstFailureIndex].expected,
+          runtime_ms: Math.round(totalRuntime / (firstFailureIndex + 1)), // Avg up to failure
+          memory_kb: Math.round(totalMemory / (firstFailureIndex + 1)),
+          feedbackMessage: feedback.message,
+          feedbackSuggestion: feedback.suggestion,
+          errorDetails: firstFailureError,
+          testResults,
+          failedTestIndex: firstFailureIndex
+        };
+      }
+
+      // --- Success Path (All tests passed) ---
       const avgRuntime = Math.round(totalRuntime / testCases.length);
       const avgMemory = Math.round(totalMemory / testCases.length);
 
@@ -395,14 +404,14 @@ export const useEnhancedCodeRunner = () => {
           if (rtPercentile !== null) runtimePercentile = rtPercentile;
           if (memPercentile !== null) memoryPercentile = memPercentile;
         } catch (e) {
-          // Fallback to default percentiles
+          // Fallback to default percentiles if DB fails
+          console.warn("Failed to fetch percentiles:", e);
         }
       }
 
       const feedback = generateFeedback('AC');
       const tier = getTierBadge(runtimePercentile);
 
-      clearInterval(timer);
       setJudgingPhase({ status: 'complete', verdict: 'AC' });
 
       return {
