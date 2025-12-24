@@ -10,13 +10,14 @@ import {
   AnimatePresence
 } from 'framer-motion';
 import React, { Children, cloneElement, useEffect, useRef, useState } from 'react';
+// Updated imports to include Calendar and User
 import { 
   Home, 
   Code2, 
-  Calendar, // For Events
-  User,     // For Profile
+  Calendar, 
+  User, 
   LayoutDashboard 
-} from 'lucide-react';
+} from 'lucide-react'; 
 import { useNavigate } from 'react-router-dom';
 import './Dock.css';
 
@@ -28,7 +29,7 @@ export type DockItemData = {
 };
 
 export type DockProps = {
-  items?: DockItemData[]; // Made optional so we can provide defaults
+  items?: DockItemData[];
   className?: string;
   distance?: number;
   baseItemSize?: number;
@@ -142,7 +143,7 @@ export default function Dock({
   const mouseX = useMotionValue(Infinity);
   const navigate = useNavigate();
 
-  // If no items are passed, we use the updated default list requested
+  // If no items are passed, use these updated defaults
   const displayItems = items || [
     {
       icon: <Home className="h-full w-full" />,
