@@ -10,9 +10,9 @@ import { useJavaScriptRunner } from '@/hooks/useJavaScriptRunner';
 import { useInteractiveRunner } from '@/hooks/useInteractiveRunner';
 import { TerminalView } from '@/components/TerminalView';
 import { 
-  Loader2, Play, RefreshCw, Home, Terminal as TerminalIcon, 
-  Download, Lock, Square, Clock, RotateCcw, Zap, Settings, 
-  Wifi, Activity, Cpu, Maximize2, Minimize2, Command, Sparkles,
+  Loader2, Rocket, Ban, Layout, Terminal as TerminalIcon, 
+  FileDown, Lock, ListRestart, Timer, SlidersHorizontal, 
+  Wifi, Activity, Cpu, Scan, Minimize, Command, Sparkles,
   ChevronRight, Infinity, Code2, Globe, Server
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,224 +21,77 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // --- GOD TIER CONFIGURATION ---
-// "Event Horizon" Color Palette: Deep Space Black, Electric Cyan, Hyper-Violet
 
 const LANGUAGES_CONFIG = [
   { 
     id: 'python', 
     name: 'Python', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
-    glow: 'shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)]', // Electric Blue
+    glow: 'shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)]', 
     border: 'group-hover/item:border-blue-500/50'
   },
   { 
     id: 'javascript', 
     name: 'JavaScript', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
-    glow: 'shadow-[0_0_30px_-5px_rgba(250,204,21,0.4)]', // Solar Gold
+    glow: 'shadow-[0_0_30px_-5px_rgba(250,204,21,0.4)]', 
     border: 'group-hover/item:border-yellow-500/50'
   },
   { 
     id: 'java', 
     name: 'Java', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
-    glow: 'shadow-[0_0_30px_-5px_rgba(239,68,68,0.5)]', // Crimson Red
+    glow: 'shadow-[0_0_30px_-5px_rgba(239,68,68,0.5)]', 
     border: 'group-hover/item:border-red-500/50'
   },
   { 
     id: 'cpp', 
     name: 'C++', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
-    glow: 'shadow-[0_0_30px_-5px_rgba(56,189,248,0.5)]', // Sky Blue
+    glow: 'shadow-[0_0_30px_-5px_rgba(56,189,248,0.5)]', 
     border: 'group-hover/item:border-cyan-500/50'
   },
   { 
     id: 'c', 
     name: 'C', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
-    glow: 'shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)]', // Indigo
+    glow: 'shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)]', 
     border: 'group-hover/item:border-indigo-500/50'
   },
   { 
     id: 'sql', 
     name: 'SQL', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
-    glow: 'shadow-[0_0_30px_-5px_rgba(168,85,247,0.5)]', // Deep Purple
+    glow: 'shadow-[0_0_30px_-5px_rgba(168,85,247,0.5)]', 
     border: 'group-hover/item:border-purple-500/50'
   },
   { 
     id: 'bash', 
     name: 'Bash', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
-    glow: 'shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)]', // Starlight White
+    glow: 'shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)]', 
     border: 'group-hover/item:border-white/50'
   },
 ] as const;
 
-// --- FULLY EXPANDED STARTER TEMPLATES ---
+// --- STARTER TEMPLATES ---
 
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
     case 'java': 
-      return `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        
-        // --- JAVA RUNTIME INITIALIZED ---
-        System.out.println(">> SYSTEM ONLINE.");
-        System.out.print(">> Enter Command: ");
-        
-        if (sc.hasNextLine()) {
-            String input = sc.nextLine();
-            System.out.println(">> Processing: " + input);
-            System.out.println(">> Status: EXECUTION COMPLETE");
-        } else {
-            System.out.println(">> No input detected.");
-        }
-        
-        sc.close();
-    }
-}`;
+      return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        System.out.println(">> SYSTEM ONLINE.");\n        System.out.print(">> Enter Command: ");\n        if (sc.hasNextLine()) {\n            String input = sc.nextLine();\n            System.out.println(">> Processing: " + input);\n            System.out.println(">> Status: EXECUTION COMPLETE");\n        } else {\n            System.out.println(">> No input detected.");\n        }\n        sc.close();\n    }\n}`;
     case 'cpp': 
-      return `#include <iostream>
-#include <string>
-#include <vector>
-#include <algorithm>
-
-using namespace std;
-
-int main() {
-    // --- C++ OPTIMIZED CORE ---
-    string input_data;
-    
-    cout << ">> KERNEL ACTIVE." << endl;
-    cout << ">> Awaiting Input Parameters: ";
-    
-    // Check if input is available
-    if (getline(cin, input_data)) {
-        cout << ">> Received Data: " << input_data << endl;
-        cout << ">> Operations successful." << endl;
-    } else {
-        cout << ">> Input stream empty." << endl;
-    }
-    
-    return 0;
-}`;
+      return `#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string input_data;\n    cout << ">> KERNEL ACTIVE." << endl;\n    cout << ">> Awaiting Input Parameters: ";\n    if (getline(cin, input_data)) {\n        cout << ">> Received Data: " << input_data << endl;\n        cout << ">> Operations successful." << endl;\n    } else {\n        cout << ">> Input stream empty." << endl;\n    }\n    return 0;\n}`;
     case 'c': 
-      return `#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-int main() {
-    char buffer[100];
-    
-    printf(">> C ENVIRONMENT LOADED.\\n");
-    printf(">> Enter execution token: ");
-    
-    if (fgets(buffer, 100, stdin) != NULL) {
-        // Remove trailing newline
-        buffer[strcspn(buffer, "\\n")] = 0; 
-        printf(">> Token Accepted: %s\\n", buffer);
-    } else {
-        printf(">> No token provided.\\n");
-    }
-    
-    printf(">> Memory released.\\n");
-    return 0;
-}`;
+      return `#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\nint main() {\n    char buffer[100];\n    printf(">> C ENVIRONMENT LOADED.\\n");\n    printf(">> Enter execution token: ");\n    if (fgets(buffer, 100, stdin) != NULL) {\n        buffer[strcspn(buffer, "\\n")] = 0; \n        printf(">> Token Accepted: %s\\n", buffer);\n    } else {\n        printf(">> No token provided.\\n");\n    }\n    printf(">> Memory released.\\n");\n    return 0;\n}`;
     case 'javascript': 
-      return `// --- JAVASCRIPT V8 ENGINE ---
-
-console.log(">> NODE.JS ENVIRONMENT READY");
-
-async function main() {
-    try {
-        // Interactive input wrapper
-        const userInput = await prompt(">> Identify User: ");
-        
-        console.log(\`>> Authenticating \${userInput}...\`);
-        console.log(">> Access Level: ADMIN");
-        
-        const systemStatus = {
-            memory: "OK",
-            cpu: "OPTIMIZED",
-            network: "SECURE"
-        };
-        
-        console.table(systemStatus);
-        
-    } catch (error) {
-        console.error(">> ERR:", error);
-    }
-}
-
-main();`;
+      return `console.log(">> NODE.JS ENVIRONMENT READY");\nasync function main() {\n    try {\n        const userInput = await prompt(">> Identify User: ");\n        console.log(\`>> Authenticating \${userInput}...\`);\n        console.log(">> Access Level: ADMIN");\n        const systemStatus = { memory: "OK", cpu: "OPTIMIZED", network: "SECURE" };\n        console.table(systemStatus);\n    } catch (error) {\n        console.error(">> ERR:", error);\n    }\n}\nmain();`;
     case 'sql': 
-      return `-- --- SQL DATA MATRIX ---
-
--- 1. Create a virtual schema
-CREATE TABLE systems (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    status TEXT DEFAULT 'OFFLINE',
-    load_percentage INTEGER
-);
-
--- 2. Inject dummy data
-INSERT INTO systems (name, status, load_percentage) VALUES 
-    ('CORE_REACTOR', 'ONLINE', 85),
-    ('NAV_COMPUTER', 'ONLINE', 12),
-    ('LIFE_SUPPORT', 'CRITICAL', 98);
-
--- 3. Execute Query
-SELECT * FROM systems 
-WHERE status = 'ONLINE'
-ORDER BY load_percentage DESC;`;
+      return `CREATE TABLE systems (id INTEGER PRIMARY KEY, name TEXT NOT NULL, status TEXT DEFAULT 'OFFLINE', load_percentage INTEGER);\nINSERT INTO systems (name, status, load_percentage) VALUES ('CORE_REACTOR', 'ONLINE', 85), ('NAV_COMPUTER', 'ONLINE', 12), ('LIFE_SUPPORT', 'CRITICAL', 98);\nSELECT * FROM systems WHERE status = 'ONLINE' ORDER BY load_percentage DESC;`;
     case 'bash': 
-      return `#!/bin/bash
-
-echo ">> BASH SHELL INITIALIZED"
-echo ">> HOST: $HOSTNAME"
-echo ">> USER: $USER"
-
-read -p ">> Enter target directive: " directive
-
-if [ -z "$directive" ]; then
-    echo ">> No directive received. Standing by."
-else
-    echo ">> Executing directive: $directive"
-    echo ">> [====================] 100%"
-    echo ">> Done."
-fi`;
+      return `#!/bin/bash\necho ">> BASH SHELL INITIALIZED"\necho ">> HOST: $HOSTNAME"\necho ">> USER: $USER"\nread -p ">> Enter target directive: " directive\nif [ -z "$directive" ]; then\n    echo ">> No directive received. Standing by."\nelse\n    echo ">> Executing directive: $directive"\n    echo ">> [====================] 100%"\n    echo ">> Done."\nfi`;
     default: 
-      return `# --- PYTHON 3 NEURAL INTERFACE ---
-import time
-import sys
-
-def system_check():
-    print(">> INITIALIZING SINGULARITY KERNEL...")
-    for i in range(3):
-        print(f">> LOADING MODULE {i+1}...")
-        time.sleep(0.2)
-    print(">> SYSTEM READY.")
-
-system_check()
-
-# Interactive Input
-try:
-    user_input = input(">> Enter Python Expression to Evaluate: ")
-    if user_input:
-        result = eval(user_input)
-        print(f">> Result: {result}")
-    else:
-        print(">> No expression entered.")
-except Exception as e:
-    print(f">> RUNTIME ERROR: {e}")
-
-print(">> Session Terminated.")`;
+      return `# --- PYTHON 3 NEURAL INTERFACE ---\nimport time\nimport sys\n\ndef system_check():\n    print(">> INITIALIZING SINGULARITY KERNEL...")\n    for i in range(3):\n        print(f">> LOADING MODULE {i+1}...")\n        time.sleep(0.2)\n    print(">> SYSTEM READY.")\n\nsystem_check()\n\ntry:\n    user_input = input(">> Enter Python Expression to Evaluate: ")\n    if user_input:\n        result = eval(user_input)\n        print(f">> Result: {result}")\n    else:\n        print(">> No expression entered.")\nexcept Exception as e:\n    print(f">> RUNTIME ERROR: {e}")\n\nprint(">> Session Terminated.")`;
   }
 };
 
@@ -260,51 +113,28 @@ const formatTime = (ms: number): string => {
   return `${seconds}s`;
 };
 
-// --- MAIN COMPONENT ---
+// --- COMPONENT ---
 
 const Compiler = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
-  // --- STATE ---
-  const [activeLanguage, setActiveLanguage] = useState<Language>(() => {
-    return (localStorage.getItem('codevo-lang') as Language) || 'python';
-  });
-  
-  const [code, setCode] = useState<string>(() => {
-    return localStorage.getItem('codevo-code') || getStarterTemplate('python');
-  });
-
+  const [activeLanguage, setActiveLanguage] = useState<Language>(() => (localStorage.getItem('codevo-lang') as Language) || 'python');
+  const [code, setCode] = useState<string>(() => localStorage.getItem('codevo-code') || getStarterTemplate('python'));
   const [lockedLanguages, setLockedLanguages] = useState<Record<string, boolean>>({});
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  
-  // Refs for precise timing
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // --- CODE RUNNERS (HOOKS) ---
-  const { 
-    runCode: runPython, output: pythonOutput, isRunning: pythonRunning, 
-    isReady: pythonReady, isWaitingForInput: pythonWaitingForInput, 
-    writeInputToWorker: writePythonInput, stopExecution: stopPython, hasSharedArrayBuffer
-  } = usePyodide();
-
-  const {
-    runCode: runJS, output: jsOutput, isRunning: jsRunning, 
-    isWaitingForInput: jsWaitingForInput, writeInput: writeJSInput, stopExecution: stopJS,
-  } = useJavaScriptRunner();
-
-  const {
-    runCode: runInteractive, output: interactiveOutput, isRunning: interactiveRunning, 
-    isWaitingForInput: interactiveWaitingForInput, writeInput: writeInteractiveInput, stopExecution: stopInteractive,
-  } = useInteractiveRunner(activeLanguage);
+  const { runCode: runPython, output: pythonOutput, isRunning: pythonRunning, isReady: pythonReady, isWaitingForInput: pythonWaitingForInput, writeInputToWorker: writePythonInput, stopExecution: stopPython, hasSharedArrayBuffer } = usePyodide();
+  const { runCode: runJS, output: jsOutput, isRunning: jsRunning, isWaitingForInput: jsWaitingForInput, writeInput: writeJSInput, stopExecution: stopJS } = useJavaScriptRunner();
+  const { runCode: runInteractive, output: interactiveOutput, isRunning: interactiveRunning, isWaitingForInput: interactiveWaitingForInput, writeInput: writeInteractiveInput, stopExecution: stopInteractive } = useInteractiveRunner(activeLanguage);
 
   const isPython = activeLanguage === 'python';
   const isJavaScript = activeLanguage === 'javascript';
   
-  // Unified Runner State
   const getCurrentRunnerState = useCallback(() => {
     if (isPython) return { output: pythonOutput, isRunning: pythonRunning, isWaitingForInput: pythonWaitingForInput, isReady: pythonReady };
     else if (isJavaScript) return { output: jsOutput, isRunning: jsRunning, isWaitingForInput: jsWaitingForInput, isReady: true };
@@ -315,9 +145,6 @@ const Compiler = () => {
   const isLoading = runnerState.isRunning || (isPython && !pythonReady);
   const isExecuting = runnerState.isRunning;
 
-  // --- EFFECTS ---
-
-  // Timer Logic
   useEffect(() => {
     if (isExecuting && executionStartRef.current === null) {
       executionStartRef.current = Date.now();
@@ -331,10 +158,9 @@ const Compiler = () => {
     return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
   }, [isExecuting]);
 
-  // Fetch Locked Languages from Supabase
   useEffect(() => {
-    supabase.from('languages').select('id, is_locked').then(({ data, error }) => {
-      if (!error && data) {
+    supabase.from('languages').select('id, is_locked').then(({ data }) => {
+      if (data) {
         const statusMap: Record<string, boolean> = {};
         data.forEach((lang: any) => statusMap[lang.id] = lang.is_locked);
         setLockedLanguages(statusMap);
@@ -342,44 +168,20 @@ const Compiler = () => {
     });
   }, []);
 
-  // Persist State
   useEffect(() => {
     localStorage.setItem('codevo-code', code);
     localStorage.setItem('codevo-lang', activeLanguage);
   }, [code, activeLanguage]);
 
-  // --- HANDLERS ---
-
-  const handleLanguageChange = (val: string) => {
-    const newLang = val as Language;
-    if (lockedLanguages[newLang]) {
-        toast({ title: "Module Locked", description: "This language protocol is restricted.", variant: "destructive" });
-        return;
-    }
-    setActiveLanguage(newLang);
-    setCode(getStarterTemplate(newLang));
-    setExecutionTime(null);
-  };
-
-  const handleReset = () => {
-    setCode(getStarterTemplate(activeLanguage));
-    setExecutionTime(null);
-    toast({ title: "System Reset", description: "Codebase restored to factory settings.", className: "bg-black border border-white/20 text-white" });
-  };
-
   const handleRun = async () => {
-    if (isLoading) return;
-    if (lockedLanguages[activeLanguage]) { toast({ title: "Access Denied", description: "Language locked.", variant: "destructive" }); return; }
+    if (isLoading || lockedLanguages[activeLanguage]) return;
     setExecutionTime(null);
     executionStartRef.current = Date.now();
-    if (isPython) runPython(code);
-    else if (isJavaScript) runJS(code);
-    else runInteractive(code);
+    if (isPython) runPython(code); else if (isJavaScript) runJS(code); else runInteractive(code);
   };
 
   const handleStop = () => {
     if (isPython) stopPython(); else if (isJavaScript) stopJS(); else stopInteractive();
-    toast({ title: "Sequence Aborted", description: "Execution terminated manually.", variant: "destructive" });
   };
 
   const handleDownload = () => {
@@ -394,8 +196,8 @@ const Compiler = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast({ title: "Source Extracted", description: `${filename} downloaded successfully.`, className: "bg-black border border-white/20 text-white" });
-    } catch { toast({ title: "Error", description: "Failed to generate archive.", variant: "destructive" }); }
+      toast({ title: "Source Extracted", description: "File saved to local drive.", className: "bg-black border-white/10 text-white" });
+    } catch { }
   };
 
   const handleTerminalInput = useCallback((char: string) => {
@@ -405,19 +207,12 @@ const Compiler = () => {
   }, [isPython, isJavaScript, writePythonInput, writeJSInput, writeInteractiveInput]);
 
   const handleClearTerminal = () => {
-    if (!isExecuting) {
-      if (isPython) runPython(''); else if (isJavaScript) runJS(''); else runInteractive('');
-    }
+    if (!isExecuting) { if (isPython) runPython(''); else if (isJavaScript) runJS(''); else runInteractive(''); }
   };
 
   const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-        setIsFullScreen(true);
-    } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-        setIsFullScreen(false);
-    }
+    if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); setIsFullScreen(true); } 
+    else { if (document.exitFullscreen) document.exitFullscreen(); setIsFullScreen(false); }
   };
 
   const activeLangConfig = LANGUAGES_CONFIG.find(l => l.id === activeLanguage);
@@ -427,27 +222,20 @@ const Compiler = () => {
       
       {/* --- EVENT HORIZON BACKGROUND --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-         {/* The Void */}
          <div className="absolute inset-0 bg-black" />
-         
-         {/* Nebula Blooms - Cold Colors Only (No Cheap Yellow) */}
          <div className="absolute top-[-30%] left-[-10%] w-[80vw] h-[80vw] bg-indigo-900/10 rounded-full blur-[150px] animate-pulse duration-[8000ms]" />
          <div className="absolute bottom-[-30%] right-[-10%] w-[70vw] h-[70vw] bg-cyan-900/10 rounded-full blur-[150px] animate-pulse duration-[10000ms]" />
-         
-         {/* Starlight Noise */}
          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.06] mix-blend-overlay" />
-         
-         {/* Grid Matrix */}
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_60%,transparent_100%)] pointer-events-none" />
       </div>
 
-      {/* --- HEADER: OBSIDIAN CRYSTAL --- */}
+      {/* --- HEADER --- */}
       <header className="relative z-50 h-16 shrink-0 border-b border-white/[0.08] bg-[#000000]/60 backdrop-blur-2xl flex items-center justify-between px-6 shadow-[0_10px_40px_-10px_rgba(0,0,0,1)]">
         
         {/* BRANDING */}
         <div className="flex items-center gap-8">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="w-10 h-10 rounded-full border border-white/5 bg-white/[0.02] hover:bg-white/10 hover:border-white/20 text-zinc-400 hover:text-white transition-all duration-500 group">
-            <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <Layout className="w-4 h-4 stroke-[1.5] group-hover:scale-110 transition-transform" />
           </Button>
           
           <div className="hidden md:flex flex-col justify-center gap-0.5 group cursor-pointer">
@@ -463,11 +251,10 @@ const Compiler = () => {
           </div>
         </div>
 
-        {/* CENTER: FLOATING COMMAND DECK */}
+        {/* CENTER: COMMAND DECK */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center">
            <div className="flex items-center gap-2 p-1.5 rounded-full bg-[#050505]/80 border border-white/10 shadow-[0_0_30px_-10px_rgba(255,255,255,0.05)] backdrop-blur-md relative overflow-hidden group/deck">
               
-              {/* Language Selector */}
               <Select value={activeLanguage} onValueChange={(v) => {
                   if (lockedLanguages[v]) { toast({ title: "Module Locked", variant: "destructive" }); return; }
                   setActiveLanguage(v as Language);
@@ -508,9 +295,8 @@ const Compiler = () => {
 
               <div className="w-px h-5 bg-white/10" />
 
-              {/* Timer */}
               <div className="flex items-center gap-3 px-5 text-zinc-500">
-                 <Clock className={cn("w-4 h-4 transition-colors", isExecuting && "text-cyan-400 animate-spin-slow")} />
+                 <Timer className={cn("w-4 h-4 transition-colors stroke-[1.5]", isExecuting && "text-cyan-400 animate-spin-slow")} />
                  <span className={cn("font-mono text-xs tabular-nums tracking-widest transition-colors", isExecuting && "text-white text-shadow-glow")}>
                    {isExecuting ? formatTime(executionTime || 0) : executionTime !== null ? formatTime(executionTime) : '00.00s'}
                  </span>
@@ -522,13 +308,13 @@ const Compiler = () => {
         <div className="flex items-center gap-4">
           <div className="flex items-center bg-[#050505]/50 rounded-full p-1 border border-white/5 backdrop-blur-md">
              <Button onClick={() => { setCode(getStarterTemplate(activeLanguage)); setExecutionTime(null); toast({title:"Reset Complete", className:"bg-black text-white border-white/10"}); }} variant="ghost" size="icon" className="h-9 w-9 text-zinc-600 hover:text-white rounded-full hover:bg-white/10 transition-colors">
-                <RotateCcw className="w-4 h-4" />
+                <ListRestart className="w-4 h-4 stroke-[1.5]" />
              </Button>
              <Button onClick={handleDownload} variant="ghost" size="icon" className="h-9 w-9 text-zinc-600 hover:text-white rounded-full hover:bg-white/10 transition-colors">
-                <Download className="w-4 h-4" />
+                <FileDown className="w-4 h-4 stroke-[1.5]" />
              </Button>
              <Button onClick={toggleFullScreen} variant="ghost" size="icon" className="h-9 w-9 text-zinc-600 hover:text-white rounded-full hover:bg-white/10 hidden sm:flex transition-colors">
-                {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                {isFullScreen ? <Minimize className="w-4 h-4 stroke-[1.5]" /> : <Scan className="w-4 h-4 stroke-[1.5]" />}
              </Button>
           </div>
 
@@ -539,7 +325,7 @@ const Compiler = () => {
               onClick={handleStop}
               className="h-10 px-6 bg-red-900/20 text-red-500 border border-red-500/30 hover:bg-red-900/40 font-bold text-[10px] tracking-[0.2em] uppercase shadow-[0_0_30px_-5px_rgba(239,68,68,0.4)] animate-pulse rounded-full"
             >
-              <Square className="w-3 h-3 mr-3 fill-current" /> Abort
+              <Ban className="w-4 h-4 mr-3 fill-current" /> Abort
             </Button>
           ) : (
             <Button 
@@ -552,7 +338,7 @@ const Compiler = () => {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-600/0 via-cyan-500/20 to-cyan-600/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
               <div className="relative z-10 flex items-center gap-3">
-                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-current" />}
+                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Rocket className="w-3.5 h-3.5 fill-current stroke-none" />}
                 {isLoading ? "INIT..." : "IGNITE"}
               </div>
             </Button>
@@ -560,7 +346,7 @@ const Compiler = () => {
         </div>
       </header>
 
-      {/* --- WORKSPACE: THE VOID --- */}
+      {/* --- WORKSPACE --- */}
       <div className="flex-1 overflow-hidden relative z-10 p-3 md:p-6">
         <div className="h-full w-full rounded-[2rem] border border-white/[0.08] bg-[#030303]/80 backdrop-blur-xl overflow-hidden shadow-2xl flex flex-col relative group/frame transition-all duration-1000">
           
@@ -579,7 +365,7 @@ const Compiler = () => {
                     SOURCE // {getFileName(activeLanguage)}
                  </div>
                  <div className="text-[10px] text-zinc-700 font-mono hover:text-zinc-400 transition-colors cursor-pointer flex items-center gap-2">
-                    UTF-8 <span className="text-zinc-800">|</span> LF
+                    <SlidersHorizontal className="w-3 h-3" /> CONFIG
                  </div>
               </div>
 
