@@ -13,68 +13,69 @@ import {
   Loader2, Play, RefreshCw, Home, Terminal as TerminalIcon, 
   Download, Lock, Square, Clock, RotateCcw, Zap, Settings, 
   Wifi, Activity, Cpu, Maximize2, Minimize2, Command, Sparkles,
-  ChevronDown
+  ChevronRight, Infinity, Code2, Globe, Server
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// --- PREMIUM CONFIGURATION WITH REAL LOGOS ---
+// --- GOD TIER CONFIGURATION ---
+// "Event Horizon" Color Palette: Deep Space Black, Electric Cyan, Hyper-Violet
 
 const LANGUAGES_CONFIG = [
   { 
     id: 'python', 
     name: 'Python', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
-    color: 'text-blue-400',
-    gradient: 'from-blue-400/20 to-yellow-400/20'
+    glow: 'shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)]', // Electric Blue
+    border: 'group-hover/item:border-blue-500/50'
   },
   { 
     id: 'javascript', 
     name: 'JavaScript', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
-    color: 'text-yellow-300',
-    gradient: 'from-yellow-300/20 to-orange-500/20'
+    glow: 'shadow-[0_0_30px_-5px_rgba(250,204,21,0.4)]', // Solar Gold
+    border: 'group-hover/item:border-yellow-500/50'
   },
   { 
     id: 'java', 
     name: 'Java', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
-    color: 'text-red-400',
-    gradient: 'from-red-400/20 to-orange-500/20'
+    glow: 'shadow-[0_0_30px_-5px_rgba(239,68,68,0.5)]', // Crimson Red
+    border: 'group-hover/item:border-red-500/50'
   },
   { 
     id: 'cpp', 
     name: 'C++', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
-    color: 'text-blue-500',
-    gradient: 'from-blue-500/20 to-cyan-500/20'
+    glow: 'shadow-[0_0_30px_-5px_rgba(56,189,248,0.5)]', // Sky Blue
+    border: 'group-hover/item:border-cyan-500/50'
   },
   { 
     id: 'c', 
     name: 'C', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
-    color: 'text-blue-400',
-    gradient: 'from-blue-400/20 to-indigo-500/20'
+    glow: 'shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)]', // Indigo
+    border: 'group-hover/item:border-indigo-500/50'
   },
   { 
     id: 'sql', 
     name: 'SQL', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
-    color: 'text-purple-400',
-    gradient: 'from-purple-400/20 to-pink-500/20'
+    glow: 'shadow-[0_0_30px_-5px_rgba(168,85,247,0.5)]', // Deep Purple
+    border: 'group-hover/item:border-purple-500/50'
   },
   { 
     id: 'bash', 
     name: 'Bash', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
-    color: 'text-zinc-300',
-    gradient: 'from-zinc-500/20 to-zinc-300/20'
+    glow: 'shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)]', // Starlight White
+    border: 'group-hover/item:border-white/50'
   },
 ] as const;
 
-// --- EXPANDED STARTER TEMPLATES ---
+// --- FULLY EXPANDED STARTER TEMPLATES ---
 
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
@@ -86,16 +87,17 @@ public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         
-        // --- MISSION START ---
-        System.out.println(">> JAVA RUNTIME ENVIRONMENT ACTIVE");
-        System.out.print(">> Enter Agent Name: ");
+        // --- JAVA RUNTIME INITIALIZED ---
+        System.out.println(">> SYSTEM ONLINE.");
+        System.out.print(">> Enter Command: ");
         
-        String name = sc.nextLine();
-        
-        System.out.println(">> Authenticating " + name + "...");
-        System.out.println(">> Access Granted.");
-        
-        // Your logic here
+        if (sc.hasNextLine()) {
+            String input = sc.nextLine();
+            System.out.println(">> Processing: " + input);
+            System.out.println(">> Status: EXECUTION COMPLETE");
+        } else {
+            System.out.println(">> No input detected.");
+        }
         
         sc.close();
     }
@@ -112,13 +114,16 @@ int main() {
     // --- C++ OPTIMIZED CORE ---
     string input_data;
     
-    cout << ">> SYSTEM INITIALIZED." << endl;
-    cout << ">> Awaiting Input Command: ";
+    cout << ">> KERNEL ACTIVE." << endl;
+    cout << ">> Awaiting Input Parameters: ";
     
-    getline(cin, input_data);
-    
-    cout << ">> Processing: " << input_data << endl;
-    cout << ">> Execution Complete." << endl;
+    // Check if input is available
+    if (getline(cin, input_data)) {
+        cout << ">> Received Data: " << input_data << endl;
+        cout << ">> Operations successful." << endl;
+    } else {
+        cout << ">> Input stream empty." << endl;
+    }
     
     return 0;
 }`;
@@ -130,93 +135,110 @@ int main() {
 int main() {
     char buffer[100];
     
-    printf(">> C KERNEL LOADED.\\n");
-    printf(">> Enter command sequence: ");
+    printf(">> C ENVIRONMENT LOADED.\\n");
+    printf(">> Enter execution token: ");
     
-    fgets(buffer, 100, stdin);
-    // Remove newline
-    buffer[strcspn(buffer, "\\n")] = 0; 
+    if (fgets(buffer, 100, stdin) != NULL) {
+        // Remove trailing newline
+        buffer[strcspn(buffer, "\\n")] = 0; 
+        printf(">> Token Accepted: %s\\n", buffer);
+    } else {
+        printf(">> No token provided.\\n");
+    }
     
-    printf(">> Received: %s\\n", buffer);
-    printf(">> Memory cleared.\\n");
-    
+    printf(">> Memory released.\\n");
     return 0;
 }`;
     case 'javascript': 
-      return `// --- JAVASCRIPT ASYNC RUNTIME ---
+      return `// --- JAVASCRIPT V8 ENGINE ---
 
-console.log(">> V8 ENGINE ONLINE");
+console.log(">> NODE.JS ENVIRONMENT READY");
 
-// Interactive Input Wrapper
-const userInput = await prompt(">> Enter system parameters: ");
+async function main() {
+    try {
+        // Interactive input wrapper
+        const userInput = await prompt(">> Identify User: ");
+        
+        console.log(\`>> Authenticating \${userInput}...\`);
+        console.log(">> Access Level: ADMIN");
+        
+        const systemStatus = {
+            memory: "OK",
+            cpu: "OPTIMIZED",
+            network: "SECURE"
+        };
+        
+        console.table(systemStatus);
+        
+    } catch (error) {
+        console.error(">> ERR:", error);
+    }
+}
 
-console.log(\`>> Analyzing \${userInput}...\`);
-
-const metrics = [
-  { id: 1, status: 'OK' },
-  { id: 2, status: 'OPTIMIZED' }
-];
-
-console.table(metrics);
-console.log(">> Process terminated.");`;
+main();`;
     case 'sql': 
       return `-- --- SQL DATA MATRIX ---
 
--- 1. Initialize Schema
-CREATE TABLE missions (
+-- 1. Create a virtual schema
+CREATE TABLE systems (
     id INTEGER PRIMARY KEY,
-    codename TEXT NOT NULL,
-    status TEXT DEFAULT 'PENDING',
-    priority INTEGER
+    name TEXT NOT NULL,
+    status TEXT DEFAULT 'OFFLINE',
+    load_percentage INTEGER
 );
 
--- 2. Inject Data
-INSERT INTO missions (codename, status, priority) VALUES 
-    ('PROJECT_GENESIS', 'ACTIVE', 1),
-    ('OPERATION_NIGHTFALL', 'COMPLETED', 2),
-    ('PROTOCOL_OMEGA', 'CLASSIFIED', 5);
+-- 2. Inject dummy data
+INSERT INTO systems (name, status, load_percentage) VALUES 
+    ('CORE_REACTOR', 'ONLINE', 85),
+    ('NAV_COMPUTER', 'ONLINE', 12),
+    ('LIFE_SUPPORT', 'CRITICAL', 98);
 
--- 3. Query Matrix
-SELECT * FROM missions 
-WHERE priority <= 2
-ORDER BY priority ASC;`;
+-- 3. Execute Query
+SELECT * FROM systems 
+WHERE status = 'ONLINE'
+ORDER BY load_percentage DESC;`;
     case 'bash': 
       return `#!/bin/bash
 
-echo ">> BASH SHELL ACCESS GRANTED"
-echo ">> Current User: $USER"
+echo ">> BASH SHELL INITIALIZED"
+echo ">> HOST: $HOSTNAME"
+echo ">> USER: $USER"
 
-read -p ">> Enter target directory: " target
+read -p ">> Enter target directive: " directive
 
-if [ -z "$target" ]; then
-    echo ">> No target specified. Defaulting to root."
+if [ -z "$directive" ]; then
+    echo ">> No directive received. Standing by."
 else
-    echo ">> Navigating to $target..."
-fi
-
-echo ">> Script execution finished."`;
+    echo ">> Executing directive: $directive"
+    echo ">> [====================] 100%"
+    echo ">> Done."
+fi`;
     default: 
       return `# --- PYTHON 3 NEURAL INTERFACE ---
 import time
 import sys
 
-def boot_system():
-    print(">> LOADING KERNEL MODULES...")
-    time.sleep(0.5)
-    print(">> READY.")
+def system_check():
+    print(">> INITIALIZING SINGULARITY KERNEL...")
+    for i in range(3):
+        print(f">> LOADING MODULE {i+1}...")
+        time.sleep(0.2)
+    print(">> SYSTEM READY.")
 
-boot_system()
+system_check()
 
 # Interactive Input
-user_cmd = input(">> Enter Python Expression: ")
-
 try:
-    result = eval(user_cmd)
-    print(f">> Result: {result}")
+    user_input = input(">> Enter Python Expression to Evaluate: ")
+    if user_input:
+        result = eval(user_input)
+        print(f">> Result: {result}")
+    else:
+        print(">> No expression entered.")
 except Exception as e:
-    print(f">> Error: {e}")
+    print(f">> RUNTIME ERROR: {e}")
 
-print(">> Session Closed.")`;
+print(">> Session Terminated.")`;
   }
 };
 
@@ -258,10 +280,11 @@ const Compiler = () => {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   
+  // Refs for precise timing
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // --- CODE RUNNERS ---
+  // --- CODE RUNNERS (HOOKS) ---
   const { 
     runCode: runPython, output: pythonOutput, isRunning: pythonRunning, 
     isReady: pythonReady, isWaitingForInput: pythonWaitingForInput, 
@@ -281,6 +304,7 @@ const Compiler = () => {
   const isPython = activeLanguage === 'python';
   const isJavaScript = activeLanguage === 'javascript';
   
+  // Unified Runner State
   const getCurrentRunnerState = useCallback(() => {
     if (isPython) return { output: pythonOutput, isRunning: pythonRunning, isWaitingForInput: pythonWaitingForInput, isReady: pythonReady };
     else if (isJavaScript) return { output: jsOutput, isRunning: jsRunning, isWaitingForInput: jsWaitingForInput, isReady: true };
@@ -292,6 +316,8 @@ const Compiler = () => {
   const isExecuting = runnerState.isRunning;
 
   // --- EFFECTS ---
+
+  // Timer Logic
   useEffect(() => {
     if (isExecuting && executionStartRef.current === null) {
       executionStartRef.current = Date.now();
@@ -305,6 +331,7 @@ const Compiler = () => {
     return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
   }, [isExecuting]);
 
+  // Fetch Locked Languages from Supabase
   useEffect(() => {
     supabase.from('languages').select('id, is_locked').then(({ data, error }) => {
       if (!error && data) {
@@ -315,16 +342,18 @@ const Compiler = () => {
     });
   }, []);
 
+  // Persist State
   useEffect(() => {
     localStorage.setItem('codevo-code', code);
     localStorage.setItem('codevo-lang', activeLanguage);
   }, [code, activeLanguage]);
 
   // --- HANDLERS ---
+
   const handleLanguageChange = (val: string) => {
     const newLang = val as Language;
     if (lockedLanguages[newLang]) {
-        toast({ title: "Module Locked", description: "This language protocol is currently disabled.", variant: "destructive" });
+        toast({ title: "Module Locked", description: "This language protocol is restricted.", variant: "destructive" });
         return;
     }
     setActiveLanguage(newLang);
@@ -335,7 +364,7 @@ const Compiler = () => {
   const handleReset = () => {
     setCode(getStarterTemplate(activeLanguage));
     setExecutionTime(null);
-    toast({ title: "System Reset", description: "Codebase reverted.", className: "bg-[#0c0c0e] border border-white/10 text-white" });
+    toast({ title: "System Reset", description: "Codebase restored to factory settings.", className: "bg-black border border-white/20 text-white" });
   };
 
   const handleRun = async () => {
@@ -350,7 +379,7 @@ const Compiler = () => {
 
   const handleStop = () => {
     if (isPython) stopPython(); else if (isJavaScript) stopJS(); else stopInteractive();
-    toast({ title: "Sequence Aborted", description: "Execution terminated.", variant: "destructive" });
+    toast({ title: "Sequence Aborted", description: "Execution terminated manually.", variant: "destructive" });
   };
 
   const handleDownload = () => {
@@ -365,8 +394,8 @@ const Compiler = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast({ title: "Archive Saved", description: `${filename} downloaded.` });
-    } catch { toast({ title: "Error", description: "Download failed.", variant: "destructive" }); }
+      toast({ title: "Source Extracted", description: `${filename} downloaded successfully.`, className: "bg-black border border-white/20 text-white" });
+    } catch { toast({ title: "Error", description: "Failed to generate archive.", variant: "destructive" }); }
   };
 
   const handleTerminalInput = useCallback((char: string) => {
@@ -394,113 +423,111 @@ const Compiler = () => {
   const activeLangConfig = LANGUAGES_CONFIG.find(l => l.id === activeLanguage);
 
   return (
-    <div className="h-screen flex flex-col bg-[#020204] text-white overflow-hidden font-sans selection:bg-primary/30 relative">
+    <div className="h-screen flex flex-col bg-[#000000] text-white overflow-hidden font-sans selection:bg-cyan-500/30 relative">
       
-      {/* --- AMBIENT BACKGROUND FX --- */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-         <div className={cn("absolute top-[-20%] left-[20%] w-[60vw] h-[60vw] rounded-full blur-[180px] opacity-15 animate-pulse transition-colors duration-1000", activeLangConfig?.color.replace('text-', 'bg-'))} />
-         <div className="absolute bottom-[-20%] right-[20%] w-[50vw] h-[50vw] bg-violet-600/10 rounded-full blur-[180px]" />
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04]" />
-         {/* Grid Overlay */}
-         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
+      {/* --- EVENT HORIZON BACKGROUND --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+         {/* The Void */}
+         <div className="absolute inset-0 bg-black" />
+         
+         {/* Nebula Blooms - Cold Colors Only (No Cheap Yellow) */}
+         <div className="absolute top-[-30%] left-[-10%] w-[80vw] h-[80vw] bg-indigo-900/10 rounded-full blur-[150px] animate-pulse duration-[8000ms]" />
+         <div className="absolute bottom-[-30%] right-[-10%] w-[70vw] h-[70vw] bg-cyan-900/10 rounded-full blur-[150px] animate-pulse duration-[10000ms]" />
+         
+         {/* Starlight Noise */}
+         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.06] mix-blend-overlay" />
+         
+         {/* Grid Matrix */}
+         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_60%,transparent_100%)] pointer-events-none" />
       </div>
 
-      {/* --- HEADER --- */}
-      <header className="relative z-50 h-16 shrink-0 border-b border-white/5 bg-[#050505]/80 backdrop-blur-2xl flex items-center justify-between px-6">
+      {/* --- HEADER: OBSIDIAN CRYSTAL --- */}
+      <header className="relative z-50 h-16 shrink-0 border-b border-white/[0.08] bg-[#000000]/60 backdrop-blur-2xl flex items-center justify-between px-6 shadow-[0_10px_40px_-10px_rgba(0,0,0,1)]">
         
-        {/* Left: Branding & Status */}
-        <div className="flex items-center gap-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="w-10 h-10 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20 hover:text-white text-zinc-400 transition-all group">
-            <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        {/* BRANDING */}
+        <div className="flex items-center gap-8">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="w-10 h-10 rounded-full border border-white/5 bg-white/[0.02] hover:bg-white/10 hover:border-white/20 text-zinc-400 hover:text-white transition-all duration-500 group">
+            <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
           </Button>
           
-          <div className="hidden md:flex flex-col justify-center">
-             <div className="flex items-center gap-2 select-none group cursor-pointer">
-                <span className="text-xl font-bold tracking-tight text-white group-hover:text-zinc-200 transition-colors font-neuropol">CODEVO</span>
-                {/* PRO BADGE: Holographic/Cosmic Effect */}
-                <div className="relative overflow-hidden rounded-md px-1.5 py-0.5 border border-white/10 bg-white/5 group-hover:border-white/20 transition-all">
-                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                   <span className="relative z-10 text-[9px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 animate-pulse tracking-widest">
-                     PRO
-                   </span>
-                </div>
-             </div>
-             <div className="flex items-center gap-2 mt-0.5">
-                <div className={cn("w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]", isExecuting ? "bg-emerald-500 text-emerald-500 animate-pulse" : "bg-zinc-600 text-zinc-600")} />
-                <span className="text-[9px] font-mono font-medium text-zinc-500 uppercase tracking-wide">
-                  {isExecuting ? 'Processing...' : 'System Idle'}
+          <div className="hidden md:flex flex-col justify-center gap-0.5 group cursor-pointer">
+             <div className="flex items-center gap-3">
+                <span className="text-2xl font-black tracking-tighter text-white font-neuropol drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                  CODEVO
+                </span>
+                <div className="h-5 w-[1px] bg-white/20 rotate-12" />
+                <span className="text-[10px] font-bold tracking-[0.4em] text-cyan-400 uppercase drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
+                  PRO
                 </span>
              </div>
           </div>
         </div>
 
-        {/* Center: Language Control Capsule */}
+        {/* CENTER: FLOATING COMMAND DECK */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center">
-           <div className="flex items-center gap-1 p-1 rounded-full bg-[#0a0a0c]/80 border border-white/10 shadow-2xl backdrop-blur-3xl relative group/capsule overflow-hidden">
-              {/* Internal Glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/capsule:translate-x-full transition-transform duration-1000 pointer-events-none" />
+           <div className="flex items-center gap-2 p-1.5 rounded-full bg-[#050505]/80 border border-white/10 shadow-[0_0_30px_-10px_rgba(255,255,255,0.05)] backdrop-blur-md relative overflow-hidden group/deck">
               
-              <Select value={activeLanguage} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="h-9 border-none bg-transparent text-sm font-medium text-white focus:ring-0 hover:bg-white/5 rounded-full pl-3 pr-2 min-w-[160px] transition-colors">
+              {/* Language Selector */}
+              <Select value={activeLanguage} onValueChange={(v) => {
+                  if (lockedLanguages[v]) { toast({ title: "Module Locked", variant: "destructive" }); return; }
+                  setActiveLanguage(v as Language);
+                  setCode(getStarterTemplate(v as Language));
+                  setExecutionTime(null);
+              }}>
+                <SelectTrigger className="h-10 border-none bg-transparent text-sm font-bold text-white focus:ring-0 hover:bg-white/5 rounded-full pl-4 pr-3 min-w-[180px] transition-all">
                   <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 shrink-0 relative">
-                      <div className="absolute inset-0 bg-white/20 blur-sm rounded-full" />
-                      <img src={activeLangConfig?.logo} alt={activeLangConfig?.name} className="w-full h-full object-contain relative z-10" />
+                    <div className="w-5 h-5 relative grayscale group-hover/deck:grayscale-0 transition-all duration-500">
+                      <img src={activeLangConfig?.logo} alt={activeLangConfig?.name} className="w-full h-full object-contain" />
                     </div>
-                    <span className="truncate text-zinc-200">{activeLangConfig?.name}</span>
+                    <span className="tracking-wide text-zinc-300 group-hover/deck:text-white transition-colors">{activeLangConfig?.name}</span>
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-2xl border-white/10 text-white rounded-2xl shadow-2xl min-w-[240px] p-2">
-                  <div className="px-3 py-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1 flex items-center justify-between">
-                    <span>Environment</span>
-                    <Sparkles className="w-3 h-3 text-zinc-600" />
-                  </div>
+                <SelectContent className="bg-[#050505] border-white/10 text-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] min-w-[240px] p-2 backdrop-blur-3xl">
                   {LANGUAGES_CONFIG.map((lang) => (
                     <SelectItem 
                       key={lang.id} 
                       value={lang.id} 
                       disabled={lockedLanguages[lang.id]}
-                      className="text-xs font-medium focus:bg-white/10 cursor-pointer rounded-xl py-2.5 px-3 my-0.5 transition-all group/item data-[state=checked]:bg-white/10"
+                      className={cn(
+                        "text-xs font-medium focus:bg-white/10 cursor-pointer rounded-xl py-3 px-4 my-1 transition-all group/item data-[state=checked]:bg-white/5 border border-transparent",
+                        lang.border
+                      )}
                     >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className="w-6 h-6 p-1 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center group-hover/item:border-white/20 transition-colors">
-                           <img src={lang.logo} alt={lang.name} className="w-full h-full object-contain opacity-80 group-hover/item:opacity-100 transition-opacity grayscale group-hover/item:grayscale-0" />
-                        </div>
-                        <span className={cn("transition-colors group-hover/item:text-white text-zinc-400 font-bold", activeLanguage === lang.id && "text-white")}>{lang.name}</span>
-                        {lockedLanguages[lang.id] && <Lock className="w-3 h-3 text-red-500 ml-auto" />}
+                      <div className="flex items-center gap-4 w-full">
+                        <img src={lang.logo} alt={lang.name} className="w-5 h-5 object-contain opacity-50 group-hover/item:opacity-100 transition-opacity grayscale group-hover/item:grayscale-0" />
+                        <span className={cn("transition-colors text-zinc-500 group-hover/item:text-white uppercase tracking-wider font-bold")}>{lang.name}</span>
                         {activeLanguage === lang.id && (
-                          <div className="ml-auto flex items-center gap-2">
-                             <span className="text-[9px] text-zinc-500 font-mono">ACTIVE</span>
-                             <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
-                          </div>
+                          <div className={cn("ml-auto w-1.5 h-1.5 rounded-full bg-white", lang.glow)} />
                         )}
+                        {lockedLanguages[lang.id] && <Lock className="w-3 h-3 text-red-900 ml-auto" />}
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <div className="w-px h-4 bg-white/10 mx-1" />
+              <div className="w-px h-5 bg-white/10" />
 
-              <div className="flex items-center gap-2 px-4 text-zinc-400 min-w-[90px] justify-center">
-                 <Clock className={cn("w-3.5 h-3.5", isExecuting && "text-primary animate-spin-slow")} />
-                 <span className={cn("font-mono text-xs tabular-nums transition-colors", isExecuting && "text-white")}>
-                   {isExecuting ? formatTime(executionTime || 0) : executionTime !== null ? formatTime(executionTime) : '0.00s'}
+              {/* Timer */}
+              <div className="flex items-center gap-3 px-5 text-zinc-500">
+                 <Clock className={cn("w-4 h-4 transition-colors", isExecuting && "text-cyan-400 animate-spin-slow")} />
+                 <span className={cn("font-mono text-xs tabular-nums tracking-widest transition-colors", isExecuting && "text-white text-shadow-glow")}>
+                   {isExecuting ? formatTime(executionTime || 0) : executionTime !== null ? formatTime(executionTime) : '00.00s'}
                  </span>
               </div>
            </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-[#0a0a0c] rounded-xl p-1 border border-white/5 shadow-inner">
-             <Button onClick={handleReset} variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white rounded-lg hover:bg-white/10 transition-colors" title="Reset Code">
+        {/* RIGHT: ACTION ARMORY */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-[#050505]/50 rounded-full p-1 border border-white/5 backdrop-blur-md">
+             <Button onClick={() => { setCode(getStarterTemplate(activeLanguage)); setExecutionTime(null); toast({title:"Reset Complete", className:"bg-black text-white border-white/10"}); }} variant="ghost" size="icon" className="h-9 w-9 text-zinc-600 hover:text-white rounded-full hover:bg-white/10 transition-colors">
                 <RotateCcw className="w-4 h-4" />
              </Button>
-             <Button onClick={handleDownload} variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white rounded-lg hover:bg-white/10 transition-colors" title="Download Source">
+             <Button onClick={handleDownload} variant="ghost" size="icon" className="h-9 w-9 text-zinc-600 hover:text-white rounded-full hover:bg-white/10 transition-colors">
                 <Download className="w-4 h-4" />
              </Button>
-             <Button onClick={toggleFullScreen} variant="ghost" size="icon" className="h-9 w-9 text-zinc-500 hover:text-white rounded-lg hover:bg-white/10 hidden sm:flex transition-colors" title="Toggle Fullscreen">
+             <Button onClick={toggleFullScreen} variant="ghost" size="icon" className="h-9 w-9 text-zinc-600 hover:text-white rounded-full hover:bg-white/10 hidden sm:flex transition-colors">
                 {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
              </Button>
           </div>
@@ -510,22 +537,22 @@ const Compiler = () => {
           {isExecuting ? (
             <Button 
               onClick={handleStop}
-              className="h-10 px-6 bg-red-500/10 text-red-500 border border-red-500/50 hover:bg-red-500/20 font-bold text-[10px] tracking-widest uppercase shadow-[0_0_30px_-10px_rgba(239,68,68,0.5)] animate-pulse rounded-xl"
+              className="h-10 px-6 bg-red-900/20 text-red-500 border border-red-500/30 hover:bg-red-900/40 font-bold text-[10px] tracking-[0.2em] uppercase shadow-[0_0_30px_-5px_rgba(239,68,68,0.4)] animate-pulse rounded-full"
             >
-              <Square className="w-3.5 h-3.5 mr-2 fill-current" /> Terminate
+              <Square className="w-3 h-3 mr-3 fill-current" /> Abort
             </Button>
           ) : (
             <Button 
               onClick={handleRun} 
               disabled={isLoading || lockedLanguages[activeLanguage]} 
               className={cn(
-                "group relative h-10 px-8 font-bold text-[10px] tracking-widest uppercase overflow-hidden transition-all rounded-xl",
-                isLoading ? "bg-zinc-800 text-zinc-500 border border-white/5" : "bg-white text-black hover:scale-[1.02] shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
+                "group relative h-10 px-8 font-bold text-[10px] tracking-[0.25em] uppercase overflow-hidden transition-all rounded-full bg-transparent border border-white/20 text-white hover:border-cyan-500/50 hover:text-cyan-50 hover:shadow-[0_0_40px_-10px_rgba(34,211,238,0.5)] active:scale-95",
+                isLoading && "opacity-50 cursor-not-allowed"
               )}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 z-0" />
-              <div className="relative z-10 flex items-center gap-2">
-                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600/0 via-cyan-500/20 to-cyan-600/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              <div className="relative z-10 flex items-center gap-3">
+                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-current" />}
                 {isLoading ? "INIT..." : "IGNITE"}
               </div>
             </Button>
@@ -533,25 +560,26 @@ const Compiler = () => {
         </div>
       </header>
 
-      {/* --- WORKSPACE --- */}
+      {/* --- WORKSPACE: THE VOID --- */}
       <div className="flex-1 overflow-hidden relative z-10 p-3 md:p-6">
-        <div className="h-full w-full rounded-3xl border border-white/10 bg-[#0a0a0c]/60 backdrop-blur-2xl overflow-hidden shadow-2xl flex flex-col relative group/workspace transition-all duration-700">
+        <div className="h-full w-full rounded-[2rem] border border-white/[0.08] bg-[#030303]/80 backdrop-blur-xl overflow-hidden shadow-2xl flex flex-col relative group/frame transition-all duration-1000">
           
-          {/* Subtle Border Glow on Hover */}
-          <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover/workspace:border-white/5 transition-colors duration-700 pointer-events-none z-20" />
+          {/* Alive Borders */}
+          <div className="absolute inset-0 rounded-[2rem] border border-transparent group-hover/frame:border-white/10 transition-colors duration-1000 pointer-events-none z-50" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover/frame:opacity-100 transition-opacity duration-1000" />
 
           <ResizablePanelGroup direction="vertical" className="h-full relative z-10">
             
             {/* EDITOR PANEL */}
             <ResizablePanel defaultSize={isMobile ? 60 : 70} minSize={30} className="bg-[#050505]/50 relative flex flex-col">
               {/* File Tab */}
-              <div className="flex items-center justify-between h-10 px-4 border-b border-white/5 bg-[#0a0a0c]/50">
-                 <div className="flex items-center gap-2 text-xs font-bold text-zinc-300 bg-white/5 px-4 py-1.5 rounded-t-lg border-t border-x border-white/5 translate-y-[5px] relative z-10 shadow-sm">
-                    <img src={activeLangConfig?.logo} className="w-3.5 h-3.5" alt="lang" />
-                    {getFileName(activeLanguage)}
+              <div className="flex items-center justify-between h-10 px-6 border-b border-white/[0.06] bg-black/40">
+                 <div className="flex items-center gap-3 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                    <div className={cn("w-1.5 h-1.5 rounded-full transition-all duration-500", isExecuting ? "bg-cyan-500 shadow-[0_0_15px_cyan]" : "bg-zinc-700")} />
+                    SOURCE // {getFileName(activeLanguage)}
                  </div>
-                 <div className="text-[10px] text-zinc-600 font-mono flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
-                    <Settings className="w-3 h-3" /> Config
+                 <div className="text-[10px] text-zinc-700 font-mono hover:text-zinc-400 transition-colors cursor-pointer flex items-center gap-2">
+                    UTF-8 <span className="text-zinc-800">|</span> LF
                  </div>
               </div>
 
@@ -564,41 +592,38 @@ const Compiler = () => {
               </div>
             </ResizablePanel>
 
-            <ResizableHandle withHandle className="bg-[#050505] border-t border-b border-white/5 h-2 hover:bg-primary/50 transition-colors group-hover/handle:shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
+            <ResizableHandle withHandle className="bg-[#020202] border-t border-b border-white/[0.06] h-2 hover:bg-cyan-900/30 transition-colors group-hover/handle:border-cyan-500/30" />
 
             {/* TERMINAL PANEL */}
-            <ResizablePanel defaultSize={isMobile ? 40 : 30} minSize={15} className="bg-[#08080a] flex flex-col min-h-[100px] relative">
+            <ResizablePanel defaultSize={isMobile ? 40 : 30} minSize={15} className="bg-[#030303] flex flex-col min-h-[100px] relative">
               
               {/* Terminal Header */}
-              <div className="flex items-center justify-between px-4 h-11 border-b border-white/5 bg-[#0a0a0c] shrink-0">
+              <div className="flex items-center justify-between px-6 h-12 border-b border-white/[0.06] bg-black/40 shrink-0">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                    <TerminalIcon className="w-4 h-4 text-blue-400" /> 
-                    Console Output
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest group-hover/frame:text-zinc-300 transition-colors">
+                    <TerminalIcon className="w-4 h-4 text-zinc-600 group-hover/frame:text-white transition-colors" /> 
+                    Output Stream
                   </div>
                   {isPython && !hasSharedArrayBuffer && (
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-                      <div className="w-1 h-1 rounded-full bg-amber-500" />
-                      <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wide">Restricted Mode</span>
-                    </div>
+                    <span className="text-[9px] font-mono text-zinc-700 px-2 py-1 rounded bg-white/[0.02] border border-white/[0.05]">
+                      LIMITED MODE
+                    </span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-3">
                   {isExecuting && (
-                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_10px_-5px_rgba(16,185,129,0.3)]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[9px] font-bold text-emerald-500 tracking-wider uppercase">
-                        {runnerState.isWaitingForInput ? 'Awaiting Input' : 'Running'}
-                      </span>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/30 border border-cyan-500/20">
+                      <div className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                      <span className="text-[9px] font-bold text-cyan-400 tracking-wider uppercase">Active</span>
                     </div>
                   )}
                   
                   <button 
                     onClick={handleClearTerminal}
                     disabled={isExecuting}
-                    className="p-2 rounded-lg hover:bg-white/5 text-zinc-600 hover:text-white transition-all disabled:opacity-30 hover:rotate-90 active:scale-90"
-                    title="Clear Console"
+                    className="p-2 rounded-full hover:bg-white/10 text-zinc-600 hover:text-white transition-all disabled:opacity-30 hover:rotate-180"
+                    title="Purge Logs"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
@@ -606,19 +631,16 @@ const Compiler = () => {
               </div>
               
               {/* Terminal Body */}
-              <div className="flex-1 relative bg-[#050505] overflow-hidden">
+              <div className="flex-1 relative bg-[#020202] overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] z-0" />
+                
                 {isPython && !pythonReady ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 gap-6 z-10">
-                    <div className="relative flex items-center justify-center">
-                       <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 animate-pulse" />
-                       <Loader2 className="w-8 h-8 animate-spin text-blue-500 relative z-10" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 gap-6 z-10">
+                    <div className="relative">
+                       <div className="absolute inset-0 bg-cyan-500 blur-[40px] opacity-10 animate-pulse" />
+                       <Loader2 className="w-8 h-8 animate-spin text-cyan-800" />
                     </div>
-                    <p className="text-[10px] font-mono tracking-wider uppercase text-zinc-500 flex items-center gap-2">
-                      <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" />
-                      Initializing Kernel
-                      <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" />
-                    </p>
+                    <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-zinc-700">Initializing Kernel...</p>
                   </div>
                 ) : (
                   <TerminalView 
@@ -635,31 +657,29 @@ const Compiler = () => {
         </div>
       </div>
 
-      {/* --- FOOTER STATUS --- */}
-      <footer className="h-8 bg-[#08080a] border-t border-white/5 flex items-center justify-between px-6 shrink-0 text-[10px] font-mono text-zinc-600 select-none relative z-50">
-         <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 hover:text-zinc-300 transition-colors cursor-help">
-               <Wifi className="w-3 h-3 text-emerald-500" />
-               <span className="hidden sm:inline">ONLINE</span>
+      {/* --- TELEMETRY FOOTER --- */}
+      <footer className="h-9 bg-[#020202] border-t border-white/[0.06] flex items-center justify-between px-8 shrink-0 text-[10px] font-mono text-zinc-600 select-none relative z-50">
+         <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 group cursor-help">
+               <div className="w-1 h-1 rounded-full bg-emerald-500 group-hover:shadow-[0_0_5px_rgba(16,185,129,0.8)] transition-all" />
+               <span className="group-hover:text-zinc-400 transition-colors">MAINNET: CONNECTED</span>
             </div>
-            <div className="flex items-center gap-2 hover:text-zinc-300 transition-colors cursor-help">
-               <Activity className="w-3 h-3 text-blue-500" />
-               <span>24ms</span>
+            <div className="flex items-center gap-2 group cursor-help">
+               <Activity className="w-3 h-3 group-hover:text-cyan-500 transition-colors" />
+               <span className="group-hover:text-zinc-400 transition-colors">PING: 24ms</span>
             </div>
-            <div className="flex items-center gap-2 hover:text-zinc-300 transition-colors cursor-help hidden sm:flex">
-               <Cpu className="w-3 h-3 text-purple-500" />
-               <span>{isPython ? 'PYODIDE' : isJavaScript ? 'V8' : 'PISTON'}</span>
+            <div className="flex items-center gap-2 group cursor-help hidden sm:flex">
+               <Cpu className="w-3 h-3 group-hover:text-purple-500 transition-colors" />
+               <span className="group-hover:text-zinc-400 transition-colors">CORE: {isPython ? 'WASM-PY' : isJavaScript ? 'V8-ISO' : 'PISTON-LX'}</span>
             </div>
          </div>
          <div className="flex items-center gap-6">
-            <div className="hidden sm:flex items-center gap-2 hover:text-zinc-300 transition-colors">
-               <Command className="w-3 h-3" />
-               <span>READY</span>
-            </div>
-            <span className="hidden sm:inline">UTF-8</span>
-            <div className="flex items-center gap-2 text-zinc-400 bg-white/5 px-2 py-0.5 rounded border border-white/5">
-               <img src={activeLangConfig?.logo} className="w-3 h-3 opacity-60 grayscale" alt="" />
-               {activeLangConfig?.name}
+            <span className="hidden sm:inline hover:text-white transition-colors cursor-pointer">Ln 1, Col 1</span>
+            <div className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors cursor-pointer">
+               <div className="w-3 h-3 opacity-50 grayscale hover:grayscale-0 transition-all">
+                  <img src={activeLangConfig?.logo} alt="" className="w-full h-full object-contain" />
+               </div>
+               {activeLangConfig?.name} v.Latest
             </div>
          </div>
       </footer>
