@@ -19,10 +19,12 @@ import {
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
+// Import local QR library
+import { QRCodeSVG } from 'qrcode.react';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- PREMIUM FOLDER STICKER (Fixed Design Logic) ---
+// --- PREMIUM FOLDER STICKER (Your Exact Design Logic) ---
 const FolderSticker = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative transition-all duration-300 shrink-0", 
@@ -43,7 +45,7 @@ const FolderSticker = ({ active }: { active: boolean }) => (
           style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }}
         />
 
-        {/* Folder Body (Front Section) */}
+        {/* Folder Body (Front Section) - Square top-left for alignment */}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden box-border">
           {/* Interior orange section bar */}
           <div className="absolute top-0 left-0 w-full h-[3.8px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
@@ -63,6 +65,7 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
+// --- QUESTION LIST ICONS ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -215,7 +218,7 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
-      {/* Navbar with Hamburger */}
+      {/* Header */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-4 md:gap-8 font-sans">
           {/* Mobile Sheet Trigger */}
@@ -268,7 +271,6 @@ export default function PracticeArena() {
            
            {isProfileOpen && (
              <div className="absolute top-12 right-0 w-64 bg-[#0c0c0e] border border-white/10 rounded-[4px] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-               {/* Profile Dropdown Content */}
                <div className="flex flex-col gap-3">
                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-xs font-bold text-white">
@@ -279,6 +281,7 @@ export default function PracticeArena() {
                      <span className="text-[10px] text-[#555] font-mono truncate">@{profile?.username || "username"}</span>
                    </div>
                  </div>
+
                  <div className="grid grid-cols-2 gap-2">
                    <div className="bg-white/5 rounded-[2px] p-2 text-center border border-white/5">
                      <span className="block text-[10px] text-[#555] uppercase tracking-wider">Solved</span>
@@ -289,17 +292,21 @@ export default function PracticeArena() {
                      <span className="text-[#00ffa3] font-bold">Top 5%</span>
                    </div>
                  </div>
+
+                 {/* LOCAL QR GENERATOR - Instant Load */}
                  <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(profileLink)}`} 
-                      alt="Profile QR"
-                      className="w-24 h-24"
+                    <QRCodeSVG 
+                      value={profileLink} 
+                      size={96} 
+                      level="H" 
+                      includeMargin={false}
                     />
                     <div className="flex items-center gap-1.5">
                       <QrCode className="w-3 h-3 text-black" />
                       <span className="text-[9px] text-black font-bold uppercase tracking-wider">Scan Profile Card</span>
                     </div>
                  </div>
+
                  {userId && (
                    <Button variant="ghost" className="w-full justify-start text-[11px] h-8 text-[#ff4d4d] hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 uppercase tracking-widest gap-2 mt-2" onClick={handleLogout}>
                      <LogOut className="w-3 h-3" /> Log Out
@@ -311,8 +318,9 @@ export default function PracticeArena() {
         </div>
       </nav>
 
+      {/* Main Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
-        {/* Desktop Sidebar */}
+        {/* Desktop Topics Sidebar */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -321,9 +329,9 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* Main Problems Feed */}
+        {/* Problems Main View */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
-          {/* Scrollable Horizontal Filter Row */}
+          {/* Filters Row */}
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
             <ScrollArea className="w-full" orientation="horizontal">
               <div className="flex items-center gap-2 pb-3 px-1 min-w-max">
@@ -335,7 +343,7 @@ export default function PracticeArena() {
                      )}>{f}</button>
                  ))}
                  
-                 {/* Portaled Dropdown using Popover to avoid clipping */}
+                 {/* Portaled Popover to prevent filter row clipping */}
                  <Popover>
                     <PopoverTrigger asChild>
                       <button className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
@@ -344,7 +352,7 @@ export default function PracticeArena() {
                         Level <ChevronDown className="w-3 h-3" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent align="start" className="w-40 bg-[#0c0c0c] border-[#333] p-1 shadow-2xl">
+                    <PopoverContent align="start" className="w-40 bg-[#0c0c0c] border-[#333] p-1 shadow-2xl z-[60]">
                       <div className="flex flex-col gap-0.5">
                         {['Easy', 'Medium', 'Hard'].map((diff) => (
                           <div key={diff} onClick={() => toggleDifficulty(diff)} className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group">
@@ -358,7 +366,7 @@ export default function PracticeArena() {
                     </PopoverContent>
                  </Popover>
               </div>
-              <ScrollBar orientation="horizontal" className="h-1" />
+              <ScrollBar orientation="horizontal" className="h-1.5" />
             </ScrollArea>
           </div>
 
@@ -397,7 +405,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* Desktop Right Sidebar */}
+        {/* Desktop Stats Sidebar */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
