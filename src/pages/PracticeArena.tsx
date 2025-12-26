@@ -23,7 +23,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- PREMIUM FOLDER STICKER (Your Exact Design Logic) ---
+// --- PREMIUM FOLDER STICKER ---
 const FolderSticker = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative transition-all duration-300 shrink-0", 
@@ -95,6 +95,8 @@ export default function PracticeArena() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
+  
+  // Username update states
   const [newUsername, setNewUsername] = useState('');
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   
@@ -308,8 +310,10 @@ export default function PracticeArena() {
                    </div>
                  </div>
 
+                 {/* Updated QR Section */}
                  <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2 relative overflow-hidden">
-                    <div className="relative">
+                    <div className="relative w-[96px] h-[96px]">
+                      {/* Blur logic: active if no username exists (Guest or Logged in without username) */}
                       <div className={cn("transition-all duration-500", !profile?.username && "blur-md select-none")}>
                         <QRCodeSVG 
                           value={profileLink} 
@@ -319,7 +323,8 @@ export default function PracticeArena() {
                         />
                       </div>
                       
-                      {!profile?.username && (
+                      {/* Input overlay: shown only if logged in AND has no username */}
+                      {userId && !profile?.username && (
                         <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 px-1">
                           <div className="w-full flex flex-col gap-1">
                             <Input 
@@ -344,7 +349,7 @@ export default function PracticeArena() {
                     <div className="flex items-center gap-1.5">
                       <QrCode className="w-3 h-3 text-black" />
                       <span className="text-[9px] text-black font-bold uppercase tracking-wider">
-                        {!profile?.username ? "Claim Username" : "Scan Profile Card"}
+                        {!userId ? "Login to view" : !profile?.username ? "Claim Username" : "Scan Profile Card"}
                       </span>
                     </div>
                  </div>
@@ -446,7 +451,6 @@ export default function PracticeArena() {
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
               <div className="flex flex-col gap-6 font-sans">
-                {/* Conditionally render Guest Card or User Stats */}
                 {!userId ? (
                   <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-6 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-300">
                     <div className="w-12 h-12 rounded-full bg-[#141414] border border-[#1a1a1a] flex items-center justify-center">
