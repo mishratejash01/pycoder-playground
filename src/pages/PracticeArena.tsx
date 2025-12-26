@@ -20,40 +20,21 @@ const BRAND_COLORS = {
 };
 
 /**
- * EXACT COMPONENT: SubTopicHashtag
- * Derived ditto from the provided HTML/CSS design
+ * PREMIUM LOOK HASHTAG
+ * A clean, flat architectural hashtag using the brand palette.
+ * No glow, no sticker backing, strictly professional.
  */
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-5 h-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-40")}>
-    <div className="relative w-full h-full scale-[0.25] origin-top-left">
-      {/* Integrated Marker */}
-      <div 
-        className="absolute top-[2px] left-[20px] w-[25px] h-[8px] border-[3px] border-b-0 rounded-t-[4px] z-0" 
-        style={{ 
-          backgroundColor: BRAND_COLORS.accent, 
-          borderColor: BRAND_COLORS.outline,
-          clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' 
-        }} 
-      />
-      {/* Horizontal Bars */}
-      <div 
-        className="absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] top-[20px]" 
-        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} 
-      />
-      <div 
-        className="absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] bottom-[20px]" 
-        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} 
-      />
-      {/* Vertical Bars */}
-      <div 
-        className="absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] left-[20px]" 
-        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} 
-      />
-      <div 
-        className="absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] right-[20px]" 
-        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} 
-      />
-    </div>
+  <div className={cn(
+    "relative w-4 h-4 shrink-0 transition-opacity duration-300", 
+    active ? "opacity-100" : "opacity-30"
+  )}>
+    {/* Vertical Bars */}
+    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    {/* Horizontal Bars */}
+    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
   </div>
 );
 
@@ -132,7 +113,6 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#080808] text-[#f1f5f9] flex flex-col font-sans overflow-hidden select-none">
-      {/* Navigation Layer */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1f1f1f] bg-[#080808] shrink-0 z-50">
         <div className="flex items-center gap-8">
           <div className="font-extrabold text-xl tracking-tighter">
@@ -165,10 +145,9 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      {/* Main Grid: Left, Middle (Independent Scroll), Right (Fixed) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topic Sidebar (Independent Scroll) */}
+        {/* LEFT COLUMN: Topic Sidebar */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-3 uppercase">Difficulty Level</div>
@@ -187,7 +166,7 @@ export default function PracticeArena() {
           </div>
 
           <div className="flex-1 flex flex-col min-h-0">
-            <ScrollArea className="flex-1 pr-4 font-sans">
+            <ScrollArea className="flex-1 pr-4">
               <nav className="flex flex-col gap-1 pb-10">
                 <div onClick={() => setSelectedTopic(null)}
                   className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer",
@@ -210,7 +189,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Main Scrollable Workspace */}
+        {/* MIDDLE COLUMN: Challenges */}
         <main className="bg-[#121212] border border-[#1f1f1f] rounded-[32px] p-8 md:p-10 flex flex-col shadow-2xl overflow-hidden h-full">
           <div className="shrink-0 flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tight">Recommended Challenges</h2>
@@ -248,7 +227,7 @@ export default function PracticeArena() {
                         {solvedProblemIds.has(problem.id) ? <CheckCircle2 className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
                       </div>
                       <div>
-                        <div className="font-bold text-lg group-hover:text-blue-400 transition-colors tracking-tight font-sans">{problem.title}</div>
+                        <div className="font-bold text-lg group-hover:text-blue-400 transition-colors tracking-tight">{problem.title}</div>
                         <div className="flex items-center gap-3 mt-1 text-[11px] uppercase tracking-wider text-[#64748b]">
                           <span className="font-bold">#{problem.tags?.[0] || 'General'}</span>
                           <span>•</span>
@@ -260,10 +239,10 @@ export default function PracticeArena() {
                     </div>
                     <div className="flex items-center gap-8">
                       <div className="hidden md:block text-right">
-                        <div className="text-[10px] text-[#64748b] font-normal uppercase tracking-tight font-sans">Acceptance</div>
+                        <div className="text-[10px] text-[#64748b] font-normal uppercase tracking-tight">Acceptance</div>
                         <div className="text-sm font-bold font-mono">{problem.acceptance_rate || 0}%</div>
                       </div>
-                      <button className="bg-[#1a1a1a] text-white border border-[#333] px-6 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-blue-500 hover:border-blue-500 transition-all font-sans">
+                      <button className="bg-[#1a1a1a] text-white border border-[#333] px-6 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-blue-500 hover:border-blue-500 transition-all">
                         Solve
                       </button>
                     </div>
@@ -274,14 +253,13 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Analytics & Fixed Activity */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
-            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase font-sans">User Analytics</div>
+            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">User Analytics</div>
             <UserStatsCard userId={userId} />
           </div>
           <div className="space-y-6">
-            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase font-sans">Activity Record</div>
+            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">Activity Record</div>
             <ActivityCalendar userId={userId} />
           </div>
         </aside>
