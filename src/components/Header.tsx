@@ -1,162 +1,169 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Session } from '@supabase/supabase-js';
-import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Home, Code2, Trophy, LayoutDashboard, User } from 'lucide-react'; 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { QrCode, Check, Loader2 } from 'lucide-react';
+import { 
+  ResponsiveContainer, AreaChart, Area
+} from 'recharts';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
-interface HeaderProps {
-  session: Session | null;
-  onLogout: () => void;
+interface UserStatsCardProps {
+  userId: string | undefined;
 }
 
-export function Header({ session, onLogout }: HeaderProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isScrolled, setIsScrolled] = useState(false);
-  
-  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+export function UserStatsCard({ userId }: UserStatsCardProps) {
+  const queryClient = useQueryClient();
+  const [newUsername, setNewUsername] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam') || location.pathname.includes('/compiler');
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['user_stats_silver', userId],
+    queryFn: async () => {
+      if (!userId) return null;
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > window.innerHeight - 100);
-    };
-    handleScroll();
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+      // Fetch Profile for Username
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).maybeSingle();
 
-  if (isPracticeOrExam) return null;
+      // Fetch submissions
+      const { data: submissions } = await supabase.from('practice_submissions').select('problem_id, status, score, submitted_at, practice_problems(difficulty)').eq('user_id', userId).eq('status', 'completed');
 
-  const NavItem = ({ to, icon: Icon, label, active, size = "normal" }: { to: string; icon: any; label: string; active?: boolean, size?: "normal" | "large" }) => (
-    <Link 
-      to={to} 
-      className={cn(
-        "flex flex-col items-center justify-center rounded-xl transition-all duration-300 group relative",
-        size === "large" ? "p-3 -mt-6 bg-[#0c0c0e] border border-primary/30 shadow-[0_0_20px_rgba(59,130,246,0.2)] z-10" : "p-2",
-        active 
-          ? (size === "large" ? "text-primary ring-2 ring-primary/50" : "bg-primary/10 text-primary")
-          : "text-muted-foreground hover:text-white"
-      )}
-    >
-      <Icon className={cn("transition-transform group-hover:scale-110", size === "large" ? "w-6 h-6" : "w-5 h-5")} />
-      {size === "large" && <span className="text-[10px] font-bold mt-1 text-primary animate-pulse">UPSKILL</span>}
-      {size !== "large" && <span className="sr-only">{label}</span>}
-    </Link>
-  );
+      const { data: allProblems } = await supabase.from('practice_problems').select('difficulty');
+
+      const difficultyStats = {
+        Easy: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Easy').length || 0 },
+        Medium: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Medium').length || 0 },
+        Hard: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Hard').length || 0 },
+      };
+
+      submissions?.forEach((s: any) => {
+        const diff = s.practice_problems?.difficulty as keyof typeof difficultyStats;
+        if (diff) difficultyStats[diff].solved++;
+      });
+
+      const sparklineData = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        const dateStr = date.toISOString().split('T')[0];
+        const count = submissions?.filter(s => s.submitted_at?.startsWith(dateStr)).length || 0;
+        return { day: dateStr, count };
+      });
+
+      const { data: streak } = await supabase.from('practice_streaks').select('current_streak').eq('user_id', userId).maybeSingle();
+      const points = submissions?.reduce((sum, s) => sum + (s.score || 0), 0) || 0;
+
+      return {
+        solved: submissions?.length || 0,
+        username: profile?.username,
+        points,
+        streak: streak?.current_streak || 0,
+        difficulty: difficultyStats,
+        sparkline: sparklineData,
+      };
+    },
+    enabled: !!userId,
+  });
+
+  const handleUpdateUsername = async () => {
+    if (!newUsername || newUsername.trim().length < 3) {
+      toast.error("Username must be at least 3 characters");
+      return;
+    }
+    setIsUpdating(true);
+    const { error } = await supabase.from('profiles').update({ username: newUsername }).eq('id', userId);
+    if (error) {
+      toast.error("Error setting username");
+    } else {
+      toast.success("Username set successfully");
+      queryClient.invalidateQueries({ queryKey: ['user_stats_silver', userId] });
+    }
+    setIsUpdating(false);
+  };
+
+  if (isLoading || !stats) return <div className="h-[400px] w-full animate-pulse bg-[#0c0c0c] rounded-2xl border border-[#1a1a1a]" />;
 
   return (
-    <>
-      <header 
-        className="fixed z-50 left-0 right-0 mx-auto w-full max-w-6xl px-4 md:px-0 transition-all duration-300"
-        style={{ top: 'calc(1.25rem + var(--banner-height, 0px))' }}
-      >
-        <div className={cn(
-          "rounded-2xl border border-white/10 shadow-2xl bg-black/60 backdrop-blur-xl transition-all duration-300 hover:border-primary/20"
-        )}>
-          <nav className="flex items-center justify-between p-2 px-6">
-            
-            <Link to="/" className="flex items-center gap-3 group mr-8">
-              <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
-                COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
-              </span>
-            </Link>
-
-            <div className="hidden md:flex flex-1 justify-center gap-4">
-              <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
-                IITM BS
-              </Link>
-              <Link to="/practice-arena" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">Practice</Link>
-              <Link to="/events" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">Events</Link>
-              <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">Compiler</Link>
-              <Link to="/leaderboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">Leaderboard</Link>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {session ? (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner cursor-pointer hover:bg-white/10 transition-all">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border border-white/20">
-                        {userName.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-xs font-medium text-gray-200 max-w-[100px] truncate">{userName}</span>
-                      <div className="relative flex h-2 w-2 ml-1" title="Online">
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
-                      </div>
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent 
-                    align="end" 
-                    sideOffset={8}
-                    className="w-40 p-1 bg-[#0c0c0e] border border-white/10 shadow-2xl rounded-xl outline-none ring-0"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      {/* Mobile Only: Profile Button */}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="md:hidden w-full flex items-center justify-start gap-2.5 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0" 
-                        onClick={() => navigate('/profile')}
-                      >
-                        <User className="w-4 h-4 text-primary" /> Profile
-                      </Button>
-                      
-                      {/* Logout Button: No purple lining */}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full flex items-center justify-start gap-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0" 
-                        onClick={onLogout}
-                      >
-                        <LogOut className="w-4 h-4" /> Logout
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <Button size="sm" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6" onClick={() => navigate('/auth')}>
-                  <LogIn className="h-3.5 w-3.5 mr-2" /> Login
-                </Button>
-              )}
-            </div>
-          </nav>
+    <div className="relative w-full bg-[#0c0c0c] p-8 font-sans">
+      {/* Header with Solved Count and QR Logic */}
+      <div className="flex justify-between items-start mb-8">
+        <div className="flex flex-col">
+          <span className="text-[0.6rem] tracking-[2px] text-[#555555] uppercase font-bold mb-2">Solved Count</span>
+          <span className="text-5xl font-thin leading-none bg-gradient-to-b from-white to-[#999999] bg-clip-text text-transparent">
+            {stats.solved}
+          </span>
         </div>
-      </header>
 
-      {/* Mobile Bottom Bar */}
-      <div className={cn(
-        "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
-        (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
-      )}>
-        <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl ring-1 ring-white/5 relative">
-          <div className="flex justify-between items-end px-2">
-            <div className="flex gap-4">
-              <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
-              <NavItem to="/events" icon={Code2} label="Events" active={location.pathname.startsWith("/events")} />
-            </div>
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
-               <NavItem to="/practice-arena" icon={Code2} label="Practice" active={location.pathname.startsWith("/practice-arena")} size="large" />
-            </div>
-            <div className="flex gap-4">
-              <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
-              {session ? (
-                 <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === "/dashboard"} />
-              ) : (
-                 <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
-              )}
-            </div>
+        {/* QR Section */}
+        <div className="relative flex flex-col items-center">
+          <div className={cn(
+            "w-20 h-20 bg-white p-2 rounded-xl transition-all duration-700 shadow-2xl",
+            (!stats.username) && "blur-md scale-95 grayscale"
+          )}>
+            <QrCode className="w-full h-full text-black" />
           </div>
+
+          {/* Overlapping Input Block for Username */}
+          {(!stats.username) && (
+            <div className="absolute inset-x-0 bottom-0 px-1 translate-y-3 z-20">
+              <div className="bg-black border border-white/20 rounded-lg p-0.5 flex items-center shadow-2xl ring-1 ring-primary/20">
+                <Input 
+                  placeholder="Set Username" 
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  className="h-6 text-[9px] bg-transparent border-none text-white focus-visible:ring-0 px-2"
+                />
+                <Button 
+                  size="icon" 
+                  className="h-5 w-5 bg-primary hover:bg-primary/90 rounded-md shrink-0" 
+                  onClick={handleUpdateUsername}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? <Loader2 className="w-2 h-2 animate-spin" /> : <Check className="w-2 h-2" />}
+                </Button>
+              </div>
+            </div>
+          )}
+          <span className="text-[9px] font-bold text-[#333] mt-4 uppercase tracking-[0.2em]">Profile QR</span>
         </div>
       </div>
-    </>
+
+      {/* Sparkline */}
+      <div className="h-16 mb-8 opacity-60">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={stats.sparkline}>
+            <Area type="monotone" dataKey="count" stroke="#ffffff" fill="rgba(255,255,255,0.05)" strokeWidth={2} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Difficulty Grid */}
+      <div className="grid grid-cols-3 gap-2 mb-8">
+        {['Easy', 'Medium', 'Hard'].map((label) => {
+          const d = label as keyof typeof stats.difficulty;
+          return (
+            <div key={label} className="bg-white/[0.02] border border-[#1a1a1a] rounded-xl py-4 px-2 text-center transition-all hover:bg-white/[0.05]">
+              <span className="block text-[0.5rem] text-[#555555] uppercase tracking-wider mb-1">{label}</span>
+              <div className="text-xl font-light text-white">
+                {stats.difficulty[d].solved}<small className="text-[#333] text-[0.6rem] ml-0.5">/{stats.difficulty[d].total}</small>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Stats Footer */}
+      <div className="flex justify-between items-center pt-6 border-t border-white/5">
+        <div className="flex flex-col">
+          <span className="text-[0.5rem] tracking-[2px] text-[#555555] uppercase mb-1">Streak</span>
+          <span className="text-lg font-normal text-white">{stats.streak}</span>
+        </div>
+        <div className="flex flex-col text-right">
+          <span className="text-[0.5rem] tracking-[2px] text-[#555555] uppercase mb-1">Points</span>
+          <span className="text-lg font-normal text-white">{stats.points}</span>
+        </div>
+      </div>
+    </div>
   );
 }
