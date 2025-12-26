@@ -13,13 +13,12 @@ import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 
-// Imported Separate Components
+// Import New Components
 import { SubTopicIcon } from '@/components/practice/SubTopicIcon';
 import { FolderSticker } from '@/components/practice/FolderSticker';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// Question Type Icons
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -89,16 +88,6 @@ export default function PracticeArena() {
     enabled: !!userId
   });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUserId(undefined);
-    setIsProfileOpen(false);
-  };
-
-  const profileLink = profile?.username 
-    ? `${window.location.origin}/u/${profile.username}` 
-    : `${window.location.origin}/profile`;
-
   const { data: topics = [] } = useQuery({
     queryKey: ['practice_topics'],
     queryFn: async () => {
@@ -146,9 +135,18 @@ export default function PracticeArena() {
     );
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUserId(undefined);
+    setIsProfileOpen(false);
+  };
+
+  const profileLink = profile?.username 
+    ? `${window.location.origin}/u/${profile.username}` 
+    : `${window.location.origin}/profile`;
+
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
-      {/* Navigation */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-8 font-sans">
           <div className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white cursor-pointer" onClick={() => navigate('/')}>
@@ -227,27 +225,25 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      {/* Main Content Area */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
-        {/* Left Sidebar: Topics */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
               <nav className="flex flex-col gap-1 pb-10">
                 <div onClick={() => setSelectedTopic(null)}
-                  className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+                  className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
                   <FolderSticker active={selectedTopic === null} />
-                  <span className="tracking-tight">All Topics</span>
+                  <span className="tracking-tight font-medium">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
                   <div key={topic.id} onClick={() => setSelectedTopic(topic.name)}
-                    className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+                    className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
                     <SubTopicIcon active={selectedTopic === topic.name} />
-                    <span className="tracking-tight">{topic.name}</span>
+                    <span className="tracking-tight font-medium">{topic.name}</span>
                   </div>
                 ))}
               </nav>
@@ -255,7 +251,6 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* Center Main: Problems List */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -321,7 +316,6 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* Right Sidebar: Stats */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
