@@ -32,7 +32,7 @@ const LayersBoxIcon = () => (
   </div>
 );
 
-// --- RESTORED: Custom Sidebar Icons ---
+// --- RESTORED: Sidebar Topic Icons (Hashtag & Folder) ---
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
     <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
@@ -65,12 +65,12 @@ export default function PracticeArena() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   
-  // Filter States
+  // Filtering & Selection State
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [isLevelOpen, setIsLevelOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   
-  // Auth & Profile States
+  // Auth & Profile State
   const [userId, setUserId] = useState<string | undefined>();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
@@ -91,11 +91,12 @@ export default function PracticeArena() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     
-    const topicsList = ["Arrays", "Dynamic Programming", "Trees", "Graphs", "Hash Maps"];
+    // Animated Search Placeholder
+    const topicsArr = ["Arrays", "Dynamic Programming", "Trees", "Graphs", "Hash Maps"];
     let index = 0;
     const intervalId = setInterval(() => {
-      index = (index + 1) % topicsList.length;
-      setPlaceholderTopic(topicsList[index]);
+      index = (index + 1) % topicsArr.length;
+      setPlaceholderTopic(topicsArr[index]);
     }, 3000);
 
     return () => {
@@ -104,6 +105,7 @@ export default function PracticeArena() {
     };
   }, []);
 
+  // Fetch Profile for QR link
   const { data: profile } = useQuery({
     queryKey: ['user_profile_arena', userId],
     queryFn: async () => {
@@ -113,18 +115,6 @@ export default function PracticeArena() {
     },
     enabled: !!userId
   });
-
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-      });
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error(error.message);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -186,7 +176,7 @@ export default function PracticeArena() {
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
       
-      {/* Navigation Branding with restored trigger button */}
+      {/* Navigation Branding & Profile Trigger */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-8 font-sans">
           <div className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white cursor-pointer" onClick={() => navigate('/')}>
@@ -211,6 +201,7 @@ export default function PracticeArena() {
              <ArrowLeft className="w-5 h-5" />
            </Button>
            
+           {/* Profile Trigger Button */}
            <div 
              className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a] flex items-center justify-center cursor-pointer hover:border-[#333] transition-colors"
              onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -218,6 +209,7 @@ export default function PracticeArena() {
              <User className="w-4 h-4 text-[#777]" />
            </div>
 
+           {/* Profile Popover with QR & Stats */}
            {isProfileOpen && (
              <div className="absolute top-12 right-0 w-64 bg-[#0c0c0e] border border-white/10 rounded-[4px] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
                <div className="flex flex-col gap-3">
@@ -230,7 +222,7 @@ export default function PracticeArena() {
                      <span className="text-[10px] text-[#555] font-mono truncate">@{profile?.username || "username"}</span>
                    </div>
                  </div>
-                 
+
                  <div className="grid grid-cols-2 gap-2">
                    <div className="bg-white/5 rounded-[2px] p-2 text-center border border-white/5">
                      <span className="block text-[10px] text-[#555] uppercase tracking-wider">Solved</span>
@@ -242,7 +234,7 @@ export default function PracticeArena() {
                    </div>
                  </div>
 
-                 {/* QR Code Section */}
+                 {/* Profile QR Code */}
                  <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2">
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(profileLink)}`} 
@@ -272,7 +264,7 @@ export default function PracticeArena() {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topic Sidebar (RESTORED ICONS) */}
+        {/* LEFT COLUMN: Sidebar with Restored SVG Icons */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -298,7 +290,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN */}
+        {/* MIDDLE COLUMN: Problems with Restored Box Icons */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -330,16 +322,10 @@ export default function PracticeArena() {
                   {isLevelOpen && (
                     <div className="absolute top-full left-0 mt-2 w-40 bg-[#0c0c0c] border border-[#333] rounded-[4px] shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200">
                       {['Easy', 'Medium', 'Hard'].map((diff) => (
-                        <div 
-                          key={diff}
-                          onClick={() => toggleDifficulty(diff)}
-                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group"
-                        >
+                        <div key={diff} onClick={() => toggleDifficulty(diff)} className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group">
                           <div className={cn(
                             "w-3.5 h-3.5 border rounded-[2px] flex items-center justify-center transition-all",
-                            selectedDifficulties.includes(diff) 
-                              ? "bg-white border-white" 
-                              : "border-[#555] group-hover:border-[#777]"
+                            selectedDifficulties.includes(diff) ? "bg-white border-white" : "border-[#555] group-hover:border-[#777]"
                           )}>
                             {selectedDifficulties.includes(diff) && <Check className="w-2.5 h-2.5 text-black stroke-[4]" />}
                           </div>
@@ -367,7 +353,7 @@ export default function PracticeArena() {
                     className="group relative bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-5 md:px-7 md:py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all duration-300 hover:border-[#333] hover:bg-[#0f0f0f] cursor-default"
                   >
                     <div className="flex items-center gap-5">
-                      {/* RESTORED: Custom Box Icons */}
+                      {/* Box Icons Logic */}
                       {problem.tags?.includes('Arrays') ? <LayersBoxIcon /> : <TerminalBoxIcon />}
                       
                       <div className="flex flex-col gap-1.5">
@@ -412,6 +398,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
+        {/* RIGHT COLUMN: Sidebar Stats */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
@@ -422,6 +409,7 @@ export default function PracticeArena() {
             </div>
           </ScrollArea>
         </aside>
+
       </div>
     </div>
   );
