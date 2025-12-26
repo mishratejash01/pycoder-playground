@@ -4,19 +4,18 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  Search, ArrowLeft, Terminal, Layers, Flame, 
+  Search, ArrowLeft, Layers, Flame, 
   ChevronDown, Check, User, LogOut, QrCode 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
-import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- RESTORED DITTO: Premium Folder Sticker Icon for Sidebar ---
+// --- Premium Folder Sticker Icon for Sidebar ---
 const TopicStickerIcon = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative w-7 h-5 transition-all duration-300 shrink-0", 
@@ -35,7 +34,7 @@ const TopicStickerIcon = ({ active }: { active: boolean }) => (
   </div>
 );
 
-// --- RESTORED: Custom Question Icons ---
+// --- Custom Question Box Icons ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -252,7 +251,6 @@ export default function PracticeArena() {
                   className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
-                  {/* RESTORED DITTO: Sticker Icon for All Topics */}
                   <TopicStickerIcon active={selectedTopic === null} />
                   <span className="tracking-tight font-bold ml-1">All Topics</span>
                 </div>
