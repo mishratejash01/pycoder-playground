@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
   Search, ArrowLeft, Terminal, Layers, Flame, 
-  Calendar, Building2, ChevronRight 
+  ChevronDown, Check 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
@@ -16,41 +16,7 @@ import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- BRAND COLORS for Custom Icons ---
-const BRAND_COLORS = {
-  outline: '#2d1d1a',
-  accent: '#f39233',
-  base: '#ffce8c',
-  sticker: '#e0e0e0',
-};
-
-// --- RESTORED: Custom Hashtag Icon ---
-const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
-    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
-    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
-  </div>
-);
-
-// --- RESTORED: Custom Folder Icon ---
-const CustomFolderIcon = ({ active }: { active: boolean }) => (
-  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
-    <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
-      <div className="relative w-7 h-5">
-        <div className="absolute -top-[5px] left-0 w-[65%] h-[7px] border-[1.5px] border-b-0 rounded-t-[3px] z-10"
-          style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
-        <div className="absolute inset-0 border-[1.5px] rounded-tr-[4px] rounded-br-[4px] rounded-bl-[4px] overflow-hidden z-20"
-          style={{ background: `linear-gradient(160deg, ${BRAND_COLORS.base} 0%, #f7b65d 100%)`, borderColor: BRAND_COLORS.outline }}>
-          <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// --- Helper for Difficulty Styling ---
+// --- Helper for Difficulty Styling (Italian Card Style) ---
 const getDifficultyStyle = (difficulty: string) => {
   switch (difficulty) {
     case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
@@ -60,16 +26,48 @@ const getDifficultyStyle = (difficulty: string) => {
   }
 };
 
+const FolderIcon = ({ active }: { active: boolean }) => (
+  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-50")}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#fff" : "none"} stroke="currentColor" strokeWidth="2">
+       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+    </svg>
+  </div>
+);
+
+// --- Custom Hashtag Icon ---
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
+    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+  </div>
+);
+
 export default function PracticeArena() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [filterDifficulty, setFilterDifficulty] = useState<string | null>(null);
+  
+  // Updated: Multi-select Difficulty State
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
+  const [isLevelOpen, setIsLevelOpen] = useState(false);
+  const levelDropdownRef = useRef<HTMLDivElement>(null);
+
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [userId, setUserId] = useState<string | undefined>();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id));
+
+    // Click outside handler for dropdown
+    const handleClickOutside = (event: MouseEvent) => {
+      if (levelDropdownRef.current && !levelDropdownRef.current.contains(event.target as Node)) {
+        setIsLevelOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleGoogleLogin = async () => {
@@ -82,6 +80,12 @@ export default function PracticeArena() {
     } catch (error: any) {
       toast.error(error.message);
     }
+  };
+
+  const toggleDifficulty = (diff: string) => {
+    setSelectedDifficulties(prev => 
+      prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
+    );
   };
 
   // Data Fetching Hooks
@@ -129,7 +133,8 @@ export default function PracticeArena() {
 
   const filteredProblems = problems.filter(p => {
     const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDifficulty = !filterDifficulty || p.difficulty === filterDifficulty;
+    // Updated Logic: Check if array includes difficulty (or if array is empty show all)
+    const matchesDifficulty = selectedDifficulties.length === 0 || selectedDifficulties.includes(p.difficulty);
     const matchesTopic = !selectedTopic || (p.tags && p.tags.includes(selectedTopic));
     let matchesStatus = true;
     if (statusFilter === 'solved') matchesStatus = solvedProblemIds.has(p.id);
@@ -176,31 +181,16 @@ export default function PracticeArena() {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topic Sidebar */}
+        {/* LEFT COLUMN: Topic Sidebar (Difficulty Removed) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
-          <div className="shrink-0 space-y-4">
-             <div className="text-[10px] font-bold text-[#555] tracking-widest px-1 uppercase">Difficulty</div>
-             <div className="grid grid-cols-3 gap-2 p-1 bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px]">
-               {['Easy', 'Medium', 'Hard'].map((d) => (
-                 <button key={d} onClick={() => setFilterDifficulty(filterDifficulty === d ? null : d)}
-                   className={cn("py-2 text-[10px] font-bold uppercase rounded-[2px] transition-all font-sans",
-                     filterDifficulty === d ? "bg-[#1a1a1a] text-white" : "text-[#555] hover:text-[#999]"
-                   )}>
-                   {d === 'Medium' ? 'Med' : d}
-                 </button>
-               ))}
-             </div>
-          </div>
-
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
               <nav className="flex flex-col gap-1 pb-10">
                 <div onClick={() => setSelectedTopic(null)}
                   className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
-                  {/* Restored Custom Folder Icon */}
-                  <CustomFolderIcon active={selectedTopic === null} />
+                  <FolderIcon active={selectedTopic === null} />
                   <span className="tracking-tight">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
@@ -208,7 +198,6 @@ export default function PracticeArena() {
                     className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
-                    {/* Restored Custom Hashtag Icon */}
                     <SubTopicHashtag active={selectedTopic === topic.name} />
                     <span className="tracking-tight">{topic.name}</span>
                   </div>
@@ -218,11 +207,11 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Question Cards */}
+        {/* MIDDLE COLUMN: Question Cards & Filters */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
-          {/* Status Filters */}
-          <div className="shrink-0 py-4 mb-2 bg-[#050505]">
-            <div className="flex items-center justify-start gap-2">
+          {/* Status Filters & Level Dropdown */}
+          <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
+            <div className="flex items-center gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
                  <button key={f} onClick={() => setStatusFilter(f)}
                    className={cn(
@@ -234,6 +223,49 @@ export default function PracticeArena() {
                    {f}
                  </button>
                ))}
+
+               {/* LEVEL DROPDOWN - Placed beside Attempted */}
+               <div className="relative" ref={levelDropdownRef}>
+                  <button 
+                    onClick={() => setIsLevelOpen(!isLevelOpen)}
+                    className={cn(
+                      "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
+                      selectedDifficulties.length > 0 || isLevelOpen
+                        ? "bg-[#141414] text-white border-[#333]" 
+                        : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white"
+                    )}
+                  >
+                    Level <ChevronDown className={cn("w-3 h-3 transition-transform", isLevelOpen && "rotate-180")} />
+                  </button>
+
+                  {/* Dropdown Content */}
+                  {isLevelOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-40 bg-[#0c0c0c] border border-[#333] rounded-[4px] shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200">
+                      {['Easy', 'Medium', 'Hard'].map((diff) => (
+                        <div 
+                          key={diff}
+                          onClick={() => toggleDifficulty(diff)}
+                          className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group"
+                        >
+                          <div className={cn(
+                            "w-3.5 h-3.5 border rounded-[2px] flex items-center justify-center transition-all",
+                            selectedDifficulties.includes(diff) 
+                              ? "bg-white border-white" 
+                              : "border-[#555] group-hover:border-[#777]"
+                          )}>
+                            {selectedDifficulties.includes(diff) && <Check className="w-2.5 h-2.5 text-black stroke-[4]" />}
+                          </div>
+                          <span className={cn(
+                            "text-[10px] uppercase font-bold tracking-widest",
+                            selectedDifficulties.includes(diff) ? "text-white" : "text-[#777] group-hover:text-[#ccc]"
+                          )}>
+                            {diff}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+               </div>
             </div>
           </div>
 
