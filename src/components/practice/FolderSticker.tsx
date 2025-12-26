@@ -12,34 +12,30 @@ export const FolderSticker = ({ active, className }: FolderStickerProps) => {
       active ? "scale-110 opacity-100" : "opacity-40 hover:opacity-70",
       className
     )}>
-      {/* Sticker Border: 5px layered shadows for the thick "Premium" die-cut edge */}
+      {/* Sticker Container with multi-layered drop shadows for the white border */}
       <div className="filter 
-        drop-shadow-[5px_0_0_#e0e0e0] 
-        drop-shadow-[-5px_0_0_#e0e0e0] 
-        drop-shadow-[0_5px_0_#e0e0e0] 
-        drop-shadow-[0_-5px_0_#e0e0e0]
-        drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]">
-        
-        <div className="relative h-[100px] w-[140px]">
-          {/* Folder Tab (The Back Section) */}
+        drop-shadow-[1.5px_0_0_#e0e0e0] 
+        drop-shadow-[-1.5px_0_0_#e0e0e0] 
+        drop-shadow-[0_1.5px_0_#e0e0e0] 
+        drop-shadow-[0_-1.5px_0_#e0e0e0]
+        drop-shadow-[0_0_1px_rgba(255,255,255,0.2)]
+        drop-shadow-[0_3px_5px_rgba(0,0,0,0.5)]"
+      >
+        {/* Scaled container based on your 140x100 original */}
+        <div className="relative w-[26px] h-[18px]">
+          
+          {/* Folder Tab: Positioned exactly at top: [-22px original -> -4px scaled] */}
           <div 
-            className="absolute -top-[22px] left-0 h-[28px] w-[85px] 
-                       bg-[#f39233] border-[4px] border-b-0 border-[#2d1d1a] 
-                       rounded-t-[12px]
-                       [clip-path:polygon(0_0,78%_0,100%_100%,0_100%)]"
+            className="absolute top-[-4px] left-0 w-[16px] h-[5px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2px] rounded-tr-[3px]"
+            style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }}
           />
 
-          {/* Folder Body (The Front Section) */}
-          <div className="absolute inset-0 overflow-hidden 
-                          rounded-tr-[14px] rounded-br-[14px] rounded-bl-[14px] rounded-tl-0
-                          border-[4px] border-[#2d1d1a] 
-                          bg-[linear-gradient(160deg,#ffce8c_0%,#f7b65d_100%)]">
+          {/* Main Folder Body: No top-left rounding to ensure proper alignment with the tab */}
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden box-border">
             
-            {/* Interior Section: Orange horizontal bar */}
-            <div className="absolute top-0 left-0 h-[20px] w-full border-b-[4px] border-[#2d1d1a] bg-[#f39233]" />
+            {/* Interior orange section: Perfectly aligned at the top of the body */}
+            <div className="absolute top-0 left-0 w-full h-[3.5px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
             
-            {/* Subtle Inner Highlight for Premium Feel */}
-            <div className="absolute inset-0 pointer-events-none shadow-[inset_3px_3px_0px_rgba(255,255,255,0.3)]" />
           </div>
         </div>
       </div>
