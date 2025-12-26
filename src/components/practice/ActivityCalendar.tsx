@@ -1,39 +1,41 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// Removed Lucide Calendar import as it's no longer needed
 import { cn } from '@/lib/utils';
 
-// --- New Custom Icon Component based on provided graphic ---
+// --- Custom Hand-Drawn Calendar Icon (Scaled Down from your HTML) ---
 const HandDrawnCalendarIcon = () => (
-  // Container with slight drop shadow to match original style, scaled down
-  <div className="relative w-5 h-6 shrink-0 select-none pointer-events-none mr-1" style={{ filter: 'drop-shadow(1px 1px 0px rgba(0,0,0,0.5))' }}>
-     {/* Sketchy Rings (Top) */}
-     <div className="absolute -top-[2px] left-0 w-full flex justify-around px-[2px] z-20">
-       <div className="w-[3.5px] h-[8px] bg-[#a8dadc] border-[1px] border-[#1a1a1a] rounded-[1px]" />
-       <div className="w-[3.5px] h-[8px] bg-[#a8dadc] border-[1px] border-[#1a1a1a] rounded-[1px]" />
-     </div>
-     {/* Calendar Body */}
-     <div className="relative top-[4px] bg-white border-[1px] border-[#1a1a1a] rounded-[3px_4px_3px_3px] overflow-hidden h-[18px] z-10">
-        {/* Red Banner */}
-        <div className="h-[5px] bg-[#e63946] border-b-[1px] border-[#1a1a1a]" />
-        {/* Inner Grid (simplified for small scale) */}
-        <div className="p-[1px] grid grid-cols-4 gap-[0.5px] mt-[0.5px]">
-           {Array(8).fill(null).map((_, i) => ( 
-              <div key={i} className="bg-[#a8dadc] border-[0.5px] border-[#1a1a1a] h-[2.5px] rounded-[0.5px]" />
-           ))}
-        </div>
-     </div>
+  <div className="relative w-6 h-7 shrink-0 mr-2 select-none" style={{ filter: 'drop-shadow(2px 2px 0px rgba(0,0,0,0.5))' }}>
+    
+    {/* Sketchy Rings (Absolute Positioned on Top) */}
+    <div className="absolute -top-[3px] left-0 w-full flex justify-around px-[4px] z-20">
+      <div className="w-[4px] h-[8px] bg-[#a8dadc] border-[1.5px] border-[#1a1a1a] rounded-[2px]" />
+      <div className="w-[4px] h-[8px] bg-[#a8dadc] border-[1.5px] border-[#1a1a1a] rounded-[2px]" />
+    </div>
+
+    {/* Calendar Body Container */}
+    <div className="relative top-[2px] bg-white border-[1.5px] border-[#1a1a1a] rounded-[4px_5px_3px_4px] overflow-hidden z-10 h-[22px] w-full">
+      
+      {/* Red Banner Header */}
+      <div className="h-[6px] bg-[#e63946] border-b-[1.5px] border-[#1a1a1a]" />
+
+      {/* Inner Grid */}
+      <div className="p-[2px] grid grid-cols-4 gap-[1.5px]">
+        {Array(8).fill(null).map((_, i) => (
+          <div key={i} className="bg-[#a8dadc] border-[1px] border-[#1a1a1a] h-[3px] rounded-[1px]" />
+        ))}
+      </div>
+    </div>
   </div>
 );
-// ---------------------------------------------------------
+// ---------------------------------------------------------------------
 
 interface ActivityCalendarProps {
   userId: string | undefined;
 }
 
 export function ActivityCalendar({ userId }: ActivityCalendarProps) {
-  // We fetch slightly more data (approx 140 days) to accommodate more columns
+  // Fetch ~140 days to fill the wider layout
   const { data: submissions = [] } = useQuery({
     queryKey: ['user_activity_expanded', userId],
     queryFn: async () => {
@@ -63,7 +65,7 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     }
   });
 
-  // Calculate roughly 20 weeks to fill the full card width with small blocks
+  // Generate 20 weeks of data
   const totalWeeks = 20; 
   const weeks: { date: string; count: number }[][] = [];
   const today = new Date();
@@ -72,7 +74,6 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     const weekDates: { date: string; count: number }[] = [];
     for (let day = 0; day < 7; day++) {
       const date = new Date(today);
-      // Logic to fill from right (today) to left (past)
       date.setDate(date.getDate() - (totalWeeks - 1 - week) * 7 - (6 - day));
       const dateStr = date.toISOString().split('T')[0];
       weekDates.push({
@@ -96,14 +97,14 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
   return (
     <Card className="bg-[#0f0f12] border-white/5 rounded-[24px] shadow-2xl overflow-hidden">
       <CardHeader className="pb-4 px-6 pt-6">
-        {/* Updated Title with Custom HandDrawnCalendarIcon */}
-        <CardTitle className="text-[1.1rem] font-bold text-white flex items-center gap-2 font-sans tracking-tight">
+        {/* Title with Custom Hand-Drawn Icon */}
+        <CardTitle className="text-[1.1rem] font-bold text-white flex items-center gap-1 font-sans tracking-tight">
           <HandDrawnCalendarIcon />
           Activity Record
         </CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
-        {/* Container for small blocks filling the card width */}
+        {/* Full-width activity grid */}
         <div className="flex justify-between gap-[3px] w-full">
           {weeks.map((week, weekIdx) => (
             <div key={weekIdx} className="flex flex-col gap-[3px]">
