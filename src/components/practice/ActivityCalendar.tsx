@@ -13,15 +13,15 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     queryKey: ['user_activity', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 90);
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       
       const { data, error } = await supabase
         .from('practice_submissions')
         .select('submitted_at')
         .eq('user_id', userId)
         .eq('status', 'completed')
-        .gte('submitted_at', thirtyDaysAgo.toISOString());
+        .gte('submitted_at', ninetyDaysAgo.toISOString());
       
       if (error) throw error;
       return data || [];
@@ -29,7 +29,6 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     enabled: !!userId
   });
 
-  // Create activity map
   const activityMap = new Map<string, number>();
   submissions.forEach(s => {
     if (s.submitted_at) {
@@ -38,7 +37,6 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     }
   });
 
-  // Generate last 12 weeks (84 days) of dates
   const weeks: string[][] = [];
   const today = new Date();
   
@@ -52,12 +50,13 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     weeks.push(weekDates);
   }
 
+  // Updated to Blue family coloring
   const getIntensity = (count: number) => {
     if (count === 0) return 'bg-white/5';
-    if (count === 1) return 'bg-green-900/50';
-    if (count === 2) return 'bg-green-700/60';
-    if (count <= 4) return 'bg-green-600/70';
-    return 'bg-green-500';
+    if (count === 1) return 'bg-blue-900/50';
+    if (count === 2) return 'bg-blue-700/60';
+    if (count <= 4) return 'bg-blue-600/70';
+    return 'bg-blue-500';
   };
 
   if (!userId) return null;
@@ -66,14 +65,14 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     <Card className="bg-[#0c0c0e] border-white/10">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-green-400" /> Activity
+          <Calendar className="w-4 h-4 text-blue-400" /> Activity
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex gap-[3px]">
           {weeks.map((week, weekIdx) => (
             <div key={weekIdx} className="flex flex-col gap-[3px]">
-              {week.map((date, dayIdx) => {
+              {week.map((date) => {
                 const count = activityMap.get(date) || 0;
                 return (
                   <div
@@ -92,10 +91,7 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
         <div className="flex items-center justify-end gap-1.5 mt-2 text-[9px] text-muted-foreground">
           <span>Less</span>
           {[0, 1, 2, 3, 4].map(i => (
-            <div
-              key={i}
-              className={cn("w-2 h-2 rounded-[2px]", getIntensity(i))}
-            />
+            <div key={i} className={cn("w-2 h-2 rounded-[2px]", getIntensity(i))} />
           ))}
           <span>More</span>
         </div>
