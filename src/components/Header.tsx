@@ -123,4 +123,40 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
-                <Button size="sm" className="bg-primary hover:
+                <Button size="sm" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6" onClick={() => navigate('/auth')}>
+                  <LogIn className="h-3.5 w-3.5 mr-2" /> Login
+                </Button>
+              )}
+            </div>
+          </nav>
+        </div>
+      </header>
+
+      {/* Mobile Bottom Bar remains unchanged */}
+      <div className={cn(
+        "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
+        (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
+      )}>
+        <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl ring-1 ring-white/5 relative">
+          <div className="flex justify-between items-end px-2">
+            <div className="flex gap-4">
+              <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
+              <NavItem to="/events" icon={Code2} label="Events" active={location.pathname.startsWith("/events")} />
+            </div>
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
+               <NavItem to="/practice-arena" icon={Code2} label="Practice" active={location.pathname.startsWith("/practice-arena")} size="large" />
+            </div>
+            <div className="flex gap-4">
+              <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
+              {session ? (
+                 <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === "/dashboard"} />
+              ) : (
+                 <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
