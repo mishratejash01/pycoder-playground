@@ -16,23 +16,7 @@ import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- Custom Italian Minimalist Icons ---
-const TerminalBoxIcon = () => (
-  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <polyline points="4 17 10 11 4 5"></polyline>
-      <line x1="12" y1="19" x2="20" y2="19"></line>
-    </svg>
-  </div>
-);
-
-const LayersBoxIcon = () => (
-  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
-    <Layers size={18} strokeWidth={2.5} />
-  </div>
-);
-
-// --- Helper for Difficulty Styling ---
+// --- Helper for Difficulty Styling (Italian Card Style) ---
 const getDifficultyStyle = (difficulty: string) => {
   switch (difficulty) {
     case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
@@ -74,7 +58,7 @@ export default function PracticeArena() {
     }
   };
 
-  // Data Fetching Hooks (Preserved Logic)
+  // Data Fetching Hooks
   const { data: topics = [] } = useQuery({
     queryKey: ['practice_topics'],
     queryFn: async () => {
@@ -131,7 +115,7 @@ export default function PracticeArena() {
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
       
-      {/* Navigation - Minimalist Style */}
+      {/* Navigation */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-8 font-sans">
           <div className="font-extrabold text-xl tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
@@ -166,7 +150,7 @@ export default function PracticeArena() {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topic Sidebar - Minimalist */}
+        {/* LEFT COLUMN: Topic Sidebar */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-[#555] tracking-widest px-1 uppercase">Difficulty</div>
@@ -206,15 +190,18 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Italian Minimalist Question Cards */}
+        {/* MIDDLE COLUMN: Question Cards */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
-          {/* Status Filters - Minimalist Tabs */}
+          {/* Status Filters - Original Pill Design */}
           <div className="shrink-0 py-4 mb-2 bg-[#050505]">
             <div className="flex items-center justify-start gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
                  <button key={f} onClick={() => setStatusFilter(f)}
-                   className={cn("px-5 py-1.5 text-[10px] font-bold rounded-[3px] transition-all duration-300 border uppercase tracking-[2px] font-sans", 
-                     statusFilter === f ? "bg-[#1a1a1a] text-white border-[#333]" : "bg-transparent text-[#444] border-transparent hover:text-[#777]"
+                   className={cn(
+                     "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
+                     statusFilter === f 
+                       ? "bg-white text-black border-white shadow-md font-bold" 
+                       : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white font-medium"
                    )}>
                    {f}
                  </button>
@@ -233,8 +220,10 @@ export default function PracticeArena() {
                   >
                     {/* Identity Group */}
                     <div className="flex items-center gap-5">
-                      {/* Terminal Box Icon */}
-                      {problem.tags?.includes('Arrays') ? <LayersBoxIcon /> : <TerminalBoxIcon />}
+                      {/* ORIGINAL ICONS RESTORED */}
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
+                        {problem.tags?.includes('Arrays') ? <Layers size={20} /> : <Terminal size={20} />}
+                      </div>
                       
                       <div className="flex flex-col gap-1.5">
                         <h3 className="text-white text-[1.1rem] font-bold tracking-[-0.01em] m-0 leading-tight group-hover:text-white transition-colors cursor-pointer" onClick={() => navigate(`/practice-arena/${problem.slug}`)}>
@@ -264,12 +253,12 @@ export default function PracticeArena() {
                         <span className="text-[1.4rem] font-light text-white leading-none">{problem.acceptance_rate || 0}%</span>
                       </div>
 
-                      {/* Animated Solve Button */}
+                      {/* Solve Button: Premium Transparent Italian Hover */}
                       <button 
                         onClick={() => navigate(`/practice-arena/${problem.slug}`)}
-                        className="relative bg-white text-black border-none px-8 py-3 rounded-[3px] text-[0.65rem] font-extrabold uppercase tracking-[3px] cursor-pointer overflow-hidden flex items-center justify-center transition-all duration-400 group/btn hover:bg-[#00ffa3] hover:pl-10"
+                        className="relative bg-white text-black border border-white px-8 py-3 rounded-[3px] text-[0.65rem] font-extrabold uppercase tracking-[3px] cursor-pointer overflow-hidden flex items-center justify-center transition-all duration-400 group/btn hover:bg-transparent hover:text-white hover:pl-10"
                       >
-                        <span className="absolute left-[-20px] opacity-0 text-[1rem] transition-all duration-400 text-black group-hover/btn:left-3 group-hover/btn:opacity-100">→</span>
+                        <span className="absolute left-[-20px] opacity-0 text-[1rem] transition-all duration-400 text-white group-hover/btn:left-3 group-hover/btn:opacity-100">→</span>
                         <span className="transition-all duration-400 group-hover/btn:translate-x-2">SOLVE</span>
                       </button>
                     </div>
@@ -280,25 +269,29 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Sidebar (Preserved Logic, Updated Aesthetic) */}
+        {/* RIGHT COLUMN: Sidebar with Preserved Holding Section */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
               
               {!userId ? (
-                /* Login Card - Scaled for Sidebar */
-                <div className="relative w-full bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-8 flex flex-col items-center text-center">
-                   {/* ... (Preserved Login Logic with Minimalist Styles) ... */}
-                   <div className="w-12 h-12 bg-[#141414] border border-[#1a1a1a] rounded-[3px] flex items-center justify-center mb-6">
-                      <svg className="text-[#555]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-                   </div>
-                   <h1 className="text-white text-[1rem] font-bold uppercase tracking-[2px] mb-3">Access Progress</h1>
-                   <button onClick={handleGoogleLogin} className="w-full bg-white text-black py-3 rounded-[3px] text-[0.7rem] font-extrabold uppercase tracking-[2px] mt-4 hover:bg-[#00ffa3] transition-colors">
-                     Log In with Google
-                   </button>
-                </div>
+                <>
+                  {/* Login Card */}
+                  <div className="relative w-full bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-8 flex flex-col items-center text-center">
+                     <div className="w-12 h-12 bg-[#141414] border border-[#1a1a1a] rounded-[3px] flex items-center justify-center mb-6">
+                        <svg className="text-[#555]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                     </div>
+                     <h1 className="text-white text-[1rem] font-bold uppercase tracking-[2px] mb-3">Access Progress</h1>
+                     <button onClick={handleGoogleLogin} className="w-full bg-white text-black py-3 rounded-[3px] text-[0.7rem] font-extrabold uppercase tracking-[2px] mt-4 hover:bg-[#e5e5e5] transition-colors flex items-center justify-center gap-2">
+                        <svg width="14" height="14" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.89 2.69-6.62z" /><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.8.54-1.83.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.95v2.33A8.99 8.99 0 0 0 9 18z" /><path fill="#FBBC05" d="M3.96 10.71A5.41 5.41 0 0 1 3.64 9c0-.59.1-1.17.28-1.71V4.96H.95a8.99 8.99 0 0 0 0 8.08l3.01-2.33z" /><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0C5.48 0 2.44 2.02.95 4.96l3.01 2.33C4.67 5.16 6.66 3.58 9 3.58z" /></svg>
+                        Google
+                     </button>
+                  </div>
+                  
+                  {/* Preserved Holding Section / Secondary Block */}
+                  <div className="w-full h-[160px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] opacity-50" />
+                </>
               ) : (
-                /* Events Section - Minimalist */
                 activeEvents.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between px-1 font-sans">
@@ -311,7 +304,7 @@ export default function PracticeArena() {
                           <div key={event.id} className="inline-block w-[280px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-6 shrink-0 snap-center">
                             <h4 className="text-xs font-bold text-white uppercase tracking-tight mb-2">{event.title}</h4>
                             <div className="text-[10px] text-[#555] mb-4">{new Date(event.start_date).toLocaleDateString()}</div>
-                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#1a1a1a] hover:bg-[#00ffa3] hover:text-black text-white font-bold h-8 text-[9px] rounded-[3px] tracking-[2px] uppercase transition-colors">
+                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#1a1a1a] hover:bg-[#fff] hover:text-black text-white font-bold h-8 text-[9px] rounded-[3px] tracking-[2px] uppercase transition-colors">
                               Participate
                             </Button>
                           </div>
