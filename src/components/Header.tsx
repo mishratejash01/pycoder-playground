@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Home, Code2, Trophy, LayoutDashboard } from 'lucide-react'; 
+import { LogIn, LogOut, Home, Code2, Trophy, LayoutDashboard, User } from 'lucide-react'; 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
-import { UserStatsCard } from '@/components/practice/UserStatsCard';
 
 interface HeaderProps {
   session: Session | null;
@@ -95,17 +94,27 @@ export function Header({ session, onLogout }: HeaderProps) {
                       </div>
                     </div>
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="w-[400px] p-0 bg-transparent border-none shadow-none mt-4 outline-none ring-0">
-                    <div className="scale-95 origin-top-right">
-                        <UserStatsCard userId={session.user.id} />
-                        <div className="mt-3 flex items-center gap-2 px-6 pb-4">
-                            <Button variant="outline" size="sm" className="flex-1 bg-black/40 border-white/10 text-white text-[10px] uppercase tracking-widest font-bold" onClick={() => navigate('/dashboard')}>
-                                <LayoutDashboard className="w-3 h-3 mr-2" /> Dashboard
-                            </Button>
-                            <Button variant="destructive" size="sm" className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border-none text-[10px] uppercase tracking-widest font-bold" onClick={onLogout}>
-                                <LogOut className="w-3 h-3 mr-2" /> Logout
-                            </Button>
-                        </div>
+                  <PopoverContent align="end" className="w-48 p-2 bg-[#0c0c0e]/95 backdrop-blur-xl border border-white/10 shadow-2xl mt-4 rounded-xl outline-none ring-0">
+                    <div className="flex flex-col gap-1">
+                        {/* Mobile Only: Profile Button */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="md:hidden flex items-center justify-start gap-3 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium" 
+                          onClick={() => navigate('/profile')}
+                        >
+                          <User className="w-4 h-4" /> Profile
+                        </Button>
+                        
+                        {/* Logout Button: Visible on both, logic remains same */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex items-center justify-start gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium" 
+                          onClick={onLogout}
+                        >
+                          <LogOut className="w-4 h-4" /> Logout
+                        </Button>
                     </div>
                   </PopoverContent>
                 </Popover>
