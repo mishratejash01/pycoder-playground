@@ -9,6 +9,9 @@ import {
   Sheet, SheetContent, SheetTrigger 
 } from "@/components/ui/sheet";
 import { 
+  Popover, PopoverContent, PopoverTrigger 
+} from '@/components/ui/popover';
+import { 
   Search, ArrowLeft, Layers, Flame, 
   ChevronDown, Check, User, LogOut, QrCode,
   Menu 
@@ -19,37 +22,38 @@ import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- Folder Sticker Component (Design logic from your snippet) ---
+// --- PREMIUM FOLDER STICKER (Fixed Design Logic) ---
 const FolderSticker = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative transition-all duration-300 shrink-0", 
     active ? "scale-105 opacity-100" : "opacity-40 hover:opacity-70"
   )}>
     <div className="filter 
-      drop-shadow-[1px_0_0_#e0e0e0] 
-      drop-shadow-[-1px_0_0_#e0e0e0] 
-      drop-shadow-[0_1px_0_#e0e0e0] 
-      drop-shadow-[0_-1px_0_#e0e0e0]
+      drop-shadow-[1.5px_0_0_#e0e0e0] 
+      drop-shadow-[-1.5px_0_0_#e0e0e0] 
+      drop-shadow-[0_1.5px_0_#e0e0e0] 
+      drop-shadow-[0_-1.5px_0_#e0e0e0]
       drop-shadow-[0_0_1px_rgba(255,255,255,0.2)]
-      drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+      drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
     >
       <div className="relative w-[26px] h-[18px]">
-        {/* Folder Tab: Designs back section slanted */}
+        {/* Folder Tab (Back Section) */}
         <div 
-          className="absolute top-[-4px] left-0 w-[16px] h-[5px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2px] rounded-tr-[3.5px]"
+          className="absolute top-[-4.2px] left-0 w-[16px] h-[5.2px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2.2px] rounded-tr-[3.4px]"
           style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }}
         />
-        {/* Main Folder Body: designs front section aligned square at top-left */}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden">
+
+        {/* Folder Body (Front Section) */}
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden box-border">
           {/* Interior orange section bar */}
-          <div className="absolute top-0 left-0 w-full h-[3.5px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
+          <div className="absolute top-0 left-0 w-full h-[3.8px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
         </div>
       </div>
     </div>
   </div>
 );
 
-// --- Sub Topic Icon ---
+// --- TOPIC HASHTAG ICON ---
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
     <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
@@ -59,7 +63,6 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
-// --- Question Icons ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -89,20 +92,17 @@ export default function PracticeArena() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
-  const [isLevelOpen, setIsLevelOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [userId, setUserId] = useState<string | undefined>();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
   
-  const levelDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id));
     const handleClickOutside = (event: MouseEvent) => {
-      if (levelDropdownRef.current && !levelDropdownRef.current.contains(event.target as Node)) setIsLevelOpen(false);
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) setIsProfileOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -192,7 +192,7 @@ export default function PracticeArena() {
         )}
       >
         <FolderSticker active={selectedTopic === null} />
-        <span className="tracking-tight">All Topics</span>
+        <span className="tracking-tight font-medium">All Topics</span>
       </div>
       {topics.map((topic: any) => (
         <div 
@@ -203,7 +203,7 @@ export default function PracticeArena() {
           )}
         >
           <SubTopicHashtag active={selectedTopic === topic.name} />
-          <span className="tracking-tight">{topic.name}</span>
+          <span className="tracking-tight font-medium">{topic.name}</span>
         </div>
       ))}
     </nav>
@@ -215,19 +215,19 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
-      {/* Header */}
+      {/* Navbar with Hamburger */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-4 md:gap-8 font-sans">
-          {/* Mobile Menu Trigger */}
+          {/* Mobile Sheet Trigger */}
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden text-zinc-400 hover:text-white hover:bg-[#1a1a1a]">
+              <Button variant="ghost" size="icon" className="lg:hidden text-[#555] hover:text-white hover:bg-[#141414]">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="bg-[#050505] border-r border-[#1a1a1a] p-0 w-72">
+            <SheetContent side="left" className="bg-[#050505] border-[#1a1a1a] p-0 w-72">
               <div className="flex flex-col h-full p-4">
-                <div className="font-neuropol text-xl font-bold text-white mb-8 px-2 pt-2">
+                <div className="font-neuropol text-xl font-bold text-white mb-8 pt-4 px-2">
                   COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
                 </div>
                 <ScrollArea className="flex-1">
@@ -268,6 +268,7 @@ export default function PracticeArena() {
            
            {isProfileOpen && (
              <div className="absolute top-12 right-0 w-64 bg-[#0c0c0e] border border-white/10 rounded-[4px] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+               {/* Profile Dropdown Content */}
                <div className="flex flex-col gap-3">
                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-xs font-bold text-white">
@@ -278,7 +279,6 @@ export default function PracticeArena() {
                      <span className="text-[10px] text-[#555] font-mono truncate">@{profile?.username || "username"}</span>
                    </div>
                  </div>
-
                  <div className="grid grid-cols-2 gap-2">
                    <div className="bg-white/5 rounded-[2px] p-2 text-center border border-white/5">
                      <span className="block text-[10px] text-[#555] uppercase tracking-wider">Solved</span>
@@ -289,7 +289,6 @@ export default function PracticeArena() {
                      <span className="text-[#00ffa3] font-bold">Top 5%</span>
                    </div>
                  </div>
-
                  <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2">
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(profileLink)}`} 
@@ -301,7 +300,6 @@ export default function PracticeArena() {
                       <span className="text-[9px] text-black font-bold uppercase tracking-wider">Scan Profile Card</span>
                     </div>
                  </div>
-
                  {userId && (
                    <Button variant="ghost" className="w-full justify-start text-[11px] h-8 text-[#ff4d4d] hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 uppercase tracking-widest gap-2 mt-2" onClick={handleLogout}>
                      <LogOut className="w-3 h-3" /> Log Out
@@ -313,9 +311,8 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      {/* Content */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
-        {/* Desktop Topics Sidebar */}
+        {/* Desktop Sidebar */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -324,25 +321,31 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* Problems Main View */}
+        {/* Main Problems Feed */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
-          {/* Scrollable Filters */}
-          <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between overflow-hidden">
+          {/* Scrollable Horizontal Filter Row */}
+          <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
             <ScrollArea className="w-full" orientation="horizontal">
-              <div className="flex items-center gap-2 pb-3 min-w-max px-1">
-                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
-                  <button key={f} onClick={() => setStatusFilter(f)}
-                    className={cn(
-                      "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
-                      statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white font-medium"
-                    )}>{f}</button>
-                ))}
-                <div className="relative" ref={levelDropdownRef}>
-                    <button onClick={() => setIsLevelOpen(!isLevelOpen)} className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
-                        selectedDifficulties.length > 0 || isLevelOpen ? "bg-[#141414] text-white border-[#333]" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white"
-                    )}>Level <ChevronDown className={cn("w-3 h-3 transition-transform", isLevelOpen && "rotate-180")} /></button>
-                    {isLevelOpen && (
-                      <div className="absolute top-full left-0 mt-2 w-40 bg-[#0c0c0c] border border-[#333] rounded-[4px] shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center gap-2 pb-3 px-1 min-w-max">
+                 {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
+                   <button key={f} onClick={() => setStatusFilter(f)}
+                     className={cn(
+                       "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
+                       statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white font-medium"
+                     )}>{f}</button>
+                 ))}
+                 
+                 {/* Portaled Dropdown using Popover to avoid clipping */}
+                 <Popover>
+                    <PopoverTrigger asChild>
+                      <button className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
+                          selectedDifficulties.length > 0 ? "bg-[#141414] text-white border-[#333]" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white"
+                      )}>
+                        Level <ChevronDown className="w-3 h-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-40 bg-[#0c0c0c] border-[#333] p-1 shadow-2xl">
+                      <div className="flex flex-col gap-0.5">
                         {['Easy', 'Medium', 'Hard'].map((diff) => (
                           <div key={diff} onClick={() => toggleDifficulty(diff)} className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group">
                             <div className={cn("w-3.5 h-3.5 border rounded-[2px] flex items-center justify-center transition-all",
@@ -352,10 +355,10 @@ export default function PracticeArena() {
                           </div>
                         ))}
                       </div>
-                    )}
-                </div>
+                    </PopoverContent>
+                 </Popover>
               </div>
-              <ScrollBar orientation="horizontal" className="h-1.5" />
+              <ScrollBar orientation="horizontal" className="h-1" />
             </ScrollArea>
           </div>
 
