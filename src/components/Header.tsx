@@ -94,65 +94,33 @@ export function Header({ session, onLogout }: HeaderProps) {
                       </div>
                     </div>
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="w-48 p-2 bg-[#0c0c0e]/95 backdrop-blur-xl border border-white/10 shadow-2xl mt-4 rounded-xl outline-none ring-0">
+                  <PopoverContent 
+                    align="end" 
+                    sideOffset={10}
+                    className="w-44 p-1.5 bg-[#0c0c0e] border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] rounded-xl outline-none"
+                  >
                     <div className="flex flex-col gap-1">
-                        {/* Mobile Only: Profile Button */}
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="md:hidden flex items-center justify-start gap-3 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium" 
-                          onClick={() => navigate('/profile')}
-                        >
-                          <User className="w-4 h-4" /> Profile
-                        </Button>
-                        
-                        {/* Logout Button: Visible on both, logic remains same */}
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex items-center justify-start gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium" 
-                          onClick={onLogout}
-                        >
-                          <LogOut className="w-4 h-4" /> Logout
-                        </Button>
+                      {/* Mobile Only: Profile Button */}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="md:hidden w-full flex items-center justify-start gap-2.5 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                        onClick={() => navigate('/profile')}
+                      >
+                        <User className="w-4 h-4 text-primary" /> Profile
+                      </Button>
+                      
+                      {/* Logout Button: Visible on all devices */}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full flex items-center justify-start gap-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                        onClick={onLogout}
+                      >
+                        <LogOut className="w-4 h-4" /> Logout
+                      </Button>
                     </div>
                   </PopoverContent>
                 </Popover>
               ) : (
-                <Button size="sm" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6" onClick={() => navigate('/auth')}>
-                  <LogIn className="h-3.5 w-3.5 mr-2" /> Login
-                </Button>
-              )}
-            </div>
-          </nav>
-        </div>
-      </header>
-
-      {/* Mobile Bottom Bar */}
-      <div className={cn(
-        "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
-        (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
-      )}>
-        <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl ring-1 ring-white/5 relative">
-          <div className="flex justify-between items-end px-2">
-            <div className="flex gap-4">
-              <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
-              <NavItem to="/events" icon={Code2} label="Events" active={location.pathname.startsWith("/events")} />
-            </div>
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
-               <NavItem to="/practice-arena" icon={Code2} label="Practice" active={location.pathname.startsWith("/practice-arena")} size="large" />
-            </div>
-            <div className="flex gap-4">
-              <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
-              {session ? (
-                 <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === "/dashboard"} />
-              ) : (
-                 <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
+                <Button size="sm" className="bg-primary hover:
