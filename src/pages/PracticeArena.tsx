@@ -140,7 +140,7 @@ export default function PracticeArena() {
         </div>
 
         <div className="flex-1 max-w-md mx-8 hidden sm:block">
-          <div className="relative group">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <Input 
               placeholder="Search challenges..." 
@@ -159,9 +159,9 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[250px_1fr_390px] gap-6 p-4 md:p-6 w-full overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topic Sidebar */}
+        {/* LEFT COLUMN */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-3 uppercase">Difficulty</div>
@@ -201,7 +201,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Challenges */}
+        {/* MIDDLE COLUMN */}
         <main className="bg-[#0f0f12] border border-white/5 rounded-[32px] flex flex-col shadow-2xl overflow-hidden h-full">
           <div className="shrink-0 p-4 border-b border-white/5 bg-white/[0.01]">
             <div className="flex flex-wrap items-center justify-start gap-2">
@@ -264,36 +264,40 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Redesigned Scrollable Sidebar */}
+        {/* RIGHT COLUMN - Updated Scaling */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-4">
             <div className="flex flex-col gap-6 pb-10">
               
               {!userId ? (
-                /* Premium Login Card Design */
-                <div className="relative w-full bg-[#111112] border border-white/10 rounded-[32px] p-10 flex flex-col items-center text-center shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7)] overflow-hidden">
-                  {/* Top rim highlight */}
+                /* Premium Login Card with Scaled Design and Google Symbol */
+                <div className="relative w-full bg-[#111112] border border-white/10 rounded-[32px] p-8 md:p-9 flex flex-col items-center text-center shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7)] overflow-hidden">
                   <div className="absolute top-0 w-3/5 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
                   
-                  <div className="relative w-14 h-14 bg-white/[0.03] border border-white/10 rounded-[18px] flex items-center justify-center mb-7">
-                    {/* Subtle glow behind icon */}
-                    <div className="absolute w-10 h-10 bg-[#a855f7] blur-[25px] opacity-15 z-0" />
-                    <svg className="relative z-10 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <div className="relative w-12 h-12 bg-white/[0.03] border border-white/10 rounded-[16px] flex items-center justify-center mb-6">
+                    <div className="absolute w-8 h-8 bg-[#a855f7] blur-[20px] opacity-15 z-0" />
+                    <svg className="relative z-10 text-white" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
                       <polyline points="10 17 15 12 10 7"></polyline>
                       <line x1="15" y1="12" x2="3" y2="12"></line>
                     </svg>
                   </div>
 
-                  <h1 className="text-white text-[1.1rem] font-bold uppercase tracking-[0.08em] mb-4 font-sans">Access Your Progress</h1>
-                  <p className="text-[#8e8e93] text-[0.9rem] leading-[1.6] mb-8 max-w-[280px] font-normal font-sans">
-                    Sign in to sync your data, view advanced history, and track your performance milestones.
+                  <h1 className="text-white text-[1.1rem] font-bold uppercase tracking-[0.08em] mb-3 font-sans">Access Your Progress</h1>
+                  <p className="text-[#8e8e93] text-[0.88rem] leading-[1.5] mb-7 max-w-[260px] font-normal font-sans">
+                    Sign in to sync your data, view advanced history, and track performance milestones.
                   </p>
 
                   <button 
                     onClick={handleGoogleLogin}
-                    className="w-full bg-white text-black py-4 rounded-[14px] text-[0.85rem] font-bold uppercase tracking-[0.1em] transition-all duration-300 hover:translate-y-[-3px] hover:shadow-[0_12px_24px_rgba(255,255,255,0.1)] active:scale-95 font-sans"
+                    className="w-full bg-white text-black py-3.5 rounded-[12px] text-[0.8rem] font-bold uppercase tracking-[0.08em] transition-all duration-400 flex items-center justify-center gap-3 hover:translate-y-[-2px] hover:shadow-[0_10px_20px_rgba(255,255,255,0.08)] active:scale-95 font-sans"
                   >
+                    <svg width="18" height="18" viewBox="0 0 18 18">
+                      <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.89 2.69-6.62z" />
+                      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.8.54-1.83.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.95v2.33A8.99 8.99 0 0 0 9 18z" />
+                      <path fill="#FBBC05" d="M3.96 10.71A5.41 5.41 0 0 1 3.64 9c0-.59.1-1.17.28-1.71V4.96H.95a8.99 8.99 0 0 0 0 8.08l3.01-2.33z" />
+                      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0C5.48 0 2.44 2.02.95 4.96l3.01 2.33C4.67 5.16 6.66 3.58 9 3.58z" />
+                    </svg>
                     Log In with Google
                   </button>
                 </div>
@@ -301,27 +305,27 @@ export default function PracticeArena() {
                 /* Ongoing Events Logic */
                 activeEvents.length > 0 && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase font-sans">Ongoing Events</span>
+                    <div className="flex items-center justify-between px-1 font-sans">
+                      <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">Ongoing Events</span>
                       <Button variant="link" onClick={() => navigate('/events')} className="h-auto p-0 text-[10px] text-zinc-500 hover:text-white uppercase font-bold">All</Button>
                     </div>
                     
-                    <ScrollArea className="w-full whitespace-nowrap rounded-[32px]">
-                      <div className="flex gap-4 pb-4 snap-x snap-mandatory">
+                    <ScrollArea className="w-full whitespace-nowrap rounded-[28px]">
+                      <div className="flex gap-4 pb-4 snap-x snap-mandatory font-sans">
                         {activeEvents.map((event) => (
-                          <div key={event.id} className="inline-block w-[320px] bg-[#111112] border border-white/10 rounded-[32px] p-6 shrink-0 snap-center shadow-xl">
+                          <div key={event.id} className="inline-block w-[300px] bg-[#111112] border border-white/10 rounded-[28px] p-6 shrink-0 snap-center shadow-xl">
                             <div className="flex justify-between items-start mb-4">
-                              <h4 className="text-sm font-bold text-white truncate max-w-[180px] font-sans uppercase tracking-tight">{event.title}</h4>
+                              <h4 className="text-xs font-bold text-white truncate max-w-[160px] uppercase tracking-tight">{event.title}</h4>
                               <div className="flex -space-x-2">
-                                 <div className="w-7 h-7 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shadow-sm"><Building2 className="w-3.5 h-3.5 text-zinc-500" /></div>
-                                 <div className="w-7 h-7 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center shadow-sm"><Building2 className="w-3.5 h-3.5 text-zinc-400" /></div>
+                                 <div className="w-6 h-6 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shadow-sm"><Building2 className="w-3 h-3 text-zinc-500" /></div>
+                                 <div className="w-6 h-6 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center shadow-sm"><Building2 className="w-3 h-3 text-zinc-400" /></div>
                               </div>
                             </div>
-                            <div className="space-y-2 mb-6 text-[11px] text-[#8e8e93] font-medium font-sans">
-                              <div className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5 text-zinc-500" /> {new Date(event.start_date).toLocaleDateString()}</div>
-                              <p className="line-clamp-2 leading-relaxed whitespace-normal">Join the specialized tracks with enterprise partners.</p>
+                            <div className="space-y-2 mb-6 text-[10px] text-[#8e8e93] font-medium">
+                              <div className="flex items-center gap-2"><Calendar className="w-3 h-3 text-zinc-500" /> {new Date(event.start_date).toLocaleDateString()}</div>
+                              <p className="line-clamp-2 leading-relaxed whitespace-normal">Join specialized tracks with enterprise partners.</p>
                             </div>
-                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#a855f7] hover:bg-[#9333ea] text-white font-bold h-10 text-[10px] rounded-xl tracking-[0.1em] uppercase font-sans shadow-lg transition-transform active:scale-95">
+                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#a855f7] hover:bg-[#9333ea] text-white font-bold h-9 text-[10px] rounded-xl tracking-[0.1em] uppercase shadow-lg transition-transform active:scale-95">
                               Participate
                             </Button>
                           </div>
@@ -333,11 +337,11 @@ export default function PracticeArena() {
                 )
               )}
 
-              {/* Wireframe Placeholder below (Secondary Block) */}
-              {!userId && <div className="w-full h-[180px] bg-white/[0.01] border border-white/[0.03] rounded-[32px]" />}
+              {/* Wireframe Placeholder for Non-Logged Users */}
+              {!userId && <div className="w-full h-[160px] bg-white/[0.01] border border-white/[0.02] rounded-[28px]" />}
 
               {/* Analytics Section */}
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-6 font-sans">
                 <UserStatsCard userId={userId} />
                 <ActivityCalendar userId={userId} />
               </div>
