@@ -96,25 +96,25 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverTrigger>
                   <PopoverContent 
                     align="end" 
-                    sideOffset={10}
-                    className="w-44 p-1.5 bg-[#0c0c0e] border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.5)] rounded-xl outline-none"
+                    sideOffset={8}
+                    className="w-40 p-1 bg-[#0c0c0e] border border-white/10 shadow-2xl rounded-xl outline-none ring-0"
                   >
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-0.5">
                       {/* Mobile Only: Profile Button */}
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="md:hidden w-full flex items-center justify-start gap-2.5 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                        className="md:hidden w-full flex items-center justify-start gap-2.5 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0" 
                         onClick={() => navigate('/profile')}
                       >
                         <User className="w-4 h-4 text-primary" /> Profile
                       </Button>
                       
-                      {/* Logout Button: Visible on all devices */}
+                      {/* Logout Button: No purple lining */}
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="w-full flex items-center justify-start gap-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                        className="w-full flex items-center justify-start gap-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0" 
                         onClick={onLogout}
                       >
                         <LogOut className="w-4 h-4" /> Logout
@@ -132,7 +132,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Bottom Bar remains unchanged */}
+      {/* Mobile Bottom Bar */}
       <div className={cn(
         "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
         (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
