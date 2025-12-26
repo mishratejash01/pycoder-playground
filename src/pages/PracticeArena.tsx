@@ -16,6 +16,7 @@ import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
 // --- Premium Folder Sticker Icon for Sidebar ---
+// This component renders the orange folder sticker with a white border effect.
 const TopicStickerIcon = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative w-7 h-5 transition-all duration-300 shrink-0", 
@@ -35,6 +36,7 @@ const TopicStickerIcon = ({ active }: { active: boolean }) => (
 );
 
 // --- Custom Question Box Icons ---
+// Terminal icon for code-based problems.
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -44,6 +46,7 @@ const TerminalBoxIcon = () => (
   </div>
 );
 
+// Layers icon for data structure or multi-layered problems.
 const LayersBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <Layers size={18} strokeWidth={2.5} />
@@ -243,6 +246,7 @@ export default function PracticeArena() {
       </nav>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
+        {/* Sidebar with Premium Topic Icons */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -268,6 +272,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
+        {/* Main Content: Problem List with Terminal/Layer Box Icons */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -306,6 +311,7 @@ export default function PracticeArena() {
                 filteredProblems.map((problem) => (
                   <div key={problem.id} className="group relative bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-5 md:px-7 md:py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all duration-300 hover:border-[#333] hover:bg-[#0f0f0f] cursor-default">
                     <div className="flex items-center gap-5">
+                      {/* Dynamic choice of box icon based on tags */}
                       {problem.tags?.includes('Arrays') ? <LayersBoxIcon /> : <TerminalBoxIcon />}
                       <div className="flex flex-col gap-1.5">
                         <h3 className="text-white text-[1.1rem] font-bold tracking-[-0.01em] m-0 leading-tight group-hover:text-white transition-colors cursor-pointer" onClick={() => navigate(`/practice-arena/${problem.slug}`)}>{problem.title}</h3>
