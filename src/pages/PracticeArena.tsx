@@ -4,39 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
-  Search, ArrowLeft, Layers, Flame, 
+  Search, ArrowLeft, Terminal, Layers, Flame, 
   ChevronDown, Check, User, LogOut, QrCode 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
+import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- Premium Folder Sticker Icon for Sidebar ---
-// This component renders the orange folder sticker with a white border effect.
-const TopicStickerIcon = ({ active }: { active: boolean }) => (
-  <div className={cn(
-    "relative w-7 h-5 transition-all duration-300 shrink-0", 
-    active ? "scale-110 rotate-[-2deg] opacity-100" : "opacity-40 grayscale"
-  )} 
-  style={{ filter: active ? 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' : 'none' }}>
-    {/* Sticker Border effect */}
-    <div className="absolute inset-[-1.5px] bg-white rounded-[4px] opacity-10 blur-[0.5px]" />
-    {/* Folder Tab */}
-    <div className="absolute top-[-4px] left-0 w-[60%] h-3 rounded-t-[4px] border-[2px] border-[#2d1d1a] z-0" 
-         style={{ backgroundColor: '#f39233', clipPath: 'polygon(0 0, 80% 0, 100% 100%, 0 100%)' }} />
-    {/* Folder Body */}
-    <div className="absolute inset-0 rounded-[2px] border-[2px] border-[#2d1d1a] bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] z-10">
-        <div className="w-full h-1 bg-[#f39233] border-b border-[#2d1d1a]" />
-    </div>
-  </div>
-);
-
-// --- Custom Question Box Icons ---
-// Terminal icon for code-based problems.
+// --- RESTORED: Custom Question Icons ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -46,10 +26,27 @@ const TerminalBoxIcon = () => (
   </div>
 );
 
-// Layers icon for data structure or multi-layered problems.
 const LayersBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <Layers size={18} strokeWidth={2.5} />
+  </div>
+);
+
+// --- RESTORED: Topic Icons (Hashtag & Folder) ---
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
+    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+  </div>
+);
+
+const CustomFolderIcon = ({ active }: { active: boolean }) => (
+  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-50")}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#fff" : "none"} stroke="currentColor" strokeWidth="2">
+       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+    </svg>
   </div>
 );
 
@@ -113,10 +110,6 @@ export default function PracticeArena() {
     setIsProfileOpen(false);
   };
 
-  const toggleDifficulty = (diff: string) => {
-    setSelectedDifficulties(prev => prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]);
-  };
-
   const profileLink = profile?.username 
     ? `${window.location.origin}/u/${profile.username}` 
     : `${window.location.origin}/profile`;
@@ -167,7 +160,7 @@ export default function PracticeArena() {
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-8 font-sans">
           <div className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white cursor-pointer" onClick={() => navigate('/')}>
-            COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO<span className="text-[#555] font-sans text-lg font-extrabold ml-1">ARENA</span>
+            COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
           </div>
         </div>
 
@@ -187,8 +180,10 @@ export default function PracticeArena() {
            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-[#555] hover:text-white hover:bg-[#1a1a1a] rounded-full transition-colors">
              <ArrowLeft className="w-5 h-5" />
            </Button>
+           
+           {/* RESTORED: Nav bar profile button */}
            <div 
-             className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a] flex items-center justify-center cursor-pointer hover:border-[#333] transition-colors" 
+             className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a] flex items-center justify-center cursor-pointer hover:border-[#333] transition-colors"
              onClick={() => setIsProfileOpen(!isProfileOpen)}
            >
              <User className="w-4 h-4 text-[#777]" />
@@ -231,11 +226,7 @@ export default function PracticeArena() {
                  </div>
 
                  {userId && (
-                   <Button 
-                     variant="ghost" 
-                     className="w-full justify-start text-[11px] h-8 text-[#ff4d4d] hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 uppercase tracking-widest gap-2 mt-2" 
-                     onClick={handleLogout}
-                   >
+                   <Button variant="ghost" className="w-full justify-start text-[11px] h-8 text-[#ff4d4d] hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 uppercase tracking-widest gap-2 mt-2" onClick={handleLogout}>
                      <LogOut className="w-3 h-3" /> Log Out
                    </Button>
                  )}
@@ -246,25 +237,26 @@ export default function PracticeArena() {
       </nav>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
-        {/* Sidebar with Premium Topic Icons */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
               <nav className="flex flex-col gap-1 pb-10">
                 <div onClick={() => setSelectedTopic(null)}
-                  className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+                  className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
-                  <TopicStickerIcon active={selectedTopic === null} />
-                  <span className="tracking-tight font-bold ml-1">All Topics</span>
+                  {/* RESTORED: All Topics Folder Icon */}
+                  <CustomFolderIcon active={selectedTopic === null} />
+                  <span className="tracking-tight">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
                   <div key={topic.id} onClick={() => setSelectedTopic(topic.name)}
-                    className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+                    className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
-                    <TopicStickerIcon active={selectedTopic === topic.name} />
-                    <span className="tracking-tight font-bold ml-1">{topic.name}</span>
+                    {/* RESTORED: Sub-topic hashtag graphic */}
+                    <SubTopicHashtag active={selectedTopic === topic.name} />
+                    <span className="tracking-tight">{topic.name}</span>
                   </div>
                 ))}
               </nav>
@@ -272,7 +264,6 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* Main Content: Problem List with Terminal/Layer Box Icons */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -311,7 +302,6 @@ export default function PracticeArena() {
                 filteredProblems.map((problem) => (
                   <div key={problem.id} className="group relative bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-5 md:px-7 md:py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all duration-300 hover:border-[#333] hover:bg-[#0f0f0f] cursor-default">
                     <div className="flex items-center gap-5">
-                      {/* Dynamic choice of box icon based on tags */}
                       {problem.tags?.includes('Arrays') ? <LayersBoxIcon /> : <TerminalBoxIcon />}
                       <div className="flex flex-col gap-1.5">
                         <h3 className="text-white text-[1.1rem] font-bold tracking-[-0.01em] m-0 leading-tight group-hover:text-white transition-colors cursor-pointer" onClick={() => navigate(`/practice-arena/${problem.slug}`)}>{problem.title}</h3>
