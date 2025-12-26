@@ -150,7 +150,7 @@ export default function PracticeArena() {
       {/* Main Grid Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[250px_1fr_320px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topics (Independent Scroll) */}
+        {/* LEFT COLUMN: Topic Selection (Independent Scroll) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-3 uppercase">Difficulty</div>
@@ -190,22 +190,17 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Maximized Space & Sharp Block Design */}
+        {/* MIDDLE COLUMN: Maximized Pure Black/Zinc Workspace */}
         <main className="bg-[#0a0a0a] border border-zinc-900 rounded-lg flex flex-col shadow-2xl overflow-hidden h-full font-sans">
-          {/* Filters Row */}
-          <div className="shrink-0 p-4 border-b border-zinc-900 bg-zinc-950/20 font-sans">
+          {/* Filters Row - Integrated status logic */}
+          <div className="shrink-0 p-4 border-b border-zinc-900 bg-zinc-950/20">
             <div className="flex flex-wrap items-center justify-start gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
-                 <button 
-                   key={f} 
-                   onClick={() => setStatusFilter(f)}
+                 <button key={f} onClick={() => setStatusFilter(f)}
                    className={cn(
                      "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider", 
-                     statusFilter === f 
-                       ? "bg-white text-black border-white shadow-md font-bold" 
-                       : "bg-zinc-950 text-zinc-500 border-zinc-900 hover:border-zinc-700 hover:text-white font-medium"
-                   )}
-                 >
+                     statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-zinc-950 text-zinc-500 border-zinc-900 hover:border-zinc-700 hover:text-white font-medium"
+                   )}>
                    {f}
                  </button>
                ))}
@@ -215,29 +210,26 @@ export default function PracticeArena() {
           <ScrollArea className="flex-1">
             <div className="flex flex-col gap-0">
               {isLoading ? (
-                [1,2,3,4,5,6].map(i => <div key={i} className="h-20 border-b border-zinc-900 animate-pulse font-sans" />)
+                [1,2,3,4,5,6].map(i => <div key={i} className="h-20 border-b border-zinc-900 animate-pulse" />)
               ) : (
                 filteredProblems.map((problem) => (
-                  <div 
-                    key={problem.id}
-                    className="group border-b border-zinc-900 hover:bg-zinc-900/30 transition-all duration-300 cursor-pointer p-5 md:p-6 font-sans"
-                    onClick={() => navigate(`/practice-arena/${problem.slug}`)}
-                  >
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 font-sans">
-                      <div className="flex items-center gap-6 flex-grow font-sans">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform font-sans">
+                  <div key={problem.id} className="group border-b border-zinc-900 hover:bg-zinc-900/30 transition-all duration-300 cursor-pointer p-5 md:p-6"
+                    onClick={() => navigate(`/practice-arena/${problem.slug}`)}>
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-6 flex-grow">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
                           {problem.tags?.includes('Arrays') ? <Layers size={20} /> : <Terminal size={20} />}
                         </div>
-                        <div className="flex-grow font-sans">
+                        <div className="flex-grow">
                           <h3 className="text-lg font-bold text-white group-hover:text-zinc-300 transition-colors tracking-tight font-sans">{problem.title}</h3>
                           
                           <div className="flex flex-wrap items-center gap-2 mt-2 font-sans">
-                            {/* Sharp Rectangular Difficulty Block */}
+                            {/* Sharp Transparent Rectangular Difficulty Block */}
                             <div className={cn(
-                              "flex items-center gap-2 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all duration-300 font-sans",
-                              problem.difficulty === 'Easy' ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" :
-                              problem.difficulty === 'Medium' ? "text-amber-500 bg-amber-500/10 border-amber-500/20" :
-                              "text-rose-500 bg-rose-500/10 border-rose-500/20"
+                              "flex items-center gap-2 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all duration-300 bg-transparent font-sans",
+                              problem.difficulty === 'Easy' ? "text-emerald-500 border-emerald-500/30" :
+                              problem.difficulty === 'Medium' ? "text-amber-500 border-amber-500/30" :
+                              "text-rose-500 border-rose-500/30"
                             )}>
                               <span className={cn(
                                 "w-1.5 h-1.5 rounded-full animate-pulse",
@@ -248,15 +240,15 @@ export default function PracticeArena() {
                               {problem.difficulty}
                             </div>
 
-                            {/* Sharp Rectangular Tag Block */}
+                            {/* Transparent Tag Block */}
                             {problem.tags && problem.tags[0] && (
-                              <div className="px-2.5 py-1 rounded-sm text-[10px] font-bold text-zinc-400 bg-zinc-900/40 border border-zinc-800 uppercase tracking-widest font-sans">
+                              <div className="px-2.5 py-1 rounded-sm text-[10px] font-bold text-zinc-400 bg-transparent border border-zinc-800 uppercase tracking-widest font-sans">
                                 {problem.tags[0]}
                               </div>
                             )}
                             
                             {problem.is_daily && (
-                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold text-orange-400 bg-orange-400/10 border border-orange-400/20 uppercase tracking-widest font-sans">
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold text-orange-400 bg-transparent border border-orange-400/20 uppercase tracking-widest font-sans">
                                 <Flame className="w-3 h-3 fill-orange-400" /> Daily
                               </div>
                             )}
@@ -264,8 +256,8 @@ export default function PracticeArena() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between w-full md:w-auto md:gap-12 font-sans">
-                        <div className="flex flex-col md:items-end min-w-[100px] text-left md:text-right font-sans">
+                      <div className="flex items-center justify-between w-full md:w-auto md:gap-12">
+                        <div className="flex flex-col md:items-end min-w-[100px] text-left md:text-right">
                           <p className="text-[9px] uppercase font-bold text-zinc-600 tracking-[0.2em] mb-0.5 font-sans">Acceptance</p>
                           <span className="text-base font-bold text-white font-mono">{problem.acceptance_rate || 0}%</span>
                         </div>
@@ -281,7 +273,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Analytics & Fixed Activity */}
+        {/* RIGHT COLUMN: Analytics & Bluish Activity */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
             <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase font-sans">User Analytics</div>
