@@ -1,423 +1,315 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, 
-  Users, Clock, Star, MessageCircle, HelpCircle, CheckCircle, 
-  Sparkles, Zap, ChevronRight, Globe, Handshake // Added Handshake
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { Session } from '@supabase/supabase-js';
+import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 
-// Internal Component Imports
-import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
-import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
-import { WorkshopRegistrationModal } from '@/components/events/WorkshopRegistrationModal';
-import { WebinarRegistrationModal } from '@/components/events/WebinarRegistrationModal';
-import { MeetupRegistrationModal } from '@/components/events/MeetupRegistrationModal';
-import { ContestRegistrationModal } from '@/components/events/ContestRegistrationModal';
-import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
-import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
-import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
-import { useEventRegistration } from '@/hooks/useEventRegistration';
-import { EventStagesTimeline } from '@/components/events/EventStagesTimeline';
-import { EventDetailsContent } from '@/components/events/EventDetails';
-import { EventDatesDeadlines } from '@/components/events/EventDatesDeadlines';
-import { EventPrizes } from '@/components/events/EventPrizes';
-import { EventReviews } from '@/components/events/EventReviews';
-import { EventFAQs } from '@/components/events/EventFAQs';
-import { EventDiscussions } from '@/components/events/EventDiscussions';
-import { EventEligibility } from '@/components/events/EventEligibility';
-import { EventSponsors } from '@/components/events/EventSponsors'; // Added Import
+// --- Types ---
+interface Event {
+  id: string;
+  title: string;
+  slug: string;
+  short_description: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  registration_deadline?: string;
+  created_at: string;
+  image_url: string;
+  category: string;
+  mode: string;
+  location: string;
+  prize_pool: string;
+  is_featured: boolean;
+  event_type: 'hackathon' | 'normal';
+  max_team_size: number | null;
+  registration_fee: number | null;
+  is_paid: boolean | null;
+}
 
-export default function EventDetailsPage() {
+export default function EventDetails() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const [event, setEvent] = useState<any>(null);
+  const { toast } = useToast();
+  const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('stages');
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const { 
-    isRegistered, 
-    invitation, 
-    hasPendingInvitation,
-    hasAcceptedInvitation,
-    loading: regLoading,
-    refetch: refetchRegistration
-  } = useEventRegistration(event?.id);
-
-  // Auth & Data Fetching
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !session) navigate('/auth');
-  }, [authLoading, session, navigate]);
+    const fetchEvent = async () => {
+      if (!slug) return;
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('slug', slug)
+        .single();
 
-  useEffect(() => {
-    if (session) getEvent();
-  }, [slug, session]);
+      if (error) {
+        console.error('Error fetching event:', error);
+        toast({
+          title: "Error",
+          description: "Could not find the requested event.",
+          variant: "destructive"
+        });
+        navigate('/events');
+        return;
+      }
 
-  async function getEvent() {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('slug', slug)
-      .single();
-    if (error) { navigate('/events'); return; }
-    setEvent(data);
-    setLoading(false);
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
-  const handleRegisterClick = () => {
-    if (hasPendingInvitation) { toast.info("You have a pending team invitation."); return; }
-    if (hasAcceptedInvitation) { toast.info("Please complete your team registration."); return; }
-    if (isRegistered) { toast.info("You're already registered!"); return; }
-
-    // Logic to determine if we should open modal or external link
-    const effectiveType = (event.form_type || event.event_type || '').toLowerCase();
-    const internalTypes = ['hackathon', 'workshop', 'webinar', 'meetup', 'contest'];
-
-    // 1. If it matches a known internal type (like 'workshop'), ALWAYS open the modal
-    if (internalTypes.includes(effectiveType)) {
-      setIsRegisterOpen(true);
-      return;
-    }
-
-    // 2. If no internal type matched, but we have a link, go to the link (External events)
-    if (event.registration_link) {
-       window.open(event.registration_link, '_blank');
-       return;
-    }
-
-    // 3. Fallback to normal registration modal
-    setIsRegisterOpen(true);
-  };
-
-  const handleShare = async () => {
-    try {
-      await navigator.share({ title: event.title, text: `Check out ${event.title}!`, url: window.location.href });
-    } catch { toast.info("Link copied!"); navigator.clipboard.writeText(window.location.href); }
-  };
-
-  // Helper function to render the correct modal based on form_type
-  const renderRegistrationModal = () => {
-    if (!event) return null;
-
-    // Logic: Use form_type if available, otherwise fallback to event_type, default to 'normal'
-    const type = (event.form_type || event.event_type || 'normal').toLowerCase();
-
-    const commonProps = {
-      event,
-      isOpen: isRegisterOpen,
-      onOpenChange: setIsRegisterOpen
+      setEvent(data as unknown as Event);
+      setLoading(false);
     };
 
-    switch (type) {
-      case 'hackathon':
-        return <HackathonRegistrationModal {...commonProps} />;
-      case 'workshop':
-        return <WorkshopRegistrationModal {...commonProps} />;
-      case 'webinar':
-        return <WebinarRegistrationModal {...commonProps} />;
-      case 'meetup':
-        return <MeetupRegistrationModal {...commonProps} />;
-      case 'contest':
-        return <ContestRegistrationModal {...commonProps} />;
-      case 'normal':
-      default:
-        return <NormalEventRegistrationModal {...commonProps} />;
-    }
-  };
+    fetchEvent();
+  }, [slug, navigate, toast]);
 
-  if (authLoading || loading) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <Loader2 className="animate-spin h-8 w-8 text-primary" />
-    </div>
-  );
-
-  const isHackathon = event?.event_type === 'hackathon';
-
-  // --- Dynamic Content Renders ---
-  const renderSidebarContent = () => {
-    if (regLoading) return <div className="flex justify-center py-6"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>;
-    
-    if (isRegistered) {
-      return (
-        <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-          <div className="absolute inset-0 bg-emerald-500/10 blur-xl opacity-50" />
-          <AlreadyRegisteredCard 
-            eventId={event.id} 
-            eventTitle={event.title} 
-            eventType={event.event_type || 'normal'} 
-            isPaid={event.is_paid} 
-            registrationFee={event.registration_fee} 
-            currency={event.currency} 
-          />
-        </div>
-      );
-    }
-    
-    if (hasPendingInvitation && invitation) return <PendingInvitationCard invitation={invitation as any} eventTitle={event.title} onAccept={refetchRegistration} onDecline={refetchRegistration} />;
-    
-    if (hasAcceptedInvitation && invitation) return <InviteeRegistrationForm eventId={event.id} eventTitle={event.title} isPaid={event.is_paid} registrationFee={event.registration_fee} currency={event.currency} invitation={{ id: invitation.id, team_name: invitation.team_name, inviter_name: invitation.inviter_name, role: invitation.role, registration_id: invitation.registration_id }} onComplete={refetchRegistration} />;
-    
+  if (loading) {
     return (
-      <div className="space-y-4 pt-2">
-        <Button 
-          onClick={handleRegisterClick} 
-          className="w-full h-14 text-base font-bold bg-white text-black hover:bg-zinc-200 hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
-        >
-          {isHackathon && <Code className="w-5 h-5 mr-2" />} 
-          Initialize Registration
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={handleShare} 
-          className="w-full h-12 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
-        >
-          <Share2 className="w-4 h-4 mr-2" /> Share Protocol
-        </Button>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="animate-spin h-8 w-8 text-white" />
       </div>
     );
-  };
+  }
 
-  const tabs = [
-    { id: 'stages', label: 'Timeline', icon: Clock },
-    { id: 'details', label: 'Briefing', icon: Zap },
-    { id: 'dates', label: 'Deadlines', icon: Calendar },
-    { id: 'prizes', label: 'Bounties', icon: Trophy },
-    { id: 'sponsors', label: 'Partners', icon: Handshake }, // Added Tab
-    { id: 'eligibility', label: 'Criteria', icon: CheckCircle },
-    { id: 'reviews', label: 'Intel', icon: Star },
-    { id: 'faqs', label: 'Comms', icon: MessageCircle },
-  ];
+  if (!event) return null;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 font-inter relative overflow-x-hidden">
-      <Header session={session} onLogout={handleLogout} />
-      
-      {/* Background Noise & Ambient Light */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-         <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/20 rounded-full blur-[150px] animate-pulse opacity-40" />
-      </div>
+    <div className="min-h-screen bg-black text-white font-inter selection:bg-white/20">
+      {/* Load Fonts */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@200;300;400;600&display=swap');
 
-      {/* --- CINEMATIC HERO --- */}
-      <div className="relative h-[60vh] md:h-[70vh] w-full flex items-end pb-20 overflow-hidden border-b border-white/5">
-        {/* Hero Image */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505] z-10" />
-          <motion.img 
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 10, ease: "easeOut" }}
-            src={event.image_url} 
-            alt="Cover" 
-            className="w-full h-full object-cover opacity-80" 
-          />
-        </div>
+        :root {
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --text-main: #ffffff;
+            --text-muted: #777777;
+            --border: #1a1a1a;
+            --titanium: #e0e0e0;
+        }
 
-        {/* Hero Content */}
-        <div className="container relative z-20 mx-auto px-4 md:px-8 max-w-[1600px]">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-4xl"
-          >
-             <Button variant="ghost" className="mb-8 text-zinc-400 hover:text-white pl-0 hover:bg-transparent group" onClick={() => navigate('/events')}>
-               <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center mr-3 group-hover:border-white/30 transition-colors bg-black/50 backdrop-blur-md">
-                 <ArrowLeft className="h-4 w-4" />
-               </div>
-               <span className="text-xs font-bold tracking-widest uppercase">Abort & Return</span>
-             </Button>
-             
-             <div className="flex flex-wrap items-center gap-4 mb-6">
-               <span className="px-3 py-1 rounded border border-primary/30 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
-                 {event.category}
-               </span>
-               <span className="flex items-center gap-2 px-3 py-1 rounded border border-white/10 bg-white/5 text-zinc-300 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">
-                 <Globe className="w-3 h-3" /> {event.mode}
-               </span>
-               {event.is_featured && (
-                 <span className="flex items-center gap-1 text-amber-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
-                   <Sparkles className="w-3 h-3" /> Featured Event
-                 </span>
-               )}
-             </div>
+        .font-serif { font-family: 'Playfair Display', serif; letter-spacing: -1px; }
+        .font-sans { font-family: 'Inter', sans-serif; }
 
-             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 leading-[0.9]">
-               {event.title}
-             </h1>
-             
-             <p className="text-lg md:text-xl text-zinc-400 max-w-2xl line-clamp-2 leading-relaxed">
-               {event.short_description}
-             </p>
-          </motion.div>
-        </div>
-      </div>
+        /* Animations */
+        @keyframes lineGrow { from { height: 0; } to { height: 100%; } }
+        
+        .roadmap { position: relative; padding-left: 40px; margin-bottom: 80px; }
+        .roadmap-line { position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: var(--border); }
+        .roadmap-progress { position: absolute; left: 0; top: 0; width: 1px; background: var(--titanium); animation: lineGrow 3s ease-in-out forwards; }
+        .stage-item { position: relative; margin-bottom: 50px; }
+        .stage-item::before {
+            content: ""; position: absolute; left: -43.5px; top: 10px;
+            width: 8px; height: 8px; background: var(--titanium); border-radius: 50%;
+        }
 
-      {/* --- NAVIGATION HUD --- */}
-      <div className="sticky top-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto max-w-[1600px] px-4 md:px-8">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            <div className="flex gap-1 overflow-x-auto no-scrollbar mask-linear-fade py-2 w-full md:w-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded-full min-w-max",
-                    activeTab === tab.id 
-                      ? "text-black" 
-                      : "text-zinc-500 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  {activeTab === tab.id && (
-                    <motion.div 
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-white rounded-full"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+        .stat-item span { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 2px; }
+        .stat-item strong { font-size: 1.4rem; font-weight: 200; color: var(--titanium); }
+
+        .section-title { font-size: 2.2rem; margin-bottom: 40px; position: relative; font-weight: 400; }
+        .section-title::after { content: ""; display: block; width: 60px; height: 1px; background: var(--text-muted); margin-top: 20px; }
+
+        .btn-participate {
+            display: block; width: 100%; padding: 22px;
+            background: var(--text-main); color: #000;
+            text-align: center; text-decoration: none; text-transform: uppercase;
+            letter-spacing: 3px; font-size: 0.8rem; font-weight: 700;
+            transition: 0.4s; cursor: pointer; border: 1px solid var(--text-main);
+        }
+        .btn-participate:hover { background: transparent; color: #fff; }
+
+        .prize-card { border: 1px solid var(--border); padding: 40px; text-align: left; transition: 0.3s; }
+        .prize-card:hover { border-color: var(--titanium); }
+        .prize-pos { font-size: 3rem; font-weight: 200; margin-bottom: 10px; color: var(--titanium); }
+
+        .patrons-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+            background: var(--border); border: 1px solid var(--border);
+        }
+        .patron-logo {
+            background: var(--bg); padding: 30px; text-align: center;
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 3px; color: var(--text-muted);
+        }
+
+        .qa-q { font-weight: 400; font-size: 1.1rem; margin-bottom: 12px; color: var(--titanium); border-left: 1px solid var(--titanium); padding-left: 20px; }
+        .qa-a { color: var(--text-muted); font-size: 0.95rem; padding-left: 21px; }
+
+        .insight-card { padding: 40px; background: var(--surface); border: 1px solid var(--border); }
+        .insight-quote { font-style: italic; color: var(--text-muted); margin-bottom: 20px; font-weight: 300; }
+        .insight-author { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--titanium); }
+
+        .meta-list li { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+        .meta-list li span { color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+      `}</style>
+
+      {/* Global App Header Preserved */}
+      <Header />
+
+      <div className="max-w-[1200px] mx-auto px-10 pt-20">
+        
+        {/* --- HERO SECTION --- */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center py-24">
+            <div>
+                <span className="text-[0.7rem] uppercase tracking-[3px] text-[#777] block mb-5">
+                    {event.category} • {event.event_type}
+                </span>
+                <h1 className="font-serif text-[3rem] md:text-[4.5rem] leading-[1] font-bold mb-6">
+                    {event.title}
+                </h1>
+                <p className="text-xl text-[#777] font-light mb-10 leading-relaxed">
+                    {event.short_description}
+                </p>
+                <div className="w-[250px]">
+                    <EventRegistrationModal 
+                        event={event} 
+                        trigger={<button className="btn-participate">Apply for Entry</button>} 
                     />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <tab.icon className="w-3.5 h-3.5" />
-                    {tab.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-            
-            {/* Desktop Quick Action (Hidden on Mobile) */}
-            <div className="hidden md:block">
-              <Button size="sm" onClick={handleShare} variant="ghost" className="text-zinc-500 hover:text-white">
-                <Share2 className="w-4 h-4 mr-2" /> Share
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- MAIN GRID LAYOUT --- */}
-      <div className="container mx-auto px-4 md:px-8 py-12 max-w-[1600px]">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
-          
-          {/* LEFT COLUMN: Content */}
-          <div className="lg:col-span-8 space-y-12">
-             <InvitationBanner />
-             
-             <div className="min-h-[500px]">
-               <AnimatePresence mode="wait">
-                 <motion.div
-                   key={activeTab}
-                   initial={{ opacity: 0, y: 10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   exit={{ opacity: 0, y: -10 }}
-                   transition={{ duration: 0.3 }}
-                 >
-                   {activeTab === 'stages' && <EventStagesTimeline eventId={event.id} eventStartDate={event.start_date} eventEndDate={event.end_date} registrationDeadline={event.registration_deadline} />}
-                   {activeTab === 'details' && <EventDetailsContent event={event} />}
-                   {activeTab === 'dates' && <EventDatesDeadlines startDate={event.start_date} endDate={event.end_date} registrationDeadline={event.registration_deadline} />}
-                   {activeTab === 'prizes' && <EventPrizes eventId={event.id} prizePool={event.prize_pool} />}
-                   {activeTab === 'sponsors' && <EventSponsors eventId={event.id} />} {/* Added Render */}
-                   {activeTab === 'eligibility' && <EventEligibility eligibilityCriteria={event.eligibility_criteria} minTeamSize={event.min_team_size} maxTeamSize={event.max_team_size} allowSolo={event.allow_solo} mode={event.mode} location={event.location} />}
-                   {activeTab === 'reviews' && <EventReviews eventId={event.id} />}
-                   {activeTab === 'faqs' && <div className="space-y-12"><EventFAQs eventId={event.id} /><EventDiscussions eventId={event.id} /></div>}
-                 </motion.div>
-               </AnimatePresence>
-             </div>
-          </div>
-
-          {/* RIGHT COLUMN: Sidebar / "Mission Card" */}
-          <div className="lg:col-span-4 relative">
-            <div className="sticky top-32 space-y-6">
-              
-              {/* Glass Card */}
-              <div className="relative overflow-hidden rounded-[2rem] bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 p-8 shadow-[0_0_50px_-20px_rgba(0,0,0,0.5)]">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
-                
-                <h3 className="text-lg font-bold uppercase tracking-widest text-zinc-500 mb-8 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Mission Status
-                </h3>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                   <div className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group">
-                      <div className="text-zinc-500 mb-2 group-hover:text-primary transition-colors"><Calendar className="w-5 h-5" /></div>
-                      <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Start Date</div>
-                      <div className="text-sm font-bold text-white mt-1">{format(new Date(event.start_date), 'MMM dd')}</div>
-                   </div>
-                   <div className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group">
-                      <div className="text-zinc-500 mb-2 group-hover:text-blue-400 transition-colors"><MapPin className="w-5 h-5" /></div>
-                      <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Sector</div>
-                      <div className="text-sm font-bold text-white mt-1 truncate">{event.location || event.mode}</div>
-                   </div>
-                   <div className="col-span-2 bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group flex items-center justify-between">
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1">Squad Size</div>
-                        <div className="text-sm font-bold text-white">{event.min_team_size} - {event.max_team_size} Operatives</div>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 group-hover:text-white transition-colors">
-                        <Users className="w-5 h-5" />
-                      </div>
-                   </div>
                 </div>
+            </div>
+            <div 
+                className="w-full h-[500px] bg-[#0a0a0a] bg-cover bg-center grayscale opacity-80"
+                style={{ backgroundImage: `url(${event.image_url})` }}
+            />
+        </section>
 
-                <div className="w-full h-px bg-white/10 mb-8" />
+        {/* --- STATS BAR --- */}
+        <div className="grid grid-cols-2 md:grid-cols-4 py-12 border-y border-[#1a1a1a] mb-24 gap-8 md:gap-0">
+            <div className="stat-item"><span>Treasury Pool</span><strong>{event.prize_pool || "Unannounced"}</strong></div>
+            <div className="stat-item"><span>Status</span><strong>{new Date(event.end_date) > new Date() ? 'Open' : 'Closed'}</strong></div>
+            <div className="stat-item"><span>Team Limit</span><strong>{event.max_team_size ? `0${event.max_team_size} Members` : "Solo"}</strong></div>
+            <div className="stat-item"><span>Applicants</span><strong>Verified</strong></div>
+        </div>
+
+        {/* --- MAIN GRID --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-24 mb-24">
+            
+            {/* LEFT CONTENT COLUMN */}
+            <div className="content-col">
                 
-                {renderSidebarContent()}
-              </div>
+                {/* Concept */}
+                <section className="mb-20">
+                    <h2 className="section-title font-serif">Concept & Rigor</h2>
+                    <div className="text-[#777] font-light max-w-[600px] text-lg leading-relaxed whitespace-pre-wrap">
+                        {event.description || event.short_description}
+                    </div>
+                </section>
 
-              {/* Support Card */}
-              <div className="rounded-2xl border border-white/5 bg-[#0c0c0e]/50 p-6 flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                    <HelpCircle className="w-5 h-5 text-zinc-400" />
-                 </div>
-                 <div className="flex-1">
-                    <h4 className="text-sm font-bold text-white">Need Intel?</h4>
-                    <p className="text-xs text-zinc-500 mt-1">Contact mission control for support.</p>
-                 </div>
-                 <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full">
-                    <ChevronRight className="w-4 h-4" />
-                 </Button>
-              </div>
+                {/* Roadmap (Timeline) */}
+                <section className="mb-20">
+                    <h2 className="section-title font-serif">The Roadmap</h2>
+                    <div className="roadmap">
+                        <div className="roadmap-line"></div>
+                        <div className="roadmap-progress"></div>
+                        
+                        <div className="stage-item">
+                            <span className="text-[0.7rem] text-[#777] tracking-[2px] block mb-1">
+                                {format(new Date(event.start_date), 'MMM dd')}
+                            </span>
+                            <h3 className="font-serif text-xl mb-1">Digital Manifest</h3>
+                            <p className="text-[#777] text-sm">Official briefing and resource allocation.</p>
+                        </div>
+                        
+                        <div className="stage-item">
+                            <span className="text-[0.7rem] text-[#777] tracking-[2px] block mb-1">
+                                {format(new Date(event.end_date), 'MMM dd')}
+                            </span>
+                            <h3 className="font-serif text-xl mb-1">Grand Submission</h3>
+                            <p className="text-[#777] text-sm">Final project uploads and documentation freeze.</p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Prizes */}
+                <section className="mb-20">
+                    <h2 className="section-title font-serif">Prizes</h2>
+                    <div className="prize-grid">
+                        <div className="prize-card">
+                            <div className="prize-pos">01</div>
+                            <strong className="uppercase tracking-[2px] block">Grand Laurels</strong>
+                            <p className="text-[#777] text-sm mt-2">{event.prize_pool ? `Share of ${event.prize_pool}` : "TBA"}</p>
+                        </div>
+                        <div className="prize-card">
+                            <div className="prize-pos">02</div>
+                            <strong className="uppercase tracking-[2px] block">Runner Up</strong>
+                            <p className="text-[#777] text-sm mt-2">Special Recognition + Swag</p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Patrons (Static Design Element) */}
+                <section className="mb-20">
+                    <h2 className="section-title font-serif">Patrons</h2>
+                    <div className="patrons-grid">
+                        <div className="patron-logo">OpenAI</div>
+                        <div className="patron-logo">Vercel</div>
+                        <div className="patron-logo">Supabase</div>
+                        <div className="patron-logo">Github</div>
+                        <div className="patron-logo">React</div>
+                        <div className="patron-logo">Stripe</div>
+                    </div>
+                </section>
+
+                {/* FAQ / Conversation */}
+                <section className="mb-20">
+                    <h2 className="section-title font-serif">Conversation</h2>
+                    <div className="mb-10">
+                        <div className="qa-q">@developer: Is this open to beginners?</div>
+                        <div className="qa-a">Organizer: While we encourage ambition, this event is designed for intermediate to advanced builders.</div>
+                    </div>
+                    <div className="mb-10">
+                        <div className="qa-q">@team_lead: IP Ownership?</div>
+                        <div className="qa-a">Organizer: All Intellectual Property created during the event remains 100% with the participants.</div>
+                    </div>
+                </section>
+
+                {/* Insights */}
+                <section>
+                    <h2 className="section-title font-serif">Member Insights</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="insight-card">
+                            <p className="insight-quote">"The technical depth expected here is on par with top-tier engineering."</p>
+                            <span className="insight-author">— Sarah J., Full Stack</span>
+                        </div>
+                        <div className="insight-card">
+                            <p className="insight-quote">"A perfect intersection of creative freedom and logical constraint."</p>
+                            <span className="insight-author">— David L., Designer</span>
+                        </div>
+                    </div>
+                </section>
 
             </div>
-          </div>
+
+            {/* RIGHT SIDEBAR COLUMN */}
+            <aside className="sidebar-col">
+                <div className="sticky top-24 bg-[#0a0a0a] p-10 border border-[#1a1a1a]">
+                    <h3 className="font-serif text-2xl mb-8 font-normal">Event Summary</h3>
+                    
+                    <EventRegistrationModal 
+                        event={event} 
+                        trigger={<button className="btn-participate mb-8">Participate Now</button>} 
+                    />
+
+                    <ul className="meta-list">
+                        <li><span>Starts</span> <strong>{format(new Date(event.start_date), 'dd MMM yyyy')}</strong></li>
+                        <li><span>Ends</span> <strong>{format(new Date(event.end_date), 'dd MMM yyyy')}</strong></li>
+                        <li><span>Venue</span> <strong>{event.mode === 'Online' ? 'Remote' : event.location}</strong></li>
+                        <li><span>Solo</span> <strong>ALLOWED</strong></li>
+                        <li><span>Mode</span> <strong>{event.mode.toUpperCase()}</strong></li>
+                    </ul>
+
+                    <div className="mt-10 pt-6 border-t border-[#1a1a1a]">
+                        <span className="text-[0.6rem] text-[#777] tracking-[2px] uppercase block">Concierge</span>
+                        <p className="text-sm mt-1">help@codevo.com</p>
+                    </div>
+                </div>
+            </aside>
+
         </div>
       </div>
-
-      {/* Modals - Dynamically Rendered based on form_type */}
-      {renderRegistrationModal()}
     </div>
   );
 }
