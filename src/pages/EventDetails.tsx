@@ -96,8 +96,25 @@ export default function EventDetailsPage() {
     if (hasPendingInvitation) { toast.info("You have a pending team invitation."); return; }
     if (hasAcceptedInvitation) { toast.info("Please complete your team registration."); return; }
     if (isRegistered) { toast.info("You're already registered!"); return; }
-    if (event.registration_link) window.open(event.registration_link, '_blank');
-    else setIsRegisterOpen(true);
+
+    // Logic to determine if we should open modal or external link
+    const effectiveType = (event.form_type || event.event_type || '').toLowerCase();
+    const internalTypes = ['hackathon', 'workshop', 'webinar', 'meetup', 'contest'];
+
+    // 1. If it matches a known internal type (like 'workshop'), ALWAYS open the modal
+    if (internalTypes.includes(effectiveType)) {
+      setIsRegisterOpen(true);
+      return;
+    }
+
+    // 2. If no internal type matched, but we have a link, go to the link (External events)
+    if (event.registration_link) {
+       window.open(event.registration_link, '_blank');
+       return;
+    }
+
+    // 3. Fallback to normal registration modal
+    setIsRegisterOpen(true);
   };
 
   const handleShare = async () => {
