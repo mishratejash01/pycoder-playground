@@ -30,10 +30,10 @@ interface Event {
 // --- Event Card Component ---
 const EventCard = ({ event }: { event: Event }) => {
   return (
-    // Updated width to 75% (w-[75%])
-    <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-[75%]">
+    // Width set to 100% (w-full)
+    <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
       
-      {/* 1. Image Section - Stacked on top, full width of the card */}
+      {/* 1. Image Section - Stacked on top, full width */}
       <div className="h-[260px] w-full rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
         <img 
           src={event.image_url} 
@@ -42,7 +42,7 @@ const EventCard = ({ event }: { event: Event }) => {
         />
       </div>
 
-      {/* 2. Content Section - Stacked below */}
+      {/* 2. Content Section */}
       <div className="flex flex-col justify-between h-full">
         <div>
           {/* Category Tag */}
@@ -167,7 +167,7 @@ export default function Events() {
       
       <Header session={session} onLogout={handleLogout} />
 
-      {/* Main Container: Left aligned */}
+      {/* Main Container: Left aligned, padding maintained */}
       <main className="pt-32 pb-24 px-8 md:px-16 w-full">
         
         {/* Page Title */}
