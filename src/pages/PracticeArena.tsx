@@ -376,7 +376,7 @@ export default function PracticeArena() {
 
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
-            <ScrollArea className="w-full" orientation="horizontal">
+            <ScrollArea className="w-full">
               <div className="flex items-center gap-2 pb-3 px-1 min-w-max">
                  {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
                    <button key={f} onClick={() => setStatusFilter(f)}
