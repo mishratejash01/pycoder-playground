@@ -18,6 +18,10 @@ import { Session } from '@supabase/supabase-js';
 // Internal Component Imports
 import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
 import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
+import { WorkshopRegistrationModal } from '@/components/events/WorkshopRegistrationModal';
+import { WebinarRegistrationModal } from '@/components/events/WebinarRegistrationModal';
+import { MeetupRegistrationModal } from '@/components/events/MeetupRegistrationModal';
+import { ContestRegistrationModal } from '@/components/events/ContestRegistrationModal';
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
 import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
 import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
