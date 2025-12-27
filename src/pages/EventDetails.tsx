@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, 
   Users, Clock, Star, MessageCircle, HelpCircle, CheckCircle, 
-  Sparkles, Zap, ChevronRight, Globe 
+  Sparkles, Zap, ChevronRight, Globe, Handshake // Added Handshake
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -34,6 +34,7 @@ import { EventReviews } from '@/components/events/EventReviews';
 import { EventFAQs } from '@/components/events/EventFAQs';
 import { EventDiscussions } from '@/components/events/EventDiscussions';
 import { EventEligibility } from '@/components/events/EventEligibility';
+import { EventSponsors } from '@/components/events/EventSponsors'; // Added Import
 
 export default function EventDetailsPage() {
   const { slug } = useParams();
@@ -210,6 +211,7 @@ export default function EventDetailsPage() {
     { id: 'details', label: 'Briefing', icon: Zap },
     { id: 'dates', label: 'Deadlines', icon: Calendar },
     { id: 'prizes', label: 'Bounties', icon: Trophy },
+    { id: 'sponsors', label: 'Partners', icon: Handshake }, // Added Tab
     { id: 'eligibility', label: 'Criteria', icon: CheckCircle },
     { id: 'reviews', label: 'Intel', icon: Star },
     { id: 'faqs', label: 'Comms', icon: MessageCircle },
@@ -343,6 +345,7 @@ export default function EventDetailsPage() {
                    {activeTab === 'details' && <EventDetailsContent event={event} />}
                    {activeTab === 'dates' && <EventDatesDeadlines startDate={event.start_date} endDate={event.end_date} registrationDeadline={event.registration_deadline} />}
                    {activeTab === 'prizes' && <EventPrizes eventId={event.id} prizePool={event.prize_pool} />}
+                   {activeTab === 'sponsors' && <EventSponsors eventId={event.id} />} {/* Added Render */}
                    {activeTab === 'eligibility' && <EventEligibility eligibilityCriteria={event.eligibility_criteria} minTeamSize={event.min_team_size} maxTeamSize={event.max_team_size} allowSolo={event.allow_solo} mode={event.mode} location={event.location} />}
                    {activeTab === 'reviews' && <EventReviews eventId={event.id} />}
                    {activeTab === 'faqs' && <div className="space-y-12"><EventFAQs eventId={event.id} /><EventDiscussions eventId={event.id} /></div>}
