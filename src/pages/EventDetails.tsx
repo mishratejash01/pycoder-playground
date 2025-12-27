@@ -5,14 +5,17 @@ import { Header } from '@/components/Header';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 import { Session } from '@supabase/supabase-js';
 
-// --- NEW IMPORTS ---
-import { useEventRegistration } from '@/hooks/useEventRegistration';
+// --- COMPONENTS ---
+import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
+import { PendingInvitationCard } from '@/components/events/InvitationBanner'; // Import the card
 
-// --- Types (Same as before) ---
+// --- HOOKS ---
+import { useEventRegistration } from '@/hooks/useEventRegistration';
+
+// --- Types based on your Schema ---
 interface EventStage {
   id: string;
   title: string;
@@ -89,13 +92,16 @@ export default function EventDetails() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
-  
-  // Auth Session State
   const [session, setSession] = useState<Session | null>(null);
 
-  // --- 1. Registration Check Hook ---
-  // We pass event?.id. If event is null, the hook handles it gracefully.
-  const { isRegistered, loading: regLoading, refetch: refetchRegistration } = useEventRegistration(event?.id);
+  // --- 1. Hook to check Registration & Invitation Status ---
+  const { 
+    isRegistered, 
+    hasPendingInvitation, 
+    invitation, 
+    loading: regLoading, 
+    refetch: refetchRegistration 
+  } = useEventRegistration(event?.id);
 
   // Auth Listener
   useEffect(() => {
@@ -145,18 +151,12 @@ export default function EventDetails() {
         return;
       }
 
-      // Sort related data
       const eventData = data as unknown as Event;
       
-      if (eventData.event_stages) {
-        eventData.event_stages.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
-      }
-      if (eventData.event_prizes) {
-        eventData.event_prizes.sort((a, b) => a.position - b.position);
-      }
-      if (eventData.event_faqs) {
-        eventData.event_faqs.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
-      }
+      // Sort data
+      if (eventData.event_stages) eventData.event_stages.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+      if (eventData.event_prizes) eventData.event_prizes.sort((a, b) => a.position - b.position);
+      if (eventData.event_faqs) eventData.event_faqs.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
 
       setEvent(eventData);
       setLoading(false);
@@ -180,7 +180,7 @@ export default function EventDetails() {
   return (
     <div className="min-h-screen bg-[#000000] text-white selection:bg-white/20 font-sans">
       
-      {/* --- INJECTED CSS --- */}
+      {/* CSS Styles */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@200;300;400;600&display=swap');
 
@@ -198,101 +198,37 @@ export default function EventDetails() {
         h1, h2, h3, .serif { font-family: 'Playfair Display', serif; letter-spacing: -1px; }
         
         .container-custom { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
-
-        /* Hero */
-        .hero {
-            padding: 100px 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: center;
-        }
+        
+        .hero { padding: 100px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
         .category-tag { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 3px; color: var(--text-muted); margin-bottom: 20px; display: block; }
         .hero h1 { font-size: 4.5rem; line-height: 1; margin-bottom: 25px; font-weight: 700; }
-        .hero-image {
-            width: 100%;
-            height: 500px;
-            background-color: #0a0a0a;
-            background-size: cover;
-            background-position: center;
-            filter: grayscale(1);
-            opacity: 0.8;
-        }
+        .hero-image { width: 100%; height: 500px; background-color: #0a0a0a; background-size: cover; background-position: center; filter: grayscale(1); opacity: 0.8; }
 
-        /* Stats Bar */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            padding: 50px 0;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 100px;
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: 50px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 100px; }
         .stat-item span { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 2px; }
         .stat-item strong { font-size: 1.4rem; font-weight: 200; color: var(--titanium); }
 
-        /* Layout Grid */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 100px;
-            margin-bottom: 100px;
-        }
+        .main-grid { display: grid; grid-template-columns: 1fr 350px; gap: 100px; margin-bottom: 100px; }
         .section-title { font-size: 2.2rem; margin-bottom: 40px; position: relative; font-weight: 400; }
         .section-title::after { content: ""; display: block; width: 60px; height: 1px; background: var(--text-muted); margin-top: 20px; }
 
-        /* Animations & Timeline */
         @keyframes lineGrow { from { height: 0; } to { height: 100%; } }
         .roadmap { position: relative; padding-left: 40px; margin-bottom: 80px; }
         .roadmap-line { position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: var(--border); }
         .roadmap-progress { position: absolute; left: 0; top: 0; width: 1px; background: var(--titanium); animation: lineGrow 3s ease-in-out forwards; }
         .stage-item { position: relative; margin-bottom: 50px; }
-        .stage-item::before {
-            content: ""; position: absolute; left: -43.5px; top: 10px;
-            width: 8px; height: 8px; background: var(--titanium); border-radius: 50%;
-        }
+        .stage-item::before { content: ""; position: absolute; left: -43.5px; top: 10px; width: 8px; height: 8px; background: var(--titanium); border-radius: 50%; }
 
-        /* Prizes */
         .prize-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 80px; }
         .prize-card { border: 1px solid var(--border); padding: 40px; text-align: left; transition: 0.3s; }
         .prize-card:hover { border-color: var(--titanium); }
         .prize-pos { font-size: 3rem; font-weight: 200; margin-bottom: 10px; color: var(--titanium); }
 
-        /* Patrons */
-        .patrons-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: var(--border);
-            border: 1px solid var(--border);
-            margin-bottom: 100px;
-        }
-        .patron-logo {
-            background: var(--bg);
-            padding: 30px;
-            text-align: center;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100px;
-        }
-        .patron-logo img {
-            max-width: 80%;
-            max-height: 40px;
-            filter: grayscale(1);
-            opacity: 0.7;
-            transition: 0.3s;
-        }
-        .patron-logo:hover img {
-            opacity: 1;
-            filter: grayscale(0);
-        }
+        .patrons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 100px; }
+        .patron-logo { background: var(--bg); padding: 30px; text-align: center; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 3px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100px; }
+        .patron-logo img { max-width: 80%; max-height: 40px; filter: grayscale(1); opacity: 0.7; transition: 0.3s; }
+        .patron-logo:hover img { opacity: 1; filter: grayscale(0); }
 
-        /* QA & Insights */
         .qa-item { margin-bottom: 40px; }
         .qa-q { font-weight: 400; font-size: 1.1rem; margin-bottom: 12px; color: var(--titanium); border-left: 1px solid var(--titanium); padding-left: 20px; }
         .qa-a { color: var(--text-muted); font-size: 0.95rem; padding-left: 21px; }
@@ -302,22 +238,8 @@ export default function EventDetails() {
         .insight-quote { font-style: italic; color: var(--text-muted); margin-bottom: 20px; font-weight: 300; }
         .insight-author { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--titanium); }
 
-        /* Sidebar Styling */
-        .sidebar-card {
-            background: var(--surface);
-            padding: 40px;
-            border: 1px solid var(--border);
-            position: sticky;
-            top: 120px; 
-        }
-        .btn-participate {
-            display: block; width: 100%; padding: 22px;
-            background: var(--text-main); color: #000;
-            text-align: center; text-decoration: none; text-transform: uppercase;
-            letter-spacing: 3px; font-size: 0.8rem; font-weight: 700;
-            margin-bottom: 30px; transition: 0.4s;
-            cursor: pointer; border: none;
-        }
+        .sidebar-card { background: var(--surface); padding: 40px; border: 1px solid var(--border); position: sticky; top: 120px; }
+        .btn-participate { display: block; width: 100%; padding: 22px; background: var(--text-main); color: #000; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; font-weight: 700; margin-bottom: 30px; transition: 0.4s; cursor: pointer; border: none; }
         .btn-participate:hover { background: transparent; color: #fff; box-shadow: inset 0 0 0 1px #fff; }
         .btn-participate:disabled { opacity: 0.5; cursor: not-allowed; background: #333; color: #777; box-shadow: none; }
         
@@ -333,17 +255,14 @@ export default function EventDetails() {
         }
       `}</style>
 
-      {/* Header with Session */}
       <Header session={session} onLogout={handleLogout} />
 
-      {/* Registration Modal */}
       <EventRegistrationModal 
         event={{ id: event.id, title: event.title }} 
         isOpen={isRegistrationOpen} 
         onOpenChange={(open) => {
           setIsRegistrationOpen(open);
-          // If modal closed, refetch registration to verify if they joined
-          if (!open) refetchRegistration();
+          if (!open) refetchRegistration(); // Refresh status when modal closes
         }}
       />
 
@@ -360,18 +279,24 @@ export default function EventDetails() {
                     {event.short_description}
                 </p>
                 
-                {/* 2. Logic: Show Apply button ONLY if not registered */}
-                {!isRegistered ? (
+                {/* 2. Logic: Button State (Apply / Registered / Pending Invite) */}
+                {isRegistered ? (
+                   <button className="btn-participate" disabled style={{ width: '250px' }}>
+                     Already Registered
+                   </button>
+                ) : hasPendingInvitation ? (
+                   <button className="btn-participate" onClick={() => {
+                      document.getElementById('invitation-section')?.scrollIntoView({ behavior: 'smooth' });
+                   }} style={{ width: '250px', backgroundColor: '#eab308' }}>
+                     View Invitation
+                   </button>
+                ) : (
                   <button 
                       onClick={() => setIsRegistrationOpen(true)} 
                       className="btn-participate" 
                       style={{ width: '250px' }}
                   >
                       Apply for Entry
-                  </button>
-                ) : (
-                  <button className="btn-participate" disabled style={{ width: '250px' }}>
-                     Already Registered
                   </button>
                 )}
             </div>
@@ -395,9 +320,25 @@ export default function EventDetails() {
             {/* CONTENT COLUMN */}
             <div className="content-col">
                 
-                {/* 3. Logic: Show Already Registered Card if registered */}
+                {/* 3. Logic: Show Pending Invitation Card */}
+                {hasPendingInvitation && invitation && (
+                  <div id="invitation-section" className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <PendingInvitationCard 
+                      invitation={invitation as any}
+                      eventTitle={event.title}
+                      onAccept={() => {
+                        refetchRegistration(); // Refresh to show Registered Card
+                      }}
+                      onDecline={() => {
+                        refetchRegistration(); // Refresh to show Apply Button
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* 4. Logic: Show Already Registered Card */}
                 {isRegistered && (
-                  <div className="mb-12">
+                  <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
                      <AlreadyRegisteredCard 
                        eventId={event.id}
                        eventTitle={event.title}
@@ -408,7 +349,6 @@ export default function EventDetails() {
                   </div>
                 )}
                 
-                {/* Concept / Description */}
                 <section>
                     <h2 className="section-title">Concept & Rigor</h2>
                     <div style={{ color: 'var(--text-muted)', fontWeight: 300, marginBottom: '80px', maxWidth: '600px', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
@@ -416,13 +356,11 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* Roadmap */}
                 <section>
                     <h2 className="section-title">The Roadmap</h2>
                     <div className="roadmap">
                         <div className="roadmap-line"></div>
                         <div className="roadmap-progress"></div>
-                        
                         {event.event_stages && event.event_stages.length > 0 ? (
                             event.event_stages.map((stage) => (
                                 <div key={stage.id} className="stage-item">
@@ -454,7 +392,6 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* Prizes */}
                 <section>
                     <h2 className="section-title">Prizes</h2>
                     <div className="prize-grid">
@@ -479,7 +416,6 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* Patrons */}
                 {event.event_sponsors && event.event_sponsors.length > 0 && (
                     <section>
                         <h2 className="section-title">Patrons</h2>
@@ -497,7 +433,6 @@ export default function EventDetails() {
                     </section>
                 )}
 
-                {/* FAQs */}
                 {event.event_faqs && event.event_faqs.length > 0 && (
                     <section>
                         <h2 className="section-title">Curated FAQ</h2>
@@ -510,7 +445,6 @@ export default function EventDetails() {
                     </section>
                 )}
 
-                {/* Reviews */}
                 {event.event_reviews && event.event_reviews.length > 0 && (
                     <section>
                         <h2 className="section-title">Member Insights</h2>
@@ -531,18 +465,22 @@ export default function EventDetails() {
                 <div className="sidebar-card">
                     <h3 className="serif" style={{ fontSize: '1.5rem', marginBottom: '30px', fontWeight: 400 }}>Event Summary</h3>
                     
-                    {/* 4. Logic: Hide/Change Sidebar button if registered */}
-                    {!isRegistered ? (
+                    {/* 5. Logic: Sidebar Button State */}
+                    {isRegistered ? (
+                       <button className="btn-participate" disabled>
+                          Registered
+                       </button>
+                    ) : hasPendingInvitation ? (
+                       <button className="btn-participate" disabled style={{ backgroundColor: '#eab308', color: '#000', opacity: 1 }}>
+                          Invitation Pending
+                       </button>
+                    ) : (
                       <button 
                           onClick={() => setIsRegistrationOpen(true)} 
                           className="btn-participate"
                       >
                           Participate Now
                       </button>
-                    ) : (
-                       <button className="btn-participate" disabled>
-                          Registered
-                       </button>
                     )}
 
                     <ul className="meta-list">
