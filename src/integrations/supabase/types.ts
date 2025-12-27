@@ -521,6 +521,7 @@ export type Database = {
           eligibility_criteria: Json | null
           end_date: string
           event_type: string | null
+          form_type: string | null
           id: string
           image_url: string | null
           is_featured: boolean | null
@@ -560,6 +561,7 @@ export type Database = {
           eligibility_criteria?: Json | null
           end_date: string
           event_type?: string | null
+          form_type?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
@@ -599,6 +601,7 @@ export type Database = {
           eligibility_criteria?: Json | null
           end_date?: string
           event_type?: string | null
+          form_type?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
