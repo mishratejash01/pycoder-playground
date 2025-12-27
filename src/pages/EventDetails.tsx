@@ -106,6 +106,36 @@ export default function EventDetailsPage() {
     } catch { toast.info("Link copied!"); navigator.clipboard.writeText(window.location.href); }
   };
 
+  // Helper function to render the correct modal based on form_type
+  const renderRegistrationModal = () => {
+    if (!event) return null;
+
+    // Logic: Use form_type if available, otherwise fallback to event_type, default to 'normal'
+    const type = (event.form_type || event.event_type || 'normal').toLowerCase();
+
+    const commonProps = {
+      event,
+      isOpen: isRegisterOpen,
+      onOpenChange: setIsRegisterOpen
+    };
+
+    switch (type) {
+      case 'hackathon':
+        return <HackathonRegistrationModal {...commonProps} />;
+      case 'workshop':
+        return <WorkshopRegistrationModal {...commonProps} />;
+      case 'webinar':
+        return <WebinarRegistrationModal {...commonProps} />;
+      case 'meetup':
+        return <MeetupRegistrationModal {...commonProps} />;
+      case 'contest':
+        return <ContestRegistrationModal {...commonProps} />;
+      case 'normal':
+      default:
+        return <NormalEventRegistrationModal {...commonProps} />;
+    }
+  };
+
   if (authLoading || loading) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center">
       <Loader2 className="animate-spin h-8 w-8 text-primary" />
@@ -366,12 +396,8 @@ export default function EventDetailsPage() {
         </div>
       </div>
 
-      {/* Modals */}
-      {event && isHackathon ? (
-        <HackathonRegistrationModal event={event} isOpen={isRegisterOpen} onOpenChange={setIsRegisterOpen} />
-      ) : event && (
-        <NormalEventRegistrationModal event={event} isOpen={isRegisterOpen} onOpenChange={setIsRegisterOpen} />
-      )}
+      {/* Modals - Dynamically Rendered based on form_type */}
+      {renderRegistrationModal()}
     </div>
   );
 }
