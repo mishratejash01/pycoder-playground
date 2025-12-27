@@ -7,13 +7,13 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 
-// --- Types ---
+// --- Types based on your Supabase definition ---
 interface Event {
   id: string;
   title: string;
   slug: string;
   short_description: string;
-  description: string;
+  content: string | null; // Corresponds to "Concept & Rigor"
   start_date: string;
   end_date: string;
   registration_deadline?: string;
@@ -24,10 +24,11 @@ interface Event {
   location: string;
   prize_pool: string;
   is_featured: boolean;
-  event_type: 'hackathon' | 'normal';
+  event_type: string;
   max_team_size: number | null;
   registration_fee: number | null;
   is_paid: boolean | null;
+  organizer_name?: string;
 }
 
 export default function EventDetails() {
@@ -36,6 +37,9 @@ export default function EventDetails() {
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // State to control the Registration Modal
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -75,8 +79,10 @@ export default function EventDetails() {
 
   if (!event) return null;
 
+  const isEventOpen = new Date(event.end_date) > new Date();
+
   return (
-    <div className="min-h-screen bg-[#000000] text-white selection:bg-white/20">
+    <div className="min-h-screen bg-[#000000] text-white selection:bg-white/20 font-sans">
       
       {/* --- INJECTED CSS FROM TEMPLATE --- */}
       <style>{`
@@ -219,6 +225,13 @@ export default function EventDetails() {
       {/* Global Header */}
       <Header />
 
+      {/* Registration Modal Component (Hidden by default, triggered by state) */}
+      <EventRegistrationModal 
+        event={{ id: event.id, title: event.title }} 
+        isOpen={isRegistrationOpen} 
+        onOpenChange={setIsRegistrationOpen} 
+      />
+
       <div className="container-custom pt-24">
         
         {/* HERO SECTION */}
@@ -232,12 +245,14 @@ export default function EventDetails() {
                     {event.short_description}
                 </p>
                 
-                <div style={{ width: '250px' }}>
-                    <EventRegistrationModal 
-                        event={event} 
-                        trigger={<button className="btn-participate">Apply for Entry</button>} 
-                    />
-                </div>
+                {/* Apply for Entry Button */}
+                <button 
+                    onClick={() => setIsRegistrationOpen(true)} 
+                    className="btn-participate" 
+                    style={{ width: '250px' }}
+                >
+                    Apply for Entry
+                </button>
             </div>
             <div 
                 className="hero-image"
@@ -248,7 +263,7 @@ export default function EventDetails() {
         {/* STATS BAR */}
         <div className="stats-grid">
             <div className="stat-item"><span>Treasury Pool</span><strong>{event.prize_pool || "TBA"}</strong></div>
-            <div className="stat-item"><span>Status</span><strong>{new Date(event.end_date) > new Date() ? 'Active' : 'Closed'}</strong></div>
+            <div className="stat-item"><span>Status</span><strong>{isEventOpen ? 'Active' : 'Closed'}</strong></div>
             <div className="stat-item"><span>Team Limit</span><strong>{event.max_team_size ? `Max ${event.max_team_size}` : "Solo"}</strong></div>
             <div className="stat-item"><span>Mode</span><strong>{event.mode}</strong></div>
         </div>
@@ -261,7 +276,7 @@ export default function EventDetails() {
                 <section>
                     <h2 className="section-title">Concept & Rigor</h2>
                     <div style={{ color: 'var(--text-muted)', fontWeight: 300, marginBottom: '80px', maxWidth: '600px', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                        {event.description || event.short_description}
+                        {event.content || event.short_description}
                     </div>
                 </section>
 
@@ -275,7 +290,7 @@ export default function EventDetails() {
                             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>
                                 {format(new Date(event.start_date), 'MMM dd')}
                             </span>
-                            <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Digital Manifest</h3>
+                            <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Initiation</h3>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Event kick-off and initial resource allocation.</p>
                         </div>
                         
@@ -283,7 +298,7 @@ export default function EventDetails() {
                             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>
                                 {format(new Date(event.end_date), 'MMM dd')}
                             </span>
-                            <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Grand Submission</h3>
+                            <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Submission Deadline</h3>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Final project uploads and documentation freeze.</p>
                         </div>
                     </div>
@@ -351,10 +366,13 @@ export default function EventDetails() {
                 <div className="sidebar-card">
                     <h3 className="serif" style={{ fontSize: '1.5rem', marginBottom: '30px', fontWeight: 400 }}>Event Summary</h3>
                     
-                    <EventRegistrationModal 
-                        event={event} 
-                        trigger={<button className="btn-participate">Participate Now</button>} 
-                    />
+                    {/* Participate Button (Sidebar) */}
+                    <button 
+                        onClick={() => setIsRegistrationOpen(true)} 
+                        className="btn-participate"
+                    >
+                        Participate Now
+                    </button>
 
                     <ul className="meta-list">
                         <li><span>Starts</span> <strong>{format(new Date(event.start_date), 'dd MMM yyyy')}</strong></li>
