@@ -56,7 +56,7 @@ const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
           height: '12px',
           borderLeft: '5px solid #000',
           borderBottom: '5px solid #000',
-          transform: 'rotate(-45deg) translate(2px, -2px)', 
+          transform: 'rotate(-45deg) translate(2px, -2px)', // Visual tweak to center the "V"
         }} />
       </div>
     );
@@ -83,16 +83,12 @@ const EventCard = ({ event }: { event: Event }) => {
   return (
     <article className="flex flex-col gap-6 md:gap-8 py-8 md:py-12 border-b border-zinc-800 last:border-0 w-full">
       
-      {/* Image Section 
-          - Mobile: h-auto (Let aspect ratio dictate height, prevents cropping)
-          - Desktop: h-[260px] (Fixed height strip, object-cover)
-          - Hover effects removed
-      */}
-      <div className="w-full h-auto md:h-[260px] rounded-none overflow-hidden border border-zinc-800 bg-zinc-950 group relative">
+      {/* Image Section */}
+      <div className="h-[200px] md:h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950 group relative">
         <img 
           src={event.image_url} 
           alt={event.title}
-          className="w-full h-auto md:h-full md:object-cover"
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
         />
         <div className="absolute top-4 right-4 flex gap-2">
            <Badge className="bg-black/80 backdrop-blur-md text-white border-zinc-600 rounded-none uppercase tracking-widest text-[10px] px-3 py-1.5">
@@ -448,7 +444,7 @@ export default function Events() {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               </div>
 
-               {/* Status */}
+               {/* Status - No Icon as requested */}
                <div className="relative min-w-[150px]">
                 <select 
                   value={selectedStatus}

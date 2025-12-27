@@ -1,505 +1,377 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
-import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, 
+  Users, Clock, Star, MessageCircle, HelpCircle, CheckCircle, 
+  Sparkles, Zap, ChevronRight, Globe 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
-// --- COMPONENTS ---
-import { EventRegistrationModal } from '@/components/EventRegistrationModal';
+// Internal Component Imports
+import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
+import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
+import { WorkshopRegistrationModal } from '@/components/events/WorkshopRegistrationModal';
+import { WebinarRegistrationModal } from '@/components/events/WebinarRegistrationModal';
+import { MeetupRegistrationModal } from '@/components/events/MeetupRegistrationModal';
+import { ContestRegistrationModal } from '@/components/events/ContestRegistrationModal';
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
-import { PendingInvitationCard } from '@/components/events/InvitationBanner'; // Import the card
-
-// --- HOOKS ---
+import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
+import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
 import { useEventRegistration } from '@/hooks/useEventRegistration';
+import { EventStagesTimeline } from '@/components/events/EventStagesTimeline';
+import { EventDetailsContent } from '@/components/events/EventDetails';
+import { EventDatesDeadlines } from '@/components/events/EventDatesDeadlines';
+import { EventPrizes } from '@/components/events/EventPrizes';
+import { EventReviews } from '@/components/events/EventReviews';
+import { EventFAQs } from '@/components/events/EventFAQs';
+import { EventDiscussions } from '@/components/events/EventDiscussions';
+import { EventEligibility } from '@/components/events/EventEligibility';
 
-// --- Types based on your Schema ---
-interface EventStage {
-  id: string;
-  title: string;
-  description: string | null;
-  start_date: string;
-  order_index: number;
-}
-
-interface EventPrize {
-  id: string;
-  position: number;
-  title: string;
-  prize_value: string | null;
-  description: string | null;
-}
-
-interface EventFAQ {
-  id: string;
-  question: string;
-  answer: string;
-  order_index: number;
-}
-
-interface EventReview {
-  id: string;
-  rating: number;
-  review_text: string;
-  user_id: string;
-}
-
-interface EventSponsor {
-  id: string;
-  name: string;
-  logo_url: string | null;
-  website_url: string | null;
-  type: string;
-  tier: string | null;
-}
-
-interface Event {
-  id: string;
-  title: string;
-  slug: string;
-  short_description: string;
-  content: string | null;
-  start_date: string;
-  end_date: string;
-  registration_deadline?: string;
-  created_at: string;
-  image_url: string;
-  category: string;
-  mode: string;
-  location: string;
-  prize_pool: string;
-  is_featured: boolean;
-  event_type: 'hackathon' | 'normal';
-  max_team_size: number | null;
-  registration_fee: number | null;
-  is_paid: boolean | null;
-  
-  // Relations
-  event_stages: EventStage[];
-  event_prizes: EventPrize[];
-  event_faqs: EventFAQ[];
-  event_reviews: EventReview[];
-  event_sponsors: EventSponsor[];
-}
-
-export default function EventDetails() {
+export default function EventDetailsPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('stages');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // --- 1. Hook to check Registration & Invitation Status ---
   const { 
     isRegistered, 
-    hasPendingInvitation, 
     invitation, 
-    loading: regLoading, 
-    refetch: refetchRegistration 
+    hasPendingInvitation,
+    hasAcceptedInvitation,
+    loading: regLoading,
+    refetch: refetchRegistration
   } = useEventRegistration(event?.id);
 
-  // Auth Listener
+  // Auth & Data Fetching
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setAuthLoading(false);
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!authLoading && !session) navigate('/auth');
+  }, [authLoading, session, navigate]);
+
+  useEffect(() => {
+    if (session) getEvent();
+  }, [slug, session]);
+
+  async function getEvent() {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+    if (error) { navigate('/events'); return; }
+    setEvent(data);
+    setLoading(false);
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setSession(null);
     navigate('/auth');
   };
 
-  // Fetch Event Data
-  useEffect(() => {
-    const fetchEvent = async () => {
-      if (!slug) return;
-      
-      const { data, error } = await supabase
-        .from('events')
-        .select(`
-          *,
-          event_stages(*),
-          event_prizes(*),
-          event_faqs(*),
-          event_reviews(*),
-          event_sponsors(*)
-        `)
-        .eq('slug', slug)
-        .single();
+  const handleRegisterClick = () => {
+    if (hasPendingInvitation) { toast.info("You have a pending team invitation."); return; }
+    if (hasAcceptedInvitation) { toast.info("Please complete your team registration."); return; }
+    if (isRegistered) { toast.info("You're already registered!"); return; }
+    if (event.registration_link) window.open(event.registration_link, '_blank');
+    else setIsRegisterOpen(true);
+  };
 
-      if (error) {
-        console.error('Error fetching event:', error);
-        toast({
-          title: "Error",
-          description: "Could not find the requested event.",
-          variant: "destructive"
-        });
-        navigate('/events');
-        return;
-      }
+  const handleShare = async () => {
+    try {
+      await navigator.share({ title: event.title, text: `Check out ${event.title}!`, url: window.location.href });
+    } catch { toast.info("Link copied!"); navigator.clipboard.writeText(window.location.href); }
+  };
 
-      const eventData = data as unknown as Event;
-      
-      // Sort data
-      if (eventData.event_stages) eventData.event_stages.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
-      if (eventData.event_prizes) eventData.event_prizes.sort((a, b) => a.position - b.position);
-      if (eventData.event_faqs) eventData.event_faqs.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+  if (authLoading || loading) return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <Loader2 className="animate-spin h-8 w-8 text-primary" />
+    </div>
+  );
 
-      setEvent(eventData);
-      setLoading(false);
-    };
+  const isHackathon = event?.event_type === 'hackathon';
 
-    fetchEvent();
-  }, [slug, navigate, toast]);
-
-  if (loading) {
+  // --- Dynamic Content Renders ---
+  const renderSidebarContent = () => {
+    if (regLoading) return <div className="flex justify-center py-6"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>;
+    
+    if (isRegistered) {
+      return (
+        <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+          <div className="absolute inset-0 bg-emerald-500/10 blur-xl opacity-50" />
+          <AlreadyRegisteredCard 
+            eventId={event.id} 
+            eventTitle={event.title} 
+            eventType={event.event_type || 'normal'} 
+            isPaid={event.is_paid} 
+            registrationFee={event.registration_fee} 
+            currency={event.currency} 
+          />
+        </div>
+      );
+    }
+    
+    if (hasPendingInvitation && invitation) return <PendingInvitationCard invitation={invitation as any} eventTitle={event.title} onAccept={refetchRegistration} onDecline={refetchRegistration} />;
+    
+    if (hasAcceptedInvitation && invitation) return <InviteeRegistrationForm eventId={event.id} eventTitle={event.title} isPaid={event.is_paid} registrationFee={event.registration_fee} currency={event.currency} invitation={{ id: invitation.id, team_name: invitation.team_name, inviter_name: invitation.inviter_name, role: invitation.role, registration_id: invitation.registration_id }} onComplete={refetchRegistration} />;
+    
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="animate-spin h-8 w-8 text-white" />
+      <div className="space-y-4 pt-2">
+        <Button 
+          onClick={handleRegisterClick} 
+          className="w-full h-14 text-base font-bold bg-white text-black hover:bg-zinc-200 hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
+        >
+          {isHackathon && <Code className="w-5 h-5 mr-2" />} 
+          Initialize Registration
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={handleShare} 
+          className="w-full h-12 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+        >
+          <Share2 className="w-4 h-4 mr-2" /> Share Protocol
+        </Button>
       </div>
     );
-  }
+  };
 
-  if (!event) return null;
-
-  const isEventActive = new Date(event.end_date) > new Date();
+  const tabs = [
+    { id: 'stages', label: 'Timeline', icon: Clock },
+    { id: 'details', label: 'Briefing', icon: Zap },
+    { id: 'dates', label: 'Deadlines', icon: Calendar },
+    { id: 'prizes', label: 'Bounties', icon: Trophy },
+    { id: 'eligibility', label: 'Criteria', icon: CheckCircle },
+    { id: 'reviews', label: 'Intel', icon: Star },
+    { id: 'faqs', label: 'Comms', icon: MessageCircle },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white selection:bg-white/20 font-sans">
-      
-      {/* CSS Styles */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@200;300;400;600&display=swap');
-
-        :root {
-            --bg: #000000;
-            --surface: #0a0a0a;
-            --text-main: #ffffff;
-            --text-muted: #777777;
-            --accent: #ffffff; 
-            --border: #1a1a1a;
-            --titanium: #e0e0e0;
-        }
-
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); }
-        h1, h2, h3, .serif { font-family: 'Playfair Display', serif; letter-spacing: -1px; }
-        
-        .container-custom { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
-        
-        .hero { padding: 100px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
-        .category-tag { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 3px; color: var(--text-muted); margin-bottom: 20px; display: block; }
-        .hero h1 { font-size: 4.5rem; line-height: 1; margin-bottom: 25px; font-weight: 700; }
-        .hero-image { width: 100%; height: 500px; background-color: #0a0a0a; background-size: cover; background-position: center; filter: grayscale(1); opacity: 0.8; }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: 50px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 100px; }
-        .stat-item span { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 2px; }
-        .stat-item strong { font-size: 1.4rem; font-weight: 200; color: var(--titanium); }
-
-        .main-grid { display: grid; grid-template-columns: 1fr 350px; gap: 100px; margin-bottom: 100px; }
-        .section-title { font-size: 2.2rem; margin-bottom: 40px; position: relative; font-weight: 400; }
-        .section-title::after { content: ""; display: block; width: 60px; height: 1px; background: var(--text-muted); margin-top: 20px; }
-
-        @keyframes lineGrow { from { height: 0; } to { height: 100%; } }
-        .roadmap { position: relative; padding-left: 40px; margin-bottom: 80px; }
-        .roadmap-line { position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: var(--border); }
-        .roadmap-progress { position: absolute; left: 0; top: 0; width: 1px; background: var(--titanium); animation: lineGrow 3s ease-in-out forwards; }
-        .stage-item { position: relative; margin-bottom: 50px; }
-        .stage-item::before { content: ""; position: absolute; left: -43.5px; top: 10px; width: 8px; height: 8px; background: var(--titanium); border-radius: 50%; }
-
-        .prize-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 80px; }
-        .prize-card { border: 1px solid var(--border); padding: 40px; text-align: left; transition: 0.3s; }
-        .prize-card:hover { border-color: var(--titanium); }
-        .prize-pos { font-size: 3rem; font-weight: 200; margin-bottom: 10px; color: var(--titanium); }
-
-        .patrons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 100px; }
-        .patron-logo { background: var(--bg); padding: 30px; text-align: center; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 3px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100px; }
-        .patron-logo img { max-width: 80%; max-height: 40px; filter: grayscale(1); opacity: 0.7; transition: 0.3s; }
-        .patron-logo:hover img { opacity: 1; filter: grayscale(0); }
-
-        .qa-item { margin-bottom: 40px; }
-        .qa-q { font-weight: 400; font-size: 1.1rem; margin-bottom: 12px; color: var(--titanium); border-left: 1px solid var(--titanium); padding-left: 20px; }
-        .qa-a { color: var(--text-muted); font-size: 0.95rem; padding-left: 21px; }
-
-        .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 50px; }
-        .insight-card { padding: 40px; background: var(--surface); border: 1px solid var(--border); }
-        .insight-quote { font-style: italic; color: var(--text-muted); margin-bottom: 20px; font-weight: 300; }
-        .insight-author { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--titanium); }
-
-        .sidebar-card { background: var(--surface); padding: 40px; border: 1px solid var(--border); position: sticky; top: 120px; }
-        .btn-participate { display: block; width: 100%; padding: 22px; background: var(--text-main); color: #000; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; font-weight: 700; margin-bottom: 30px; transition: 0.4s; cursor: pointer; border: none; }
-        .btn-participate:hover { background: transparent; color: #fff; box-shadow: inset 0 0 0 1px #fff; }
-        .btn-participate:disabled { opacity: 0.5; cursor: not-allowed; background: #333; color: #777; box-shadow: none; }
-        
-        .meta-list { list-style: none; padding: 0; margin: 0; }
-        .meta-list li { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
-        .meta-list li span { color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-
-        @media (max-width: 900px) {
-            .hero, .main-grid, .prize-grid, .insights-grid { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 3rem; }
-            .stats-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
-            .sidebar-card { position: static; margin-top: 50px; }
-        }
-      `}</style>
-
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 font-inter relative overflow-x-hidden">
       <Header session={session} onLogout={handleLogout} />
+      
+      {/* Background Noise & Ambient Light */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+         <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/20 rounded-full blur-[150px] animate-pulse opacity-40" />
+      </div>
 
-      <EventRegistrationModal 
-        event={{ id: event.id, title: event.title }} 
-        isOpen={isRegistrationOpen} 
-        onOpenChange={(open) => {
-          setIsRegistrationOpen(open);
-          if (!open) refetchRegistration(); // Refresh status when modal closes
-        }}
-      />
-
-      <div className="container-custom pt-24">
-        
-        {/* HERO SECTION */}
-        <section className="hero">
-            <div>
-                <span className="category-tag">
-                    {event.category} • {event.event_type}
-                </span>
-                <h1 className="serif">{event.title}</h1>
-                <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', fontWeight: 200, marginBottom: '40px', lineHeight: 1.6 }}>
-                    {event.short_description}
-                </p>
-                
-                {/* 2. Logic: Button State (Apply / Registered / Pending Invite) */}
-                {isRegistered ? (
-                   <button className="btn-participate" disabled style={{ width: '250px' }}>
-                     Already Registered
-                   </button>
-                ) : hasPendingInvitation ? (
-                   <button className="btn-participate" onClick={() => {
-                      document.getElementById('invitation-section')?.scrollIntoView({ behavior: 'smooth' });
-                   }} style={{ width: '250px', backgroundColor: '#eab308' }}>
-                     View Invitation
-                   </button>
-                ) : (
-                  <button 
-                      onClick={() => setIsRegistrationOpen(true)} 
-                      className="btn-participate" 
-                      style={{ width: '250px' }}
-                  >
-                      Apply for Entry
-                  </button>
-                )}
-            </div>
-            <div 
-                className="hero-image"
-                style={{ backgroundImage: `url(${event.image_url})` }}
-            />
-        </section>
-
-        {/* STATS BAR */}
-        <div className="stats-grid">
-            <div className="stat-item"><span>Treasury Pool</span><strong>{event.prize_pool || "TBA"}</strong></div>
-            <div className="stat-item"><span>Status</span><strong>{isEventActive ? 'Active' : 'Closed'}</strong></div>
-            <div className="stat-item"><span>Team Limit</span><strong>{event.max_team_size ? `Max ${event.max_team_size}` : "Solo"}</strong></div>
-            <div className="stat-item"><span>Mode</span><strong>{event.mode}</strong></div>
+      {/* --- CINEMATIC HERO --- */}
+      <div className="relative h-[60vh] md:h-[70vh] w-full flex items-end pb-20 overflow-hidden border-b border-white/5">
+        {/* Hero Image */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505] z-10" />
+          <motion.img 
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 10, ease: "easeOut" }}
+            src={event.image_url} 
+            alt="Cover" 
+            className="w-full h-full object-cover opacity-80" 
+          />
         </div>
 
-        {/* MAIN LAYOUT */}
-        <div className="main-grid">
-            
-            {/* CONTENT COLUMN */}
-            <div className="content-col">
-                
-                {/* 3. Logic: Show Pending Invitation Card */}
-                {hasPendingInvitation && invitation && (
-                  <div id="invitation-section" className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <PendingInvitationCard 
-                      invitation={invitation as any}
-                      eventTitle={event.title}
-                      onAccept={() => {
-                        refetchRegistration(); // Refresh to show Registered Card
-                      }}
-                      onDecline={() => {
-                        refetchRegistration(); // Refresh to show Apply Button
-                      }}
-                    />
-                  </div>
-                )}
+        {/* Hero Content */}
+        <div className="container relative z-20 mx-auto px-4 md:px-8 max-w-[1600px]">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-4xl"
+          >
+             <Button variant="ghost" className="mb-8 text-zinc-400 hover:text-white pl-0 hover:bg-transparent group" onClick={() => navigate('/events')}>
+               <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center mr-3 group-hover:border-white/30 transition-colors bg-black/50 backdrop-blur-md">
+                 <ArrowLeft className="h-4 w-4" />
+               </div>
+               <span className="text-xs font-bold tracking-widest uppercase">Abort & Return</span>
+             </Button>
+             
+             <div className="flex flex-wrap items-center gap-4 mb-6">
+               <span className="px-3 py-1 rounded border border-primary/30 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
+                 {event.category}
+               </span>
+               <span className="flex items-center gap-2 px-3 py-1 rounded border border-white/10 bg-white/5 text-zinc-300 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">
+                 <Globe className="w-3 h-3" /> {event.mode}
+               </span>
+               {event.is_featured && (
+                 <span className="flex items-center gap-1 text-amber-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                   <Sparkles className="w-3 h-3" /> Featured Event
+                 </span>
+               )}
+             </div>
 
-                {/* 4. Logic: Show Already Registered Card */}
-                {isRegistered && (
-                  <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
-                     <AlreadyRegisteredCard 
-                       eventId={event.id}
-                       eventTitle={event.title}
-                       eventType={event.event_type}
-                       isPaid={event.is_paid ?? false}
-                       registrationFee={event.registration_fee ?? 0}
-                     />
-                  </div>
-                )}
-                
-                <section>
-                    <h2 className="section-title">Concept & Rigor</h2>
-                    <div style={{ color: 'var(--text-muted)', fontWeight: 300, marginBottom: '80px', maxWidth: '600px', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                        {event.content || event.short_description}
-                    </div>
-                </section>
-
-                <section>
-                    <h2 className="section-title">The Roadmap</h2>
-                    <div className="roadmap">
-                        <div className="roadmap-line"></div>
-                        <div className="roadmap-progress"></div>
-                        {event.event_stages && event.event_stages.length > 0 ? (
-                            event.event_stages.map((stage) => (
-                                <div key={stage.id} className="stage-item">
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>
-                                        {format(new Date(stage.start_date), 'MMM dd')}
-                                    </span>
-                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>{stage.title}</h3>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{stage.description}</p>
-                                </div>
-                            ))
-                        ) : (
-                            <>
-                                <div className="stage-item">
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>
-                                        {format(new Date(event.start_date), 'MMM dd')}
-                                    </span>
-                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Initiation</h3>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Event kick-off.</p>
-                                </div>
-                                <div className="stage-item">
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>
-                                        {format(new Date(event.end_date), 'MMM dd')}
-                                    </span>
-                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Submission Deadline</h3>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Final submission date.</p>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </section>
-
-                <section>
-                    <h2 className="section-title">Prizes</h2>
-                    <div className="prize-grid">
-                        {event.event_prizes && event.event_prizes.length > 0 ? (
-                            event.event_prizes.map((prize) => (
-                                <div key={prize.id} className="prize-card">
-                                    <div className="prize-pos">{prize.position.toString().padStart(2, '0')}</div>
-                                    <strong style={{ textTransform: 'uppercase', letterSpacing: '2px' }}>{prize.title}</strong>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '10px' }}>
-                                        {prize.prize_value}
-                                    </p>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="prize-card">
-                                <strong style={{ textTransform: 'uppercase', letterSpacing: '2px' }}>Prize Pool</strong>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '10px' }}>
-                                    {event.prize_pool || "TBA"}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </section>
-
-                {event.event_sponsors && event.event_sponsors.length > 0 && (
-                    <section>
-                        <h2 className="section-title">Patrons</h2>
-                        <div className="patrons-grid">
-                            {event.event_sponsors.map((sponsor) => (
-                                <div key={sponsor.id} className="patron-logo">
-                                    {sponsor.logo_url ? (
-                                        <img src={sponsor.logo_url} alt={sponsor.name} />
-                                    ) : (
-                                        sponsor.name
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {event.event_faqs && event.event_faqs.length > 0 && (
-                    <section>
-                        <h2 className="section-title">Curated FAQ</h2>
-                        {event.event_faqs.map((faq) => (
-                            <div key={faq.id} className="qa-item">
-                                <div className="qa-q">{faq.question}</div>
-                                <div className="qa-a">{faq.answer}</div>
-                            </div>
-                        ))}
-                    </section>
-                )}
-
-                {event.event_reviews && event.event_reviews.length > 0 && (
-                    <section>
-                        <h2 className="section-title">Member Insights</h2>
-                        <div className="insights-grid">
-                            {event.event_reviews.map((review) => (
-                                <div key={review.id} className="insight-card">
-                                    <p className="insight-quote">"{review.review_text}"</p>
-                                    <span className="insight-author">— Member</span>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
-            </div>
-
-            {/* SIDEBAR COLUMN */}
-            <aside className="sidebar-col">
-                <div className="sidebar-card">
-                    <h3 className="serif" style={{ fontSize: '1.5rem', marginBottom: '30px', fontWeight: 400 }}>Event Summary</h3>
-                    
-                    {/* 5. Logic: Sidebar Button State */}
-                    {isRegistered ? (
-                       <button className="btn-participate" disabled>
-                          Registered
-                       </button>
-                    ) : hasPendingInvitation ? (
-                       <button className="btn-participate" disabled style={{ backgroundColor: '#eab308', color: '#000', opacity: 1 }}>
-                          Invitation Pending
-                       </button>
-                    ) : (
-                      <button 
-                          onClick={() => setIsRegistrationOpen(true)} 
-                          className="btn-participate"
-                      >
-                          Participate Now
-                      </button>
-                    )}
-
-                    <ul className="meta-list">
-                        <li><span>Starts</span> <strong>{format(new Date(event.start_date), 'dd MMM yyyy')}</strong></li>
-                        <li><span>Ends</span> <strong>{format(new Date(event.end_date), 'dd MMM yyyy')}</strong></li>
-                        <li><span>Venue</span> <strong>{event.mode === 'Online' ? 'Remote' : event.location}</strong></li>
-                        <li><span>Solo</span> <strong>{event.max_team_size === 1 ? "REQUIRED" : "ALLOWED"}</strong></li>
-                        <li><span>Mode</span> <strong>{event.mode.toUpperCase()}</strong></li>
-                    </ul>
-
-                    <div style={{ marginTop: '40px', paddingTop: '25px', borderTop: '1px solid var(--border)' }}>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '2px', textTransform: 'uppercase' }}>Concierge</span>
-                        <p style={{ fontSize: '0.85rem', marginTop: '5px' }}>help@codevo.com</p>
-                    </div>
-                </div>
-            </aside>
-
+             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 leading-[0.9]">
+               {event.title}
+             </h1>
+             
+             <p className="text-lg md:text-xl text-zinc-400 max-w-2xl line-clamp-2 leading-relaxed">
+               {event.short_description}
+             </p>
+          </motion.div>
         </div>
       </div>
+
+      {/* --- NAVIGATION HUD --- */}
+      <div className="sticky top-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="container mx-auto max-w-[1600px] px-4 md:px-8">
+          <div className="flex items-center justify-between h-16 md:h-20">
+            <div className="flex gap-1 overflow-x-auto no-scrollbar mask-linear-fade py-2 w-full md:w-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "relative flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded-full min-w-max",
+                    activeTab === tab.id 
+                      ? "text-black" 
+                      : "text-zinc-500 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  {activeTab === tab.id && (
+                    <motion.div 
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-white rounded-full"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <tab.icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            
+            {/* Desktop Quick Action (Hidden on Mobile) */}
+            <div className="hidden md:block">
+              <Button size="sm" onClick={handleShare} variant="ghost" className="text-zinc-500 hover:text-white">
+                <Share2 className="w-4 h-4 mr-2" /> Share
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* --- MAIN GRID LAYOUT --- */}
+      <div className="container mx-auto px-4 md:px-8 py-12 max-w-[1600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+          
+          {/* LEFT COLUMN: Content */}
+          <div className="lg:col-span-8 space-y-12">
+             <InvitationBanner />
+             
+             <div className="min-h-[500px]">
+               <AnimatePresence mode="wait">
+                 <motion.div
+                   key={activeTab}
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, y: -10 }}
+                   transition={{ duration: 0.3 }}
+                 >
+                   {activeTab === 'stages' && <EventStagesTimeline eventId={event.id} eventStartDate={event.start_date} eventEndDate={event.end_date} registrationDeadline={event.registration_deadline} />}
+                   {activeTab === 'details' && <EventDetailsContent event={event} />}
+                   {activeTab === 'dates' && <EventDatesDeadlines startDate={event.start_date} endDate={event.end_date} registrationDeadline={event.registration_deadline} />}
+                   {activeTab === 'prizes' && <EventPrizes eventId={event.id} prizePool={event.prize_pool} />}
+                   {activeTab === 'eligibility' && <EventEligibility eligibilityCriteria={event.eligibility_criteria} minTeamSize={event.min_team_size} maxTeamSize={event.max_team_size} allowSolo={event.allow_solo} mode={event.mode} location={event.location} />}
+                   {activeTab === 'reviews' && <EventReviews eventId={event.id} />}
+                   {activeTab === 'faqs' && <div className="space-y-12"><EventFAQs eventId={event.id} /><EventDiscussions eventId={event.id} /></div>}
+                 </motion.div>
+               </AnimatePresence>
+             </div>
+          </div>
+
+          {/* RIGHT COLUMN: Sidebar / "Mission Card" */}
+          <div className="lg:col-span-4 relative">
+            <div className="sticky top-32 space-y-6">
+              
+              {/* Glass Card */}
+              <div className="relative overflow-hidden rounded-[2rem] bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 p-8 shadow-[0_0_50px_-20px_rgba(0,0,0,0.5)]">
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+                
+                <h3 className="text-lg font-bold uppercase tracking-widest text-zinc-500 mb-8 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Mission Status
+                </h3>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                   <div className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group">
+                      <div className="text-zinc-500 mb-2 group-hover:text-primary transition-colors"><Calendar className="w-5 h-5" /></div>
+                      <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Start Date</div>
+                      <div className="text-sm font-bold text-white mt-1">{format(new Date(event.start_date), 'MMM dd')}</div>
+                   </div>
+                   <div className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group">
+                      <div className="text-zinc-500 mb-2 group-hover:text-blue-400 transition-colors"><MapPin className="w-5 h-5" /></div>
+                      <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Sector</div>
+                      <div className="text-sm font-bold text-white mt-1 truncate">{event.location || event.mode}</div>
+                   </div>
+                   <div className="col-span-2 bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1">Squad Size</div>
+                        <div className="text-sm font-bold text-white">{event.min_team_size} - {event.max_team_size} Operatives</div>
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 group-hover:text-white transition-colors">
+                        <Users className="w-5 h-5" />
+                      </div>
+                   </div>
+                </div>
+
+                <div className="w-full h-px bg-white/10 mb-8" />
+                
+                {renderSidebarContent()}
+              </div>
+
+              {/* Support Card */}
+              <div className="rounded-2xl border border-white/5 bg-[#0c0c0e]/50 p-6 flex items-center gap-4">
+                 <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                    <HelpCircle className="w-5 h-5 text-zinc-400" />
+                 </div>
+                 <div className="flex-1">
+                    <h4 className="text-sm font-bold text-white">Need Intel?</h4>
+                    <p className="text-xs text-zinc-500 mt-1">Contact mission control for support.</p>
+                 </div>
+                 <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full">
+                    <ChevronRight className="w-4 h-4" />
+                 </Button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {event && isHackathon ? (
+        <HackathonRegistrationModal event={event} isOpen={isRegisterOpen} onOpenChange={setIsRegisterOpen} />
+      ) : event && (
+        <NormalEventRegistrationModal event={event} isOpen={isRegisterOpen} onOpenChange={setIsRegisterOpen} />
+      )}
     </div>
   );
 }
