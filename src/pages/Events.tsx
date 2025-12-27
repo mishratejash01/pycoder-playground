@@ -30,18 +30,19 @@ interface Event {
 // --- Event Card Component ---
 const EventCard = ({ event }: { event: Event }) => {
   return (
-    <article className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 py-12 border-b border-zinc-800 last:border-0">
+    // changed from grid to flex-col for single column layout
+    <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full max-w-4xl">
       
-      {/* 1. Image Section - Fixed dimensions as per request */}
-      <div className="h-[220px] w-full rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
+      {/* 1. Image Section - Stacked on top, full width of container */}
+      <div className="h-[260px] w-full rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
         <img 
           src={event.image_url} 
           alt={event.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
         />
       </div>
 
-      {/* 2. Content Section */}
+      {/* 2. Content Section - Stacked below */}
       <div className="flex flex-col justify-between h-full">
         <div>
           {/* Category Tag */}
@@ -55,7 +56,7 @@ const EventCard = ({ event }: { event: Event }) => {
           </h2>
 
           {/* Description */}
-          <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-3xl line-clamp-2">
+          <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-3xl line-clamp-3">
             {event.short_description}
           </p>
         </div>
@@ -166,7 +167,7 @@ export default function Events() {
       
       <Header session={session} onLogout={handleLogout} />
 
-      {/* Main Container: Removed centering (mx-auto) for left alignment and increased width */}
+      {/* Main Container: Left aligned, generous padding */}
       <main className="pt-32 pb-24 px-8 md:px-16 w-full">
         
         {/* Page Title */}
@@ -180,9 +181,9 @@ export default function Events() {
         </div>
 
         {/* Events List */}
-        <div className="flex flex-col w-full max-w-[1400px]"> 
+        <div className="flex flex-col w-full"> 
           {loading ? (
-             <div className="min-h-[400px] flex items-center justify-center">
+             <div className="min-h-[400px] flex items-center justify-start">
                 <Loader2 className="animate-spin h-10 w-10 text-zinc-500" />
              </div>
           ) : events.length > 0 ? (
