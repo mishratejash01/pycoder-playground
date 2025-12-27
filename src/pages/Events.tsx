@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Loader2, Search, SlidersHorizontal, ChevronDown, ChevronRight, 
+  Loader2, Search, SlidersHorizontal, ChevronDown, ChevronRight, // Fixed: Added ChevronRight
   MapPin, LayoutGrid
 } from 'lucide-react';
 import { Header } from '@/components/Header';
@@ -45,11 +45,10 @@ interface Event {
   status?: string; 
 }
 
-// --- 1. Custom Status Icons (From your CSS) ---
+// --- 1. Custom Status Icons ---
 const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
   if (type === 'success') {
     return (
-      // Checkmark
       <div style={{
         width: '25px',
         height: '12px',
@@ -61,7 +60,6 @@ const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
     );
   }
   return (
-    // Cross
     <div style={{ position: 'relative', width: '30px', height: '30px' }}>
       <div style={{
         position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
@@ -119,7 +117,7 @@ const EventCard = ({ event }: { event: Event }) => {
         {/* Info Strip with Custom Status Box */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 py-4 md:py-6 border-y border-dashed border-zinc-700 mb-6 md:mb-8">
           
-          {/* Status Box Implementation */}
+          {/* Status Box */}
           <div className="flex w-full h-[70px] md:h-[80px] border-[4px] md:border-[6px] border-black rounded-none overflow-hidden bg-[#edf5ff]">
              {/* Left Icon Area */}
              <div className={`w-[70px] md:w-[80px] h-full border-r-[4px] md:border-r-[6px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
@@ -206,6 +204,9 @@ export default function Events() {
   const [selectedType, setSelectedType] = useState<string>('All');
   const [selectedTeamSize, setSelectedTeamSize] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('newest');
+  
+  // NEW: Location Search State
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
 
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
@@ -251,8 +252,21 @@ export default function Events() {
   // --- Derived Filter Options ---
   const categories = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.category).filter(Boolean)))], [events]);
   const modes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.mode).filter(Boolean)))], [events]);
-  const locations = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.location).filter(Boolean)))], [events]);
   const eventTypes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.event_type).filter(Boolean)))], [events]);
+  
+  // Location Logic (with Search filtering)
+  const locations = useMemo(() => {
+    const locs = Array.from(new Set(events.map(e => e.location).filter(l => l && l !== 'Online')));
+    // Return all locations, we filter for display later
+    return ['All', ...locs];
+  }, [events]);
+
+  const filteredLocationDisplay = useMemo(() => {
+    return locations.filter(loc => 
+      loc.toLowerCase().includes(locationSearchQuery.toLowerCase())
+    );
+  }, [locations, locationSearchQuery]);
+
 
   const placeholders = useMemo(() => {
     const uniqueLocations = Array.from(new Set(events.map(e => e.location).filter(Boolean)));
@@ -328,6 +342,7 @@ export default function Events() {
      setSelectedTeamSize('All');
      setSortBy('newest');
      setSearchQuery('');
+     setLocationSearchQuery('');
   };
 
   const activeFiltersCount = [
@@ -351,7 +366,7 @@ export default function Events() {
 
       <main className="pt-24 md:pt-32 pb-24 px-4 md:px-16 w-full relative">
         
-        {/* Title - Scrolls away */}
+        {/* Title */}
         <div className="mb-8 md:mb-12">
           <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-white mb-2 md:mb-4">
             Events
@@ -393,7 +408,7 @@ export default function Events() {
               />
             </div>
 
-            {/* Desktop Filters (Hidden on Mobile) */}
+            {/* Desktop Filters */}
             <div className="hidden md:flex gap-3">
               {/* Category */}
               <div className="relative min-w-[150px]">
@@ -429,7 +444,7 @@ export default function Events() {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               </div>
 
-               {/* Status - Timer Icon Removed */}
+               {/* Status */}
                <div className="relative min-w-[150px]">
                 <select 
                   value={selectedStatus}
@@ -440,12 +455,11 @@ export default function Events() {
                   <option value="Open" className="bg-zinc-900 text-white">Open</option>
                   <option value="Closed" className="bg-zinc-900 text-white">Closed</option>
                 </select>
-                {/* No Icon on left as requested for this specific filter or kept consistent? Assuming removal of the specific "timer" icon as requested */}
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               </div>
             </div>
 
-            {/* Sidebar Trigger - Visible on both Mobile and Desktop */}
+            {/* Sidebar Trigger */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button 
@@ -498,16 +512,32 @@ export default function Events() {
                        </div>
                        <Separator className="bg-zinc-800" />
 
-                       {/* Location Sidebar */}
+                       {/* Location Sidebar with Search */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Location</Label>
-                          <div className="flex flex-col gap-2">
-                             {locations.map(loc => (
-                                <Button key={loc} variant="ghost" onClick={() => setSelectedLocation(loc)} className={`rounded-none justify-between h-10 px-4 ${selectedLocation === loc ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-white'}`}>
+                          {/* Search Input for Locations */}
+                          <div className="relative">
+                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                             <input 
+                               type="text" 
+                               placeholder="Search cities..." 
+                               value={locationSearchQuery}
+                               onChange={(e) => setLocationSearchQuery(e.target.value)}
+                               className="w-full bg-zinc-900 border border-zinc-800 rounded-none py-2 pl-9 pr-3 text-xs text-white focus:outline-none focus:border-zinc-600"
+                             />
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                             {filteredLocationDisplay.length > 0 ? (
+                               filteredLocationDisplay.map(loc => (
+                                <Button key={loc} variant="ghost" onClick={() => setSelectedLocation(loc)} className={`rounded-none justify-between h-9 px-4 text-xs ${selectedLocation === loc ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-white'}`}>
                                   {loc === 'All' ? 'All Locations' : loc}
-                                  {selectedLocation === loc && <ChevronRight className="w-4 h-4" />}
+                                  {selectedLocation === loc && <ChevronRight className="w-3 h-3" />}
                                 </Button>
-                             ))}
+                               ))
+                             ) : (
+                               <div className="text-zinc-600 text-xs py-2 text-center">No locations found</div>
+                             )}
                           </div>
                        </div>
                        <Separator className="bg-zinc-800" />
