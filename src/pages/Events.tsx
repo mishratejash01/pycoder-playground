@@ -45,19 +45,30 @@ interface Event {
   status?: string; 
 }
 
-// --- Status Icon Components (Based on your HTML) ---
+// --- 1. ROBUST STATUS ICONS (Direct CSS Implementation) ---
 const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
   if (type === 'success') {
-    // Pure CSS Checkmark converted to Tailwind
     return (
-      <div className="w-[25px] h-[12px] border-l-[6px] border-b-[6px] border-black -rotate-45 -mt-1" />
+      <div style={{
+        width: '25px',
+        height: '12px',
+        borderLeft: '6px solid #000',
+        borderBottom: '6px solid #000',
+        transform: 'rotate(-45deg)',
+        marginTop: '-5px'
+      }} />
     );
   }
-  // Pure CSS Cross converted to Tailwind
   return (
-    <div className="relative w-[30px] h-[30px]">
-      <div className="absolute top-[12px] left-[-2px] w-[34px] h-[6px] bg-black rotate-45 rounded-[3px]" />
-      <div className="absolute top-[12px] left-[-2px] w-[34px] h-[6px] bg-black -rotate-45 rounded-[3px]" />
+    <div style={{ position: 'relative', width: '30px', height: '30px' }}>
+      <div style={{
+        position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
+        top: '12px', left: '-2px', borderRadius: '3px', transform: 'rotate(45deg)'
+      }} />
+      <div style={{
+        position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
+        top: '12px', left: '-2px', borderRadius: '3px', transform: 'rotate(-45deg)'
+      }} />
     </div>
   );
 };
@@ -69,7 +80,7 @@ const EventCard = ({ event }: { event: Event }) => {
   return (
     <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
       
-      {/* 1. Image Section */}
+      {/* Image Section */}
       <div className="h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950 group relative">
         <img 
           src={event.image_url} 
@@ -77,65 +88,68 @@ const EventCard = ({ event }: { event: Event }) => {
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
         />
         <div className="absolute top-4 right-4 flex gap-2">
-           <Badge className="bg-black/50 backdrop-blur-md text-white border-zinc-700 rounded-none uppercase tracking-widest text-[10px]">
+           <Badge className="bg-black/80 backdrop-blur-md text-white border-zinc-600 rounded-none uppercase tracking-widest text-[10px] px-3 py-1.5">
              {event.mode}
            </Badge>
-           {/* MapPin Icon added here for Location */}
-           {event.location && event.mode !== 'Online' && (
-             <Badge className="bg-black/50 backdrop-blur-md text-white border-zinc-700 rounded-none uppercase tracking-widest text-[10px] flex items-center gap-1">
-               <MapPin className="w-3 h-3" />
+           {event.location && (
+             <Badge className="bg-black/80 backdrop-blur-md text-white border-zinc-600 rounded-none uppercase tracking-widest text-[10px] px-3 py-1.5 flex items-center gap-2">
+               <MapPin className="w-3 h-3 text-white" />
                {event.location}
              </Badge>
            )}
         </div>
       </div>
 
-      {/* 2. Content Section */}
+      {/* Content Section */}
       <div className="flex flex-col justify-between h-full">
         <div>
-          {/* Category Tag */}
           <span className="font-mono text-[11px] tracking-[0.2em] text-zinc-400 uppercase mb-3 block">
             {event.category} • {event.event_type}
           </span>
-
-          {/* Title */}
           <h2 className="text-4xl font-bold tracking-tight text-white mb-4">
             {event.title}
           </h2>
-
-          {/* Description */}
           <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-3xl line-clamp-3">
             {event.short_description}
           </p>
         </div>
 
-        {/* 3. Info Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-5 border-y border-dashed border-zinc-800 mb-8">
+        {/* Info Strip with VISIBLE STATUS BOX */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-6 border-y border-dashed border-zinc-700 mb-8">
           
-          {/* Custom Status Box (Replacing generic text if desired, or acting as status indicator) */}
-          <div className="flex items-center gap-3">
-             <div className={`w-[60px] h-[60px] border-[4px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
+          {/* Status Box - High Contrast & Exact Sizing */}
+          <div className="flex items-center gap-4">
+             <div 
+               className="shrink-0 flex items-center justify-center border-[4px] border-black"
+               style={{ 
+                 width: '60px', 
+                 height: '60px', 
+                 backgroundColor: isOpen ? '#88d66c' : '#ff8a8a' 
+               }}
+             >
                 <StatusIcon type={isOpen ? 'success' : 'fail'} />
              </div>
              <div className="flex flex-col gap-1">
                 <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Status</span>
-                <span className="font-mono text-sm text-white font-medium">{isOpen ? 'Open' : 'Closed'}</span>
+                <span className={`font-mono text-sm font-bold ${isOpen ? 'text-[#88d66c]' : 'text-[#ff8a8a]'}`}>
+                  {isOpen ? 'Open' : 'Closed'}
+                </span>
              </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 justify-center">
+          <div className="flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Prizes</span>
             <span className="font-mono text-sm text-white font-medium">{event.prize_pool || "N/A"}</span>
           </div>
 
-          <div className="flex flex-col gap-1.5 justify-center">
+          <div className="flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Team Size</span>
             <span className="font-mono text-sm text-white font-medium">
               {(event.max_team_size && event.max_team_size > 1) ? `Up to ${event.max_team_size}` : "Solo"}
             </span>
           </div>
 
-          <div className="flex flex-col gap-1.5 justify-center">
+          <div className="flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Ends On</span>
             <span className="font-mono text-sm text-white font-medium">
               {new Date(event.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -143,7 +157,6 @@ const EventCard = ({ event }: { event: Event }) => {
           </div>
         </div>
 
-        {/* 4. Action Buttons */}
         <div className="flex flex-wrap gap-5">
           <a 
             href={`/events/${event.slug}`}
@@ -151,8 +164,7 @@ const EventCard = ({ event }: { event: Event }) => {
           >
             View Details —
           </a>
-
-          <button className="flex items-center justify-center border border-zinc-600 text-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-none hover:border-white hover:bg-white/5 transition-all duration-200">
+          <button className="flex items-center justify-center border border-zinc-500 text-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-none hover:border-white hover:bg-white/10 transition-all duration-200">
             Register Now
           </button>
         </div>
@@ -179,10 +191,8 @@ export default function Events() {
   const [selectedTeamSize, setSelectedTeamSize] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('newest');
 
-  // Placeholder Animation State
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  // Auth state management
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setSession(session);
@@ -198,15 +208,11 @@ export default function Events() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !session) {
-      navigate('/auth');
-    }
+    if (!authLoading && !session) navigate('/auth');
   }, [authLoading, session, navigate]);
 
   useEffect(() => {
-    if (session) {
-      fetchEvents();
-    }
+    if (session) fetchEvents();
   }, [session]);
 
   const fetchEvents = async () => {
@@ -227,28 +233,11 @@ export default function Events() {
   };
 
   // --- Derived Filter Options ---
-  
-  const categories = useMemo(() => {
-    const cats = new Set(events.map(e => e.category).filter(Boolean));
-    return ['All', ...Array.from(cats)];
-  }, [events]);
+  const categories = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.category).filter(Boolean)))], [events]);
+  const modes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.mode).filter(Boolean)))], [events]);
+  const locations = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.location).filter(Boolean)))], [events]);
+  const eventTypes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.event_type).filter(Boolean)))], [events]);
 
-  const modes = useMemo(() => {
-    const ms = new Set(events.map(e => e.mode).filter(Boolean));
-    return ['All', ...Array.from(ms)];
-  }, [events]);
-
-  const locations = useMemo(() => {
-    const locs = new Set(events.map(e => e.location).filter(l => l && l !== 'Online'));
-    return ['All', ...Array.from(locs)];
-  }, [events]);
-
-  const eventTypes = useMemo(() => {
-    const types = new Set(events.map(e => e.event_type).filter(Boolean));
-    return ['All', ...Array.from(types)];
-  }, [events]);
-
-  // Randomized Placeholders
   const placeholders = useMemo(() => {
     const uniqueLocations = Array.from(new Set(events.map(e => e.location).filter(Boolean)));
     const uniqueCategories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
@@ -277,7 +266,6 @@ export default function Events() {
     return () => clearInterval(interval);
   }, [placeholders]);
 
-
   // --- Filter Logic ---
   const filteredEvents = events.filter(event => {
     const query = searchQuery.toLowerCase();
@@ -285,7 +273,7 @@ export default function Events() {
     const matchesSearch = 
         event.title.toLowerCase().includes(query) || 
         event.short_description?.toLowerCase().includes(query) ||
-        event.location?.toLowerCase().includes(query);
+        (event.location && event.location.toLowerCase().includes(query));
 
     const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
     const matchesMode = selectedMode === 'All' || event.mode === selectedMode;
@@ -343,22 +331,20 @@ export default function Events() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-inter selection:bg-white/20">
-      
       <Header session={session} onLogout={handleLogout} />
 
       <main className="pt-32 pb-24 px-8 md:px-16 w-full">
-        
         <div className="mb-12">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white mb-10">
             Events
           </h1>
 
-          {/* --- TOP FILTER BAR --- */}
+          {/* --- FILTER BAR --- */}
           <div className="flex flex-col lg:flex-row gap-4 w-full">
             
             {/* Search */}
-            <div className="relative flex-[2] min-w-[200px] bg-zinc-900/50 border border-zinc-800 focus-within:border-zinc-600 transition-colors h-12 flex items-center rounded-none group">
-              <Search className="absolute left-3 w-4 h-4 text-zinc-500 z-10" />
+            <div className="relative flex-[2] min-w-[200px] bg-zinc-900 border border-zinc-700 focus-within:border-zinc-500 transition-colors h-12 flex items-center rounded-none group">
+              <Search className="absolute left-3 w-4 h-4 text-zinc-400 z-10" />
               <div className="absolute left-10 right-4 h-full flex items-center pointer-events-none overflow-hidden">
                 <AnimatePresence mode="wait">
                   {!searchQuery && (
@@ -389,7 +375,7 @@ export default function Events() {
               <select 
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer h-12"
+                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat} className="bg-zinc-900 text-white">
@@ -400,12 +386,12 @@ export default function Events() {
               <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
-            {/* Location (New) */}
+            {/* Location */}
             <div className="hidden md:block relative min-w-[150px]">
               <select 
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer h-12"
+                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
               >
                 {locations.map(loc => (
                   <option key={loc} value={loc} className="bg-zinc-900 text-white">
@@ -421,7 +407,7 @@ export default function Events() {
               <select 
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer h-12"
+                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
               >
                 <option value="All" className="bg-zinc-900 text-white">Status</option>
                 <option value="Open" className="bg-zinc-900 text-white">Open</option>
@@ -430,15 +416,15 @@ export default function Events() {
               <Timer className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
-            {/* --- SIDEBAR TRIGGER --- */}
+            {/* Sidebar Trigger */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button 
                    variant="outline" 
-                   className="h-12 px-6 bg-zinc-900/50 border-zinc-800 rounded-none hover:bg-zinc-800 hover:text-white gap-2"
+                   className="h-12 px-6 bg-zinc-900 border-zinc-700 rounded-none hover:bg-zinc-800 hover:text-white gap-2"
                 >
                    <SlidersHorizontal className="w-4 h-4" />
-                   All Filters 
+                   Filters 
                    {activeFiltersCount > 0 && (
                      <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center bg-white text-black rounded-full text-[10px]">
                        {activeFiltersCount}
@@ -456,7 +442,6 @@ export default function Events() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                       
                        {/* Sort */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sort By</Label>
@@ -469,84 +454,33 @@ export default function Events() {
                              ))}
                           </RadioGroup>
                        </div>
-                       
                        <Separator className="bg-zinc-800" />
-
-                       {/* Event Type (Format) */}
+                       
+                       {/* Formats */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Event Format</Label>
                           <div className="grid grid-cols-2 gap-2">
                              {eventTypes.map(type => (
-                                <Button 
-                                  key={type} 
-                                  variant="outline" 
-                                  onClick={() => setSelectedType(type)}
-                                  className={`rounded-none justify-start border-zinc-800 capitalize ${selectedType === type ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
-                                >
+                                <Button key={type} variant="outline" onClick={() => setSelectedType(type)} className={`rounded-none justify-start border-zinc-800 capitalize ${selectedType === type ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}>
                                   {type === 'All' ? 'All Formats' : type}
                                 </Button>
                              ))}
                           </div>
                        </div>
-
                        <Separator className="bg-zinc-800" />
 
-                       {/* Categories */}
+                       {/* Location Sidebar */}
                        <div className="space-y-4">
-                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Category</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                             {categories.map(cat => (
-                                <Button 
-                                  key={cat} 
-                                  variant="outline" 
-                                  onClick={() => setSelectedCategory(cat)}
-                                  className={`rounded-none justify-start border-zinc-800 ${selectedCategory === cat ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
-                                >
-                                  {cat === 'All' ? 'All' : cat}
-                                </Button>
-                             ))}
-                          </div>
-                       </div>
-
-                       <Separator className="bg-zinc-800" />
-
-                        {/* Location (Sidebar) */}
-                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Location</Label>
                           <div className="flex flex-col gap-2">
                              {locations.map(loc => (
-                                <Button 
-                                  key={loc} 
-                                  variant="ghost" 
-                                  onClick={() => setSelectedLocation(loc)}
-                                  className={`rounded-none justify-between h-10 px-4 ${selectedLocation === loc ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-white'}`}
-                                >
+                                <Button key={loc} variant="ghost" onClick={() => setSelectedLocation(loc)} className={`rounded-none justify-between h-10 px-4 ${selectedLocation === loc ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-white'}`}>
                                   {loc === 'All' ? 'All Locations' : loc}
                                   {selectedLocation === loc && <ChevronRight className="w-4 h-4" />}
                                 </Button>
                              ))}
                           </div>
                        </div>
-                       
-                       <Separator className="bg-zinc-800" />
-
-                       {/* Mode */}
-                       <div className="space-y-4">
-                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Mode</Label>
-                          <div className="flex gap-2">
-                             {modes.map(mode => (
-                                <Button 
-                                  key={mode} 
-                                  variant="outline" 
-                                  onClick={() => setSelectedMode(mode)}
-                                  className={`flex-1 rounded-none border-zinc-800 ${selectedMode === mode ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
-                                >
-                                  {mode === 'All' ? 'All' : mode}
-                                </Button>
-                             ))}
-                          </div>
-                       </div>
-
                        <Separator className="bg-zinc-800" />
 
                        {/* Team Size */}
@@ -554,32 +488,8 @@ export default function Events() {
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Team Size</Label>
                           <div className="flex gap-2">
                              {['All', 'Solo', 'Team'].map(size => (
-                                <Button 
-                                  key={size} 
-                                  variant="outline" 
-                                  onClick={() => setSelectedTeamSize(size)}
-                                  className={`flex-1 rounded-none border-zinc-800 ${selectedTeamSize === size ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
-                                >
+                                <Button key={size} variant="outline" onClick={() => setSelectedTeamSize(size)} className={`flex-1 rounded-none border-zinc-800 ${selectedTeamSize === size ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}>
                                   {size}
-                                </Button>
-                             ))}
-                          </div>
-                       </div>
-
-                       <Separator className="bg-zinc-800" />
-
-                       {/* Price */}
-                       <div className="space-y-4">
-                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Price</Label>
-                          <div className="flex gap-2">
-                             {['All', 'Free', 'Paid'].map(price => (
-                                <Button 
-                                  key={price} 
-                                  variant="outline" 
-                                  onClick={() => setSelectedPrice(price)}
-                                  className={`flex-1 rounded-none border-zinc-800 ${selectedPrice === price ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
-                                >
-                                  {price}
                                 </Button>
                              ))}
                           </div>
@@ -588,16 +498,12 @@ export default function Events() {
 
                     <div className="p-6 border-t border-zinc-800 bg-zinc-900/30 backdrop-blur-sm">
                        <div className="flex gap-4">
-                          <Button 
-                             variant="outline" 
-                             onClick={clearAllFilters}
-                             className="flex-1 rounded-none border-zinc-700 hover:bg-zinc-800 text-white"
-                          >
+                          <Button variant="outline" onClick={clearAllFilters} className="flex-1 rounded-none border-zinc-700 hover:bg-zinc-800 text-white">
                             Reset
                           </Button>
                           <SheetClose asChild>
                              <Button className="flex-[2] rounded-none bg-white text-black hover:bg-zinc-200">
-                               View {filteredEvents.length} Events
+                               View Results
                              </Button>
                           </SheetClose>
                        </div>
@@ -605,7 +511,6 @@ export default function Events() {
                  </div>
               </SheetContent>
             </Sheet>
-
           </div>
         </div>
 
