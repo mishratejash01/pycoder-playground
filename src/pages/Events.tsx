@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Loader2, Search, SlidersHorizontal, ChevronDown, ChevronRight, // Fixed: Added ChevronRight
+  Loader2, Search, SlidersHorizontal, ChevronDown, ChevronRight, 
   MapPin, LayoutGrid
 } from 'lucide-react';
 import { Header } from '@/components/Header';
@@ -45,29 +45,32 @@ interface Event {
   status?: string; 
 }
 
-// --- 1. Custom Status Icons ---
+// --- 1. Custom Status Icons (Fixed Centering) ---
 const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
   if (type === 'success') {
     return (
-      <div style={{
-        width: '25px',
-        height: '12px',
-        borderLeft: '6px solid #000',
-        borderBottom: '6px solid #000',
-        transform: 'rotate(-45deg)',
-        marginTop: '-5px'
-      }} />
+      // Checkmark: Perfectly centered visually
+      <div className="relative w-full h-full flex items-center justify-center">
+        <div style={{
+          width: '24px',
+          height: '12px',
+          borderLeft: '5px solid #000',
+          borderBottom: '5px solid #000',
+          transform: 'rotate(-45deg) translate(2px, -2px)', // Visual tweak to center the "V"
+        }} />
+      </div>
     );
   }
   return (
-    <div style={{ position: 'relative', width: '30px', height: '30px' }}>
+    // Cross: Perfectly centered
+    <div className="relative w-[30px] h-[30px]">
       <div style={{
-        position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
-        top: '12px', left: '-2px', borderRadius: '3px', transform: 'rotate(45deg)'
+        position: 'absolute', width: '36px', height: '5px', backgroundColor: '#000',
+        top: '12.5px', left: '-3px', borderRadius: '4px', transform: 'rotate(45deg)'
       }} />
       <div style={{
-        position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
-        top: '12px', left: '-2px', borderRadius: '3px', transform: 'rotate(-45deg)'
+        position: 'absolute', width: '36px', height: '5px', backgroundColor: '#000',
+        top: '12.5px', left: '-3px', borderRadius: '4px', transform: 'rotate(-45deg)'
       }} />
     </div>
   );
@@ -117,11 +120,11 @@ const EventCard = ({ event }: { event: Event }) => {
         {/* Info Strip with Custom Status Box */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 py-4 md:py-6 border-y border-dashed border-zinc-700 mb-6 md:mb-8">
           
-          {/* Status Box */}
+          {/* Status Box Implementation */}
           <div className="flex w-full h-[70px] md:h-[80px] border-[4px] md:border-[6px] border-black rounded-none overflow-hidden bg-[#edf5ff]">
-             {/* Left Icon Area */}
+             {/* Left Icon Area - Centered */}
              <div className={`w-[70px] md:w-[80px] h-full border-r-[4px] md:border-r-[6px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
-                <div className="scale-75 md:scale-100">
+                <div className="scale-75 md:scale-100 flex items-center justify-center">
                    <StatusIcon type={isOpen ? 'success' : 'fail'} />
                 </div>
              </div>
@@ -156,7 +159,7 @@ const EventCard = ({ event }: { event: Event }) => {
             </span>
           </div>
           
-          {/* Mobile Only Info Row */}
+          {/* Mobile Only Info Row (Compact) */}
           <div className="flex md:hidden justify-between items-center px-1">
              <div className="flex flex-col">
                <span className="font-mono text-[9px] text-zinc-500 uppercase">Prize Pool</span>
@@ -205,7 +208,7 @@ export default function Events() {
   const [selectedTeamSize, setSelectedTeamSize] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('newest');
   
-  // NEW: Location Search State
+  // Location Search
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
 
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -254,10 +257,8 @@ export default function Events() {
   const modes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.mode).filter(Boolean)))], [events]);
   const eventTypes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.event_type).filter(Boolean)))], [events]);
   
-  // Location Logic (with Search filtering)
   const locations = useMemo(() => {
     const locs = Array.from(new Set(events.map(e => e.location).filter(l => l && l !== 'Online')));
-    // Return all locations, we filter for display later
     return ['All', ...locs];
   }, [events]);
 
@@ -366,7 +367,6 @@ export default function Events() {
 
       <main className="pt-24 md:pt-32 pb-24 px-4 md:px-16 w-full relative">
         
-        {/* Title */}
         <div className="mb-8 md:mb-12">
           <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-white mb-2 md:mb-4">
             Events
@@ -377,7 +377,7 @@ export default function Events() {
         </div>
 
         {/* --- STICKY FILTER BAR --- */}
-        <div className="sticky top-16 md:top-20 z-30 bg-[#050505]/95 backdrop-blur-md py-4 -mx-4 px-4 md:mx-0 md:px-0 border-b border-white/5 md:border-none mb-8 transition-all duration-300">
+        <div className="sticky top-16 md:top-20 z-40 bg-[#050505]/95 backdrop-blur-md py-4 -mx-4 px-4 md:mx-0 md:px-0 border-b border-white/5 md:border-none mb-8 transition-all duration-300">
           <div className="flex flex-row gap-3 w-full">
             
             {/* Search */}
@@ -444,7 +444,7 @@ export default function Events() {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               </div>
 
-               {/* Status */}
+               {/* Status - No Icon as requested */}
                <div className="relative min-w-[150px]">
                 <select 
                   value={selectedStatus}
