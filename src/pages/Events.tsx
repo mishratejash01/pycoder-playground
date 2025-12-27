@@ -2,8 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Loader2, Search, SlidersHorizontal, ChevronDown, 
-  Timer, MapPin, LayoutGrid, Check, X 
+  Loader2, Search, SlidersHorizontal, ChevronDown, ChevronRight, // Added ChevronRight back
+  Timer, MapPin, LayoutGrid
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Session } from '@supabase/supabase-js';
@@ -45,11 +45,10 @@ interface Event {
   status?: string; 
 }
 
-// --- 1. Custom Status Icons (From your CSS) ---
+// --- 1. Custom Status Icons ---
 const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
   if (type === 'success') {
     return (
-      // Checkmark
       <div style={{
         width: '25px',
         height: '12px',
@@ -61,7 +60,6 @@ const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
     );
   }
   return (
-    // Cross
     <div style={{ position: 'relative', width: '30px', height: '30px' }}>
       <div style={{
         position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
@@ -127,7 +125,6 @@ const EventCard = ({ event }: { event: Event }) => {
              </div>
              {/* Right Content Area */}
              <div className="flex-grow flex flex-col justify-center px-5 gap-2">
-                {/* Visual Lines from your CSS, reused as loading/status bars or just kept as visual elements */}
                 <div className="h-[8px] bg-black rounded-[4px] w-[50%]" />
                 <div className="flex items-center justify-between">
                    <span className="font-bold text-black uppercase tracking-wider text-xs">
@@ -384,7 +381,6 @@ export default function Events() {
                   </option>
                 ))}
               </select>
-              {/* Icon Moved to Left for uniformity */}
               <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             </div>
