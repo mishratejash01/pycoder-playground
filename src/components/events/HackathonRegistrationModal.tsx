@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Loader2, Check, ChevronRight, Trash2, ExternalLink } from 'lucide-react';
+import { Loader2, Check, ChevronRight, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -35,7 +35,6 @@ interface HackathonRegistrationModalProps {
 const formSchema = z.object({
   full_name: z.string().min(2, "Name is required").max(100),
   email: z.string().email("Invalid email").max(255),
-  // FIX: Relaxed validation to min(3) so "123" works during testing
   mobile_number: z.string().min(3, "Valid mobile required").max(20),
   college_org_name: z.string().min(2, "Required").max(200),
   current_status: z.enum(['Student', 'Working Professional', 'Freelancer', 'Founder']),
@@ -43,10 +42,10 @@ const formSchema = z.object({
   experience_level: z.enum(['Beginner', 'Intermediate', 'Advanced', 'Expert']),
   primary_languages: z.string().min(1, "Enter at least one language"),
   tech_stack_skills: z.string().optional(),
-  github_link: z.string().url().optional().or(z.literal("")),
-  linkedin_link: z.string().url().optional().or(z.literal("")),
-  resume_url: z.string().url().optional().or(z.literal("")),
-  portfolio_url: z.string().url().optional().or(z.literal("")),
+  github_link: z.string().url("Invalid URL").optional().or(z.literal("")),
+  linkedin_link: z.string().url("Invalid URL").optional().or(z.literal("")),
+  resume_url: z.string().url("Invalid URL").optional().or(z.literal("")),
+  portfolio_url: z.string().url("Invalid URL").optional().or(z.literal("")),
   prior_experience: z.boolean().default(false),
   participation_type: z.enum(['Solo', 'Team']),
   team_name: z.string().optional(),
@@ -57,14 +56,14 @@ const formSchema = z.object({
     role: z.string().default("Member")
   })).optional(),
   preferred_track: z.string().optional(),
-  motivation_answer: z.string().min(20, "Please provide more details").max(1000),
+  motivation_answer: z.string().min(10, "Please provide at least 10 characters").max(1000),
   custom_answers: z.record(z.string()).optional(),
   agreed_to_rules: z.boolean().refine(val => val === true, "You must agree to the rules"),
   agreed_to_privacy: z.boolean().refine(val => val === true, "You must agree to the privacy policy"),
 }).superRefine((data, ctx) => {
   if (data.participation_type === 'Team') {
     if (!data.team_name || data.team_name.length < 2) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Team Name required", path: ["team_name"] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Team Name required for team entry", path: ["team_name"] });
     }
   }
 });
@@ -179,17 +178,44 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       toast.success("Registration successful!");
     } catch (err: any) {
       console.error("Registration error:", err);
-      toast.error(err.code === '23505' ? "Entry already exists" : (err.message || "Registration failure"));
+      toast.error(err.code === '23505' ? "You are already registered for this event." : (err.message || "Registration failure"));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // Improved Error Logging
+  // --- RECURSIVE ERROR EXTRACTOR ---
+  const getErrorMessages = (errors: any): string[] => {
+    let messages: string[] = [];
+    Object.entries(errors).forEach(([key, value]: [string, any]) => {
+      if (value.message) {
+        messages.push(value.message);
+      } else if (typeof value === 'object') {
+        messages = [...messages, ...getErrorMessages(value)];
+      }
+    });
+    return messages;
+  };
+
   const onFormError = (errors: any) => {
-    console.error("Form validation errors:", errors);
-    const errorMessages = Object.values(errors).map((e: any) => e.message).join(", ");
-    toast.error(`Please fix errors: ${errorMessages}`);
+    console.log("Full Form Errors:", errors); // Logs full object to console for debugging
+    const messages = getErrorMessages(errors);
+    
+    // Only show unique messages
+    const uniqueMessages = Array.from(new Set(messages));
+    
+    if (uniqueMessages.length > 0) {
+      toast.error("Validation Failed", {
+        description: (
+          <ul className="list-disc pl-4 text-xs mt-2 space-y-1">
+            {uniqueMessages.map((m, i) => <li key={i}>{m}</li>)}
+          </ul>
+        ),
+        duration: 5000,
+      });
+    } else {
+      toast.error("Please fill in all required fields marked in red.");
+    }
   };
 
   const nextStep = async () => {
@@ -203,7 +229,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
     if (isValid) {
       setStep(s => Math.min(s + 1, totalSteps));
     } else {
-       toast.error("Please complete all required fields correctly.");
+       toast.error("Please fill all required fields correctly.");
     }
   };
 
@@ -212,7 +238,6 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       if (!isSubmitting) onOpenChange(open);
     }}>
       <DialogContent className="max-w-[700px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto block">
-        {/* FIX: Visually Hidden Title for Accessibility */}
         <VisuallyHidden>
           <DialogTitle>Hackathon Registration</DialogTitle>
           <DialogDescription>Register for the 2025 event</DialogDescription>
@@ -241,10 +266,13 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                       return (
                         <div key={title} className="relative z-10 bg-[#0a0a0a] flex flex-col items-center">
                           <div className={cn(
-                            "w-[32px] h-[32px] border flex items-center justify-center text-[0.6rem] transition-all duration-400 font-mono",
+                            "w-[32px] h-[32px] border flex items-center justify-center text-[0.6rem] transition-all duration-400 font-mono cursor-pointer",
                             step === sNum ? "border-[#ff8c00] text-[#ff8c00] shadow-[0_0_10px_rgba(255,140,0,0.15)]" : 
                             step > sNum ? "border-[#00ff88] text-[#00ff88]" : "border-[#1a1a1a] text-[#777777]"
-                          )}>
+                          )}
+                          // Allow clicking back to previous steps
+                          onClick={() => { if (step > sNum) setStep(sNum); }}
+                          >
                             {step > sNum ? <Check size={12} /> : `0${sNum}`}
                           </div>
                           <span className={cn(
@@ -339,12 +367,14 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">GitHub Link</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="https://github.com/..." /></FormControl>
+                          <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="linkedin_link" render={({ field }) => (
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">LinkedIn or Portfolio</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="https://linkedin.com/..." /></FormControl>
+                          <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="tech_stack_skills" render={({ field }) => (
@@ -433,7 +463,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                       <FormField control={form.control} name="motivation_answer" render={({ field }) => (
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Why do you want to join this hackathon?</label>
-                          <FormControl><textarea className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none h-[120px] focus:border-[#777777] resize-none" {...field} placeholder="Tell us what you hope to learn or build..." /></FormControl>
+                          <FormControl><textarea className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none h-[120px] focus:border-[#777777] resize-none" {...field} placeholder="Tell us what you hope to learn or build... (min 10 chars)" /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
@@ -459,19 +489,50 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
                       <div className="space-y-4">
                         <FormField control={form.control} name="agreed_to_rules" render={({ field }) => (
-                          <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
-                            <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="w-4 h-4 mt-1 accent-[#ff8c00]" /></FormControl>
+                          <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer group">
+                            <FormControl>
+                              <input 
+                                type="checkbox" 
+                                checked={field.value} 
+                                onChange={field.onChange} 
+                                className={cn(
+                                  "w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer transition-all",
+                                  form.formState.errors.agreed_to_rules && "outline outline-1 outline-red-500"
+                                )} 
+                              />
+                            </FormControl>
                             <div className="flex flex-col">
-                              <span className="text-[0.75rem] text-white leading-relaxed">I agree to follow the event rules and assembly code of conduct protocol.</span>
+                              <span className={cn(
+                                "text-[0.75rem] leading-relaxed transition-colors", 
+                                form.formState.errors.agreed_to_rules ? "text-red-400" : "text-white"
+                              )}>
+                                I agree to follow the event rules and assembly code of conduct protocol.
+                              </span>
                               <FormMessage className="text-red-500 text-[10px]" />
                             </div>
                           </FormItem>
                         )} />
+                        
                         <FormField control={form.control} name="agreed_to_privacy" render={({ field }) => (
-                          <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
-                            <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="w-4 h-4 mt-1 accent-[#ff8c00]" /></FormControl>
+                          <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer group">
+                            <FormControl>
+                              <input 
+                                type="checkbox" 
+                                checked={field.value} 
+                                onChange={field.onChange} 
+                                className={cn(
+                                  "w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer transition-all",
+                                  form.formState.errors.agreed_to_privacy && "outline outline-1 outline-red-500"
+                                )} 
+                              />
+                            </FormControl>
                             <div className="flex flex-col">
-                              <span className="text-[0.75rem] text-white leading-relaxed">I authorize event organizers to process my data for assembly communication.</span>
+                              <span className={cn(
+                                "text-[0.75rem] leading-relaxed transition-colors", 
+                                form.formState.errors.agreed_to_privacy ? "text-red-400" : "text-white"
+                              )}>
+                                I authorize event organizers to process my data for assembly communication.
+                              </span>
                               <FormMessage className="text-red-500 text-[10px]" />
                             </div>
                           </FormItem>
