@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { 
   Check, Users, RefreshCw, ChevronDown, ChevronUp, Layers, 
-  UserPlus, Pencil, Trash2, ShieldCheck, QrCode, X, Info 
+  UserPlus, Pencil, Trash2, ShieldCheck, QrCode, Info 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -57,7 +57,6 @@ export function AlreadyRegisteredCard({
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [isLeader, setIsLeader] = useState(false);
   
-  // Modal States
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -72,7 +71,6 @@ export function AlreadyRegisteredCard({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) { setLoading(false); return; }
 
-    // 1. Fetch current user's registration to identify the team
     const { data: reg } = await supabase
       .from('event_registrations')
       .select('*')
@@ -83,11 +81,9 @@ export function AlreadyRegisteredCard({
     if (!reg) { setLoading(false); return; }
     setCurrentUserReg(reg);
     
-    // The leader is either the user themselves or the one identified by invited_by_registration_id
     const leaderId = reg.invited_by_registration_id || reg.id;
     setIsLeader(!reg.invited_by_registration_id);
 
-    // 2. Fetch all team components (Leader, Members, and Invitations) relative to the Leader ID
     const [leaderRes, membersRes, invitesRes] = await Promise.all([
       supabase.from('event_registrations').select('*').eq('id', leaderId).single(),
       supabase.from('event_registrations').select('*').eq('invited_by_registration_id', leaderId),
@@ -100,7 +96,7 @@ export function AlreadyRegisteredCard({
     setLoading(false);
   }
 
-  const confirmedCount = teamMembers.length + 1; // Members + Leader
+  const confirmedCount = teamMembers.length + 1;
   const isTeamFull = confirmedCount >= maxTeamSize;
 
   const handleEditOpen = (id: string, name: string, role: string, type: 'reg' | 'invite') => {
@@ -115,13 +111,12 @@ export function AlreadyRegisteredCard({
       ? { full_name: editingMember.name, team_role: editingMember.role }
       : { invitee_name: editingMember.name, role: editingMember.role };
 
-    // Update the correct table based on whether the member is registered or just invited
     const { error } = await supabase.from(table).update(payload).eq('id', editingMember.id);
     
     if (error) {
       toast.error("Update failed: " + error.message);
     } else {
-      toast.success("Squad details updated");
+      toast.success("Squad identity synchronized");
       setIsEditOpen(false);
       fetchTeamData();
     }
@@ -147,7 +142,7 @@ export function AlreadyRegisteredCard({
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Invitation sent");
+      toast.success("Access key dispatched to subject");
       setIsInviteOpen(false);
       setInviteForm({ name: '', email: '', role: '' });
       fetchTeamData();
@@ -156,8 +151,7 @@ export function AlreadyRegisteredCard({
 
   if (loading || !currentUserReg || !leaderReg) return null;
 
-  // STATUS BLOCK COMPONENT WITH GLOW REQUIREMENTS
-  const StatusBadge = ({ status }: { status: 'completed' | 'pending' | 'declined' | 'expired' | 'accepted' }) => {
+  const StatusBadge = ({ status }: { status: string }) => {
     const isConfirmed = status === 'completed';
     const isPending = status === 'pending' || status === 'accepted';
     const isRejected = status === 'declined' || status === 'expired';
@@ -170,9 +164,9 @@ export function AlreadyRegisteredCard({
           )}
           <span className={cn(
             "relative inline-flex rounded-full h-2 w-2",
-            isConfirmed && "bg-[#00ff88] shadow-[0_0_10px_rgba(0,255,136,0.8)]", // Green glow for confirmed
-            isPending && "bg-yellow-500", // Yellow for pending
-            isRejected && "bg-red-600" // Red for rejected
+            isConfirmed && "bg-[#00ff88] shadow-[0_0_10px_rgba(0,255,136,0.8)]",
+            isPending && "bg-yellow-500",
+            isRejected && "bg-red-600"
           )}></span>
         </div>
         <span className="text-[10px] uppercase tracking-[1px] text-[#e0e0e0] font-medium">
@@ -192,20 +186,20 @@ export function AlreadyRegisteredCard({
           </div>
           <div className="space-y-1">
             <span className="text-[10px] tracking-[3px] uppercase text-[#777777] block">Registry Verified</span>
-            <h2 className="font-serif text-3xl md:text-[2.4rem] font-normal leading-none text-white">Squad Manifest</h2>
+            <h2 className="font-serif text-3xl md:text-[2.4rem] font-normal leading-none text-white">Squad Profile</h2>
           </div>
         </div>
-        <button onClick={() => setShowQR(true)} className="w-[45px] h-[45px] border border-[#1a1a1a] flex items-center justify-center text-[#777777] hover:text-[#00ff88]">
+        <button onClick={() => setShowQR(true)} className="w-[45px] h-[45px] border border-[#1a1a1a] flex items-center justify-center text-[#777777] hover:text-[#00ff88] transition-colors">
           <QrCode className="w-5 h-5" />
         </button>
       </header>
 
       {/* Manifest Section */}
       <div className="mx-6 md:mx-10 my-10 border border-[#1a1a1a]">
-        <button onClick={() => setShowTeamDetails(!showTeamDetails)} className="w-full p-5 bg-[#0d0d0d] flex justify-between items-center cursor-pointer transition-colors hover:bg-[#111]">
+        <button onClick={() => setShowTeamDetails(!showTeamDetails)} className="w-full p-5 bg-[#0d0d0d] flex justify-between items-center cursor-pointer hover:bg-[#111]">
           <div className="text-[11px] tracking-[2px] uppercase flex items-center gap-3 text-white">
             <Users className="w-3.5 h-3.5" />
-            Squad Capacity ({confirmedCount}/{maxTeamSize})
+            Squad Manifest ({confirmedCount}/{maxTeamSize})
           </div>
           <div className="flex items-center gap-4">
              {isLeader && !isTeamFull && (
@@ -219,7 +213,7 @@ export function AlreadyRegisteredCard({
 
         {showTeamDetails && (
           <div className="bg-[#050505] border-t border-[#1a1a1a] divide-y divide-[#1a1a1a]">
-            {/* 1. Leader Row - Always visible to everyone */}
+            {/* 1. Leader (Always visible to everyone) */}
             <div className="p-6 flex justify-between items-center gap-5 text-white">
               <div className="flex gap-4 items-center flex-1">
                 <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">01</div>
@@ -236,7 +230,7 @@ export function AlreadyRegisteredCard({
               </div>
             </div>
 
-            {/* 2. Registered Members Row - Visible to everyone */}
+            {/* 2. Confirmed Members (Visible to everyone) */}
             {teamMembers.map((member, idx) => (
               <div key={member.id} className="p-6 flex justify-between items-center gap-5 text-white">
                 <div className="flex gap-4 items-center flex-1">
@@ -255,11 +249,10 @@ export function AlreadyRegisteredCard({
               </div>
             ))}
 
-            {/* 3. Pending/Rejected Invitations Row - Mixed Visibility */}
+            {/* 3. Invitations (Pending/Rejected) */}
             {invitations.filter(inv => inv.status !== 'completed').map((invite) => {
-              const showToAll = invite.status === 'pending' || invite.status === 'accepted';
-              // If the invitation is rejected or expired, only the Leader sees it
-              if (!isLeader && !showToAll) return null;
+              // Non-leaders do NOT see the pending/rejected list
+              if (!isLeader) return null;
 
               return (
                 <div key={invite.id} className="p-6 flex justify-between items-center gap-5 text-white bg-white/[0.02]">
@@ -271,10 +264,8 @@ export function AlreadyRegisteredCard({
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
-                    <StatusBadge status={invite.status as any} />
-                    {isLeader && (
-                      <button onClick={() => handleEditOpen(invite.id, invite.invitee_name, invite.role, 'invite')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
-                    )}
+                    <StatusBadge status={invite.status} />
+                    <button onClick={() => handleEditOpen(invite.id, invite.invitee_name, invite.role, 'invite')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
               );
@@ -283,54 +274,52 @@ export function AlreadyRegisteredCard({
         )}
       </div>
 
-      {/* Modals for Edit and Invite (Standard neutral styling) */}
+      {/* Edit Modal */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Modify Registry</DialogTitle></DialogHeader>
           <div className="space-y-6 pt-4">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Full Name</Label>
+              <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Identity Name</Label>
               <Input value={editingMember?.name || ''} onChange={e => setEditingMember(p => p ? {...p, name: e.target.value} : null)} className="bg-black border-[#1a1a1a] rounded-none focus:border-[#00ff88] h-12" />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Role</Label>
               <Input value={editingMember?.role || ''} onChange={e => setEditingMember(p => p ? {...p, role: e.target.value} : null)} className="bg-black border-[#1a1a1a] rounded-none focus:border-[#00ff88] h-12" />
             </div>
-            <Button onClick={saveMemberChanges} className="w-full bg-[#00ff88] text-black font-bold uppercase tracking-widest rounded-none h-12">Save Profile</Button>
+            <Button onClick={saveMemberChanges} className="w-full bg-[#00ff88] text-black font-bold uppercase tracking-widest rounded-none h-12 hover:bg-[#00ff88]/90">Apply Changes</Button>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Invite Modal */}
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Squad Expansion</DialogTitle></DialogHeader>
           <form onSubmit={handleInvite} className="space-y-6 pt-4">
             <Input required placeholder="Subject Name" value={inviteForm.name} onChange={e => setInviteForm({...inviteForm, name: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88]" />
             <Input required type="email" placeholder="Registry Email" value={inviteForm.email} onChange={e => setInviteForm({...inviteForm, email: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88]" />
-            <Input required placeholder="Role" value={inviteForm.role} onChange={e => setInviteForm({...inviteForm, role: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88]" />
+            <Input required placeholder="Designated Role" value={inviteForm.role} onChange={e => setInviteForm({...inviteForm, role: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88]" />
             <Button type="submit" className="w-full bg-[#00ff88] text-black font-bold uppercase tracking-widest rounded-none h-12">Dispatch Invitation</Button>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* QR Modal */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm">
           <DialogHeader className="items-center"><DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle></DialogHeader>
-          <div className="bg-white p-4 mx-auto my-6">
-            <QRCodeSVG value={`${window.location.origin}/verify/${currentUserReg.id}`} size={200} level="H" />
-          </div>
-          <div className="text-center pb-4">
-             <p className="text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
-             <p className="text-[10px] text-[#777777] uppercase tracking-widest">{currentUserReg.team_name || 'Individual'}</p>
-          </div>
+          <div className="bg-white p-4 mx-auto my-6"><QRCodeSVG value={`${window.location.origin}/verify/${currentUserReg.id}`} size={200} level="H" /></div>
+          <p className="text-center text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
         </DialogContent>
       </Dialog>
 
+      {/* Footer Info */}
       <div className="px-6 md:px-10 pb-10">
         <div className="border border-[#1a1a1a] p-4 bg-[#0d0d0d] flex items-start gap-4">
           <Info className="w-4 h-4 text-[#777777] shrink-0 mt-0.5" />
           <p className="text-[10px] text-[#777777] leading-relaxed uppercase tracking-wider">
-            {isTeamFull ? "Squad full. No further capacity available." : `Accepting members until ${maxTeamSize} confirmed registrations are reached.`}
+            {isTeamFull ? "Squad full. No further capacity available." : `Confirmations accepted until ${maxTeamSize} registered members are reached.`}
           </p>
         </div>
       </div>
