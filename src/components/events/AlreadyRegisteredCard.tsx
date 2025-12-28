@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Check, Users, RefreshCw, ChevronDown, ChevronUp, Layers, Mail, AlertCircle } from 'lucide-react';
+import { Check, Users, RefreshCw, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +31,7 @@ interface Registration {
 interface AlreadyRegisteredCardProps {
   eventId: string;
   eventTitle: string;
-  eventType: 'hackathon' | 'normal';
+  eventType: string; // Changed to string for more flexible checking
   isPaid: boolean;
   registrationFee?: number;
   currency?: string;
@@ -62,6 +62,7 @@ export function AlreadyRegisteredCard({
       return;
     }
 
+    // Fetch registration
     const { data: reg, error } = await supabase
       .from('event_registrations')
       .select('*')
@@ -76,7 +77,9 @@ export function AlreadyRegisteredCard({
 
     setRegistration(reg as any);
 
-    if (eventType === 'hackathon' && reg.participation_type === 'Team') {
+    // Fetch team invitations
+    // Removed strict 'hackathon' check to ensure team logic runs if participation_type is 'Team'
+    if (reg.participation_type === 'Team') {
       const { data: invites } = await supabase
         .from('team_invitations')
         .select('*')
@@ -91,6 +94,7 @@ export function AlreadyRegisteredCard({
 
   async function resendInvitation(invitationId: string) {
     setResendingId(invitationId);
+    // Simulate API call as per original logic
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast.success("Invitation resent successfully!");
     setResendingId(null);
@@ -156,8 +160,8 @@ export function AlreadyRegisteredCard({
         </div>
       </div>
 
-      {/* Team Manifest Section */}
-      {eventType === 'hackathon' && registration.participation_type === 'Team' && (
+      {/* Team Manifest Section - Simplified trigger conditions */}
+      {registration.participation_type === 'Team' && (
         <div className="mx-6 md:mx-10 mb-10 border border-[#1a1a1a]">
           <button
             onClick={() => setShowTeamDetails(!showTeamDetails)}
@@ -175,19 +179,25 @@ export function AlreadyRegisteredCard({
 
           {showTeamDetails && (
             <div className="bg-[#050505] border-t border-[#1a1a1a]">
-              {/* User Row (Always first) */}
+              {/* Leader (User) Row */}
               <div className="p-6 border-b border-[#1a1a1a] flex justify-between items-center gap-5">
                 <div className="flex gap-4 items-start flex-1">
                   <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1 mt-0.5">01</div>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-white">{registration.full_name}</h4>
+                    <h4 className="text-sm font-medium text-white">{registration.full_name} (Leader)</h4>
                     <p className="text-[12px] text-[#777777] break-all">{registration.email}</p>
                   </div>
                 </div>
                 <div className="text-[10px] tracking-[1px] uppercase text-[#00ff88]">Confirmed</div>
               </div>
 
-              {/* Invitations */}
+              {/* Invitation Rows */}
+              {invitations.length === 0 && (
+                <div className="p-6 text-center text-[10px] uppercase tracking-widest text-[#777777]">
+                  No squad members identified
+                </div>
+              )}
+              
               {invitations.map((invite, index) => (
                 <div key={invite.id} className="p-6 border-b border-[#1a1a1a] last:border-b-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
                   <div className={cn("flex gap-4 items-start flex-1", invite.status === 'pending' && "opacity-50")}>
@@ -195,28 +205,22 @@ export function AlreadyRegisteredCard({
                       {String(index + 2).padStart(2, '0')}
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium text-white">{invite.invitee_name || 'Unknown User'}</h4>
+                      <h4 className="text-sm font-medium text-white">{invite.invitee_name || 'Protocol Subject'}</h4>
                       <p className="text-[12px] text-[#777777] break-all">{invite.invitee_email}</p>
                     </div>
                   </div>
                   
                   {invite.status === 'completed' ? (
                     <div className="text-[10px] tracking-[1px] uppercase text-[#00ff88]">Confirmed</div>
-                  ) : invite.status === 'pending' ? (
+                  ) : (
                     <button
                       onClick={() => resendInvitation(invite.id)}
                       disabled={resendingId === invite.id}
                       className="bg-transparent border border-[#1a1a1a] text-[#e0e0e0] px-3.5 py-2 text-[10px] uppercase tracking-[2px] flex items-center gap-2 cursor-pointer transition-all hover:border-[#ff8c00] hover:text-[#ff8c00] disabled:opacity-50"
                     >
-                      {resendingId === invite.id ? (
-                        <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-2.5 h-2.5" />
-                      )}
+                      <RefreshCw className={cn("w-2.5 h-2.5", resendingId === invite.id && "animate-spin")} />
                       Resend Protocol
                     </button>
-                  ) : (
-                    <div className="text-[10px] tracking-[1px] uppercase text-[#777777]">{invite.status}</div>
                   )}
                 </div>
               ))}
