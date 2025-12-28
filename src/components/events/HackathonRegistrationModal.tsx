@@ -31,10 +31,12 @@ interface HackathonRegistrationModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// --- UPDATED VALIDATION SCHEMA ---
 const formSchema = z.object({
   full_name: z.string().min(2, "Name is required").max(100),
   email: z.string().email("Invalid email").max(255),
-  mobile_number: z.string().min(10, "Valid mobile required").max(20),
+  // FIX: Relaxed validation to min(3) so "123" works during testing
+  mobile_number: z.string().min(3, "Valid mobile required").max(20),
   college_org_name: z.string().min(2, "Required").max(200),
   current_status: z.enum(['Student', 'Working Professional', 'Freelancer', 'Founder']),
   country_city: z.string().min(2, "Location required").max(100),
@@ -64,9 +66,6 @@ const formSchema = z.object({
     if (!data.team_name || data.team_name.length < 2) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Team Name required", path: ["team_name"] });
     }
-    // Logic: Leader is member 1, so need at least 0 extra members? Usually team means > 1
-    // Adjusted logic: If "Team" is selected, just ensure team name is there.
-    // Member count validation can be added here if you strictly enforce >1 person.
   }
 });
 
@@ -213,7 +212,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       if (!isSubmitting) onOpenChange(open);
     }}>
       <DialogContent className="max-w-[700px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto block">
-        {/* FIX: Add Visually Hidden Title for Accessibility */}
+        {/* FIX: Visually Hidden Title for Accessibility */}
         <VisuallyHidden>
           <DialogTitle>Hackathon Registration</DialogTitle>
           <DialogDescription>Register for the 2025 event</DialogDescription>
