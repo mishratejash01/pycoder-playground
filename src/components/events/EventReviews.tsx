@@ -5,9 +5,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+// Updated interface to match database schema (review_text instead of content)
 interface Review {
   id: string;
-  content: string;
+  review_text: string | null; // Database column name
   rating: number;
   created_at: string;
   user_id: string;
@@ -66,19 +67,21 @@ export function EventReviews({ eventId }: EventReviewsProps) {
     if (!newReview.trim() || !userId) return;
 
     setSubmitting(true);
+    // FIX: Using 'review_text' to match the database schema defined in types.ts
     const { error } = await supabase
       .from('event_reviews')
       .insert({
         event_id: eventId,
         user_id: userId,
-        content: newReview.trim(),
+        review_text: newReview.trim(), 
         rating,
       });
 
     if (error) {
-      toast.error('Failed to submit review');
+      console.error("Submission Error:", error);
+      toast.error('Failed to submit review. Check console for details.');
     } else {
-      toast.success('Review submitted!');
+      toast.success('Review submitted successfully!');
       setNewReview('');
       setRating(5);
       fetchReviews();
@@ -136,7 +139,7 @@ export function EventReviews({ eventId }: EventReviewsProps) {
         </div>
       </div>
 
-      {/* --- New Review Form (Auth Protected) --- */}
+      {/* --- New Review Form --- */}
       {userId ? (
         <div className="border border-[#1a1a1a] p-[30px] mb-[60px] relative">
           <span className="block text-[0.7rem] uppercase tracking-[2px] text-[#666666] mb-[20px] font-bold">
@@ -188,7 +191,6 @@ export function EventReviews({ eventId }: EventReviewsProps) {
         <div className="divide-y divide-[#1a1a1a]">
           {reviews.map((review) => (
             <div key={review.id} className="py-[40px] flex flex-col md:flex-row gap-[25px] first:pt-0">
-              {/* Avatar */}
               <div className="w-[50px] h-[50px] border border-[#1a1a1a] shrink-0 bg-[#080808] overflow-hidden flex items-center justify-center">
                 {review.profiles?.avatar_url ? (
                   <img 
@@ -201,7 +203,6 @@ export function EventReviews({ eventId }: EventReviewsProps) {
                 )}
               </div>
 
-              {/* Review Content */}
               <div className="grow">
                 <div className="flex justify-between items-start mb-[15px]">
                   <div className="flex flex-col gap-1.5">
@@ -221,7 +222,7 @@ export function EventReviews({ eventId }: EventReviewsProps) {
                 <StarRow score={review.rating} size={12} className="mb-[15px]" />
                 
                 <p className="text-[#e0e0e0] text-[1rem] leading-[1.6] font-light whitespace-pre-wrap">
-                  {review.content}
+                  {review.review_text}
                 </p>
               </div>
             </div>
