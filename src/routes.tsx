@@ -20,6 +20,9 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
 import Dashboard from "./pages/Dashboard";
+// --- ATTENDANCE SYSTEM IMPORTS ---
+import VerifyRegistration from "./pages/VerifyRegistration";
+import AdminScanner from "./pages/AdminScanner";
 
 export const AppRoutes = [
   { path: "/", component: Landing, name: "Landing Page" },
@@ -29,7 +32,11 @@ export const AppRoutes = [
   { path: "/terms", component: TermsOfService, name: "Terms of Service" },
   { path: "/privacy", component: PrivacyPolicy, name: "Privacy Policy" },
   
-  // --- NEW ROUTES ---
+  // --- ATTENDANCE & VERIFICATION ROUTES ---
+  { path: "/verify/:registrationId", component: VerifyRegistration, name: "Verify Registration" },
+  { path: "/admin/scanner", component: AdminScanner, name: "Admin Terminal" },
+  
+  // --- EVENT ROUTES ---
   { path: "/events", component: Events, name: "Events" },
   { path: "/events/:slug", component: EventDetails, name: "Event Details" },
   
