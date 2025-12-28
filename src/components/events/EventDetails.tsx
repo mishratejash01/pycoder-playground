@@ -1,5 +1,6 @@
-import { Calendar, MapPin, Users, Eye } from 'lucide-react';
+import { Calendar, MapPin, Users, Eye, Mail, Phone, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface EventDetailsContentProps {
   event: {
@@ -21,86 +22,121 @@ interface EventDetailsContentProps {
 
 export function EventDetailsContent({ event }: EventDetailsContentProps) {
   return (
-    <div className="space-y-8">
-      <div>
-        <h3 className="text-2xl font-bold text-white flex items-center gap-2 mb-6">
-          <div className="w-1 h-6 bg-purple-500 rounded-full" />
-          About the Event
+    <div className="w-full max-w-[850px] mx-auto font-sans selection:bg-orange-500/30">
+      
+      {/* --- About Section --- */}
+      <div className="flex items-center gap-[15px] mb-[30px]">
+        <div className="w-[2px] h-[20px] bg-[#ff8c00]" />
+        <h3 className="font-serif text-[1.8rem] font-normal tracking-[-0.5px] text-white">
+          About the Assembly
         </h3>
-        <div className="text-gray-300 whitespace-pre-wrap leading-relaxed text-base bg-[#151518]/50 p-6 rounded-2xl border border-white/5">
-          {event.content || event.short_description}
+      </div>
+      
+      <div className="bg-[#050505] border border-[#1a1a1a] p-[40px] leading-[1.8] font-light text-[#e0e0e0] text-[1rem] whitespace-pre-wrap mb-[40px]">
+        {event.content || event.short_description}
+      </div>
+
+      {/* --- Stats Dashboard Grid --- */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-[1px] bg-[#1a1a1a] border border-[#1a1a1a] my-[40px] overflow-hidden">
+        {/* Participants */}
+        <div className="bg-black py-[30px] px-[20px] text-center">
+          <span className="block text-[0.6rem] uppercase tracking-[2px] text-[#777777] mb-[15px]">Participants</span>
+          <div className="text-[1.4rem] font-extralight text-white">
+            {event.current_participants || 0}
+          </div>
+        </div>
+
+        {/* Capacity */}
+        <div className="bg-black py-[30px] px-[20px] text-center">
+          <span className="block text-[0.6rem] uppercase tracking-[2px] text-[#777777] mb-[15px]">Capacity</span>
+          <div className="text-[1.4rem] font-extralight text-white">
+            {event.max_participants || 'Unlimited'}
+          </div>
+        </div>
+
+        {/* Mode */}
+        <div className="bg-black py-[30px] px-[20px] text-center">
+          <span className="block text-[0.6rem] uppercase tracking-[2px] text-[#777777] mb-[15px]">Mode</span>
+          <div className="text-[1rem] tracking-[1px] uppercase font-extralight text-white">
+            {event.mode}
+          </div>
+        </div>
+
+        {/* Start Date */}
+        <div className="bg-black py-[30px] px-[20px] text-center">
+          <span className="block text-[0.6rem] uppercase tracking-[2px] text-[#777777] mb-[15px]">Start Date</span>
+          <div className="text-[1rem] tracking-[1px] uppercase font-extralight text-white">
+            {format(new Date(event.start_date), 'MMM dd')}
+          </div>
         </div>
       </div>
 
-      {/* Rules & Guidelines */}
+      {/* --- Rules Section --- */}
       {event.rules && (
-        <div>
-          <h4 className="text-xl font-bold text-white mb-4">Rules & Guidelines</h4>
-          <div className="text-gray-300 whitespace-pre-wrap leading-relaxed bg-[#151518]/50 p-6 rounded-2xl border border-white/5">
+        <>
+          <div className="flex items-center gap-[15px] mb-[30px] mt-[60px]">
+            <div className="w-[2px] h-[20px] bg-[#ff8c00]" />
+            <h3 className="font-serif text-[1.8rem] font-normal tracking-[-0.5px] text-white">
+              Protocol & Rules
+            </h3>
+          </div>
+          <div className="bg-[#050505] border border-[#1a1a1a] border-l-2 p-[40px] leading-[1.8] font-light text-[#777777] text-[0.95rem] whitespace-pre-wrap mb-[40px]">
             {event.rules}
           </div>
-        </div>
+        </>
       )}
 
-      {/* Event Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#151518] border border-white/10 rounded-xl p-4 text-center">
-          <Users className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-white">{event.current_participants || 0}</div>
-          <div className="text-gray-400 text-xs">Registered</div>
-        </div>
-        
-        {event.max_participants && (
-          <div className="bg-[#151518] border border-white/10 rounded-xl p-4 text-center">
-            <Eye className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-white">{event.max_participants}</div>
-            <div className="text-gray-400 text-xs">Max Capacity</div>
-          </div>
-        )}
-
-        <div className="bg-[#151518] border border-white/10 rounded-xl p-4 text-center">
-          <MapPin className="w-6 h-6 text-green-400 mx-auto mb-2" />
-          <div className="text-lg font-bold text-white">{event.mode}</div>
-          <div className="text-gray-400 text-xs">Mode</div>
-        </div>
-
-        <div className="bg-[#151518] border border-white/10 rounded-xl p-4 text-center">
-          <Calendar className="w-6 h-6 text-orange-400 mx-auto mb-2" />
-          <div className="text-lg font-bold text-white">{format(new Date(event.start_date), 'MMM dd')}</div>
-          <div className="text-gray-400 text-xs">Starts</div>
-        </div>
-      </div>
-
-      {/* Organizer Info */}
-      {event.organizer_name && (
-        <div className="bg-[#151518] border border-white/10 rounded-xl p-6">
-          <h4 className="text-lg font-bold text-white mb-4">Organizer</h4>
-          <div className="flex items-center gap-4">
-            {event.organizer_logo && (
-              <img 
-                src={event.organizer_logo} 
-                alt={event.organizer_name}
-                className="w-16 h-16 rounded-xl object-cover"
-              />
-            )}
-            <div>
-              <div className="text-white font-medium">{event.organizer_name}</div>
-              {event.contact_email && (
-                <a href={`mailto:${event.contact_email}`} className="text-purple-400 text-sm hover:underline">
-                  {event.contact_email}
-                </a>
-              )}
+      {/* --- Organizer & Venue Manifest --- */}
+      {(event.organizer_name || event.venue) && (
+        <div className="border border-[#1a1a1a] mt-[40px] divide-y divide-[#1a1a1a]">
+          
+          {/* Row: Authorized Organizer */}
+          {event.organizer_name && (
+            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr]">
+              <div className="bg-[#080808] p-[25px] text-[0.65rem] uppercase tracking-[2px] text-[#777777] border-b md:border-b-0 md:border-r border-[#1a1a1a] flex items-center">
+                Authorized Organizer
+              </div>
+              <div className="p-[25px] flex items-center gap-[20px]">
+                {event.organizer_logo && (
+                  <img 
+                    src={event.organizer_logo} 
+                    alt={event.organizer_name}
+                    className="w-[50px] h-[50px] grayscale contrast-[1.2] border border-[#1a1a1a] object-cover"
+                  />
+                )}
+                <div>
+                  <div className="font-medium text-[1rem] text-white">{event.organizer_name}</div>
+                  {event.contact_email && (
+                    <a href={`mailto:${event.contact_email}`} className="text-[#ff8c00] text-[0.85rem] mt-[4px] block hover:underline">
+                      {event.contact_email}
+                    </a>
+                  )}
+                  {event.contact_phone && (
+                    <div className="text-[#777777] text-[0.8rem] mt-1">{event.contact_phone}</div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Venue */}
-      {event.venue && (
-        <div className="bg-[#151518] border border-white/10 rounded-xl p-6">
-          <h4 className="text-lg font-bold text-white mb-2">Venue</h4>
-          <p className="text-gray-300">{event.venue}</p>
-          {event.location && <p className="text-gray-400 text-sm mt-1">{event.location}</p>}
+          {/* Row: Assembly Venue */}
+          {event.venue && (
+            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr]">
+              <div className="bg-[#080808] p-[25px] text-[0.65rem] uppercase tracking-[2px] text-[#777777] border-b md:border-b-0 md:border-r border-[#1a1a1a] flex items-center">
+                Assembly Venue
+              </div>
+              <div className="p-[25px] flex items-center">
+                <div>
+                  <div className="font-medium text-[1rem] text-white">{event.venue}</div>
+                  {(event.location || event.mode) && (
+                    <div className="text-[#777777] text-[0.85rem] mt-[4px]">
+                      {event.location || event.mode}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
