@@ -1,13 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Users, Loader2, CheckCircle2, User, Briefcase, GraduationCap, Sparkles, Github, Linkedin } from 'lucide-react';
+import { Loader2, CheckCircle2, GraduationCap, Briefcase, User, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface InviteeRegistrationFormProps {
   eventId: string;
@@ -57,13 +52,8 @@ export function InviteeRegistrationForm({
           return;
         }
 
-        // Prefill email
-        setFormData(prev => ({
-          ...prev,
-          email: session.user.email || ''
-        }));
+        setFormData(prev => ({ ...prev, email: session.user.email || '' }));
 
-        // Try to get profile data
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, contact_no, institute_name, country, github_handle, linkedin_url, experience_level')
@@ -88,28 +78,18 @@ export function InviteeRegistrationForm({
         setPrefilling(false);
       }
     }
-
     prefillUserData();
   }, []);
 
   const formatSbError = (error: any) => {
     if (!error) return 'Unknown error';
-    const code = error.code ? ` (${error.code})` : '';
-    const details = error.details ? ` — ${error.details}` : '';
-    return `${error.message || 'Request failed'}${code}${details}`;
+    return error.message || 'Request failed';
   };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (
-      !formData.full_name ||
-      !formData.email ||
-      !formData.mobile_number ||
-      !formData.college_org_name ||
-      !formData.country_city ||
-      !formData.current_status
-    ) {
+    if (!formData.full_name || !formData.email || !formData.mobile_number || !formData.college_org_name || !formData.country_city || !formData.current_status) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -117,58 +97,34 @@ export function InviteeRegistrationForm({
     setLoading(true);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         toast.error('Please log in to continue');
         return;
       }
 
-      // Fast-path: if registration already exists (by user_id), just mark invitation completed.
-      const { data: existingReg, error: existingRegError } = await supabase
+      const { data: existingReg } = await supabase
         .from('event_registrations')
         .select('id')
         .eq('event_id', eventId)
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      if (existingRegError) {
-        console.error('[InviteeRegistrationForm] existing registration check failed:', existingRegError);
-        // Continue anyway; we can still try insert.
-      }
-
       const completeInvitation = async () => {
         const { error: inviteError } = await supabase
           .from('team_invitations')
-          .update({
-            status: 'completed',
-            responded_at: new Date().toISOString(),
-          })
+          .update({ status: 'completed', responded_at: new Date().toISOString() })
           .eq('id', invitation.id);
-
-        if (inviteError) {
-          console.error('[InviteeRegistrationForm] invitation update error:', inviteError);
-          toast.error(`Invitation update failed: ${formatSbError(inviteError)}`);
-          return false;
-        }
-
-        return true;
+        return !inviteError;
       };
 
       if (existingReg?.id) {
-        const ok = await completeInvitation();
-        if (ok) {
-          toast.success("You're already registered. Invitation marked as complete.");
+        if (await completeInvitation()) {
+          toast.success("Already registered. Invitation marked complete.");
           onComplete();
         }
         return;
       }
-
-      // Determine status based on event payment settings
-      const registrationStatus = isPaid ? 'pending_payment' : 'confirmed';
-      const paymentStatus = isPaid ? 'pending' : 'exempt';
 
       const { error: regError } = await supabase.from('event_registrations').insert({
         event_id: eventId,
@@ -186,37 +142,27 @@ export function InviteeRegistrationForm({
         team_name: invitation.team_name,
         team_role: invitation.role,
         invited_by_registration_id: invitation.registration_id,
-        status: registrationStatus,
-        payment_status: paymentStatus,
+        status: isPaid ? 'pending_payment' : 'confirmed',
+        payment_status: isPaid ? 'pending' : 'exempt',
         agreed_to_rules: true,
         agreed_to_privacy: true,
       });
 
       if (regError) {
-        console.error('[InviteeRegistrationForm] registration insert error:', regError);
-
-        // If the backend enforces uniqueness and this is a duplicate, treat it as already registered.
         if (regError.code === '23505') {
-          const ok = await completeInvitation();
-          if (ok) {
-            toast.success("You're already registered. Invitation marked as complete.");
+          if (await completeInvitation()) {
+            toast.success("Already registered. Invitation marked complete.");
             onComplete();
           }
           return;
         }
-
         toast.error(`Registration failed: ${formatSbError(regError)}`);
         return;
       }
 
-      const invitationOk = await completeInvitation();
-      if (invitationOk) {
-        toast.success("You've successfully joined the team!");
-      }
-
+      if (await completeInvitation()) toast.success("Successfully joined the team!");
       onComplete();
     } catch (err) {
-      console.error('[InviteeRegistrationForm] unexpected error:', err);
       toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -225,234 +171,181 @@ export function InviteeRegistrationForm({
 
   if (prefilling) {
     return (
-      <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </CardContent>
-      </Card>
+      <div className="w-full max-w-[800px] mx-auto border border-[#1a1a1a] bg-[#050505] p-20 flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#ff8c00]" />
+      </div>
     );
   }
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-b from-card to-background overflow-hidden">
-      {/* Header */}
-      <CardHeader className="bg-primary/5 border-b border-primary/10 pb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-            <Sparkles className="w-6 h-6 text-primary" />
+    <div className="w-full max-w-[800px] mx-auto border border-[#1a1a1a] bg-[#050505] font-sans selection:bg-orange-500/30">
+      
+      {/* 1. Header Section */}
+      <header className="p-[40px] border-b border-[#1a1a1a] flex justify-between items-center">
+        <div className="header-content">
+          <p className="text-[0.7rem] text-[#666666] uppercase tracking-[2px] mb-1">Registration Protocol</p>
+          <h2 className="font-serif text-[2.2rem] font-normal text-white">Complete Your Profile</h2>
+        </div>
+        <div className="w-[2px] h-[40px] bg-[#ff8c00]" />
+      </header>
+
+      {/* 2. Team Summary Bar */}
+      <div className="bg-[#0a0a0a] p-[20px_40px] border-b border-[#1a1a1a] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-[0.6rem] uppercase tracking-[2px] text-[#666666]">Team Name</span>
+          <span className="text-[0.9rem] text-[#ff8c00] font-medium">{invitation.team_name}</span>
+        </div>
+        <div className="flex flex-col gap-1 md:text-center">
+          <span className="text-[0.6rem] uppercase tracking-[2px] text-[#666666]">Your Role</span>
+          <span className="text-[0.9rem] text-white font-medium">{invitation.role}</span>
+        </div>
+        <div className="flex flex-col gap-1 md:text-right">
+          <span className="text-[0.6rem] uppercase tracking-[2px] text-[#666666]">Invited By</span>
+          <span className="text-[0.9rem] text-white font-medium">{invitation.inviter_name}</span>
+        </div>
+      </div>
+
+      {/* 3. Form Content */}
+      <form onSubmit={handleSubmit} className="p-[40px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[30px_25px]">
+          
+          {/* Full Name */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">Full Name</label>
+            <input
+              type="text"
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              placeholder="Your full name"
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] transition-all"
+              required
+            />
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">Complete Registration</h3>
-            <p className="text-sm text-muted-foreground">
-              Join team <span className="text-primary font-medium">"{invitation.team_name}"</span>
-            </p>
+
+          {/* Email (Disabled) */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">Email Address</label>
+            <input
+              type="email"
+              value={formData.email}
+              disabled
+              className="bg-white/[0.02] border border-[#1a1a1a] text-[#666666] p-[15px] text-[0.95rem] cursor-not-allowed break-all"
+            />
+          </div>
+
+          {/* Mobile Number */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">Phone Number</label>
+            <input
+              type="text"
+              value={formData.mobile_number}
+              onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
+              placeholder="+91 00000 00000"
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] transition-all"
+              required
+            />
+          </div>
+
+          {/* College/Org */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">College or Company</label>
+            <input
+              type="text"
+              value={formData.college_org_name}
+              onChange={(e) => setFormData({ ...formData, college_org_name: e.target.value })}
+              placeholder="Where you study or work"
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] transition-all"
+              required
+            />
+          </div>
+
+          {/* Current Status */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">Current Status</label>
+            <select
+              value={formData.current_status}
+              onChange={(e) => setFormData({ ...formData, current_status: e.target.value })}
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] appearance-none"
+              required
+            >
+              <option value="" disabled className="bg-[#050505]">Please select</option>
+              <option value="Student" className="bg-[#050505]">Student</option>
+              <option value="Working Professional" className="bg-[#050505]">Working Professional</option>
+              <option value="Freelancer" className="bg-[#050505]">Freelancer</option>
+              <option value="Founder" className="bg-[#050505]">Founder</option>
+            </select>
+          </div>
+
+          {/* Experience Level */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">Experience Level</label>
+            <select
+              value={formData.experience_level}
+              onChange={(e) => setFormData({ ...formData, experience_level: e.target.value })}
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] appearance-none"
+            >
+              <option value="Beginner" className="bg-[#050505]">Beginner</option>
+              <option value="Intermediate" className="bg-[#050505]">Intermediate</option>
+              <option value="Advanced" className="bg-[#050505]">Advanced</option>
+              <option value="Expert" className="bg-[#050505]">Expert</option>
+            </select>
+          </div>
+
+          {/* GitHub */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">GitHub Link (Optional)</label>
+            <input
+              type="url"
+              value={formData.github_link}
+              onChange={(e) => setFormData({ ...formData, github_link: e.target.value })}
+              placeholder="https://github.com/username"
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] transition-all"
+            />
+          </div>
+
+          {/* LinkedIn */}
+          <div className="flex flex-col gap-3">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">LinkedIn Link (Optional)</label>
+            <input
+              type="url"
+              value={formData.linkedin_link}
+              onChange={(e) => setFormData({ ...formData, linkedin_link: e.target.value })}
+              placeholder="https://linkedin.com/in/username"
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] transition-all"
+            />
+          </div>
+
+          {/* City/Country */}
+          <div className="flex flex-col gap-3 md:col-span-2">
+            <label className="text-[0.65rem] uppercase tracking-[3px] text-[#666666] font-semibold">Where are you from? (City, Country)</label>
+            <input
+              type="text"
+              value={formData.country_city}
+              onChange={(e) => setFormData({ ...formData, country_city: e.target.value })}
+              placeholder="e.g. Mumbai, India"
+              className="bg-transparent border border-[#1a1a1a] text-white p-[15px] text-[0.95rem] outline-none focus:border-[#666666] transition-all"
+              required
+            />
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="p-6 space-y-6">
-        {/* Team Info Badge */}
-        <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-            <Users className="w-3 h-3 mr-1" /> Team Member
-          </Badge>
-          <Badge variant="outline" className="text-muted-foreground">
-            Role: {invitation.role}
-          </Badge>
-          <span className="text-xs text-muted-foreground ml-auto">
-            Invited by {invitation.inviter_name}
-          </span>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-sm font-medium">
-                Full Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="full_name"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                placeholder="Your full name"
-                className="bg-background border-border focus:border-primary"
-                required
-              />
-            </div>
-
-            {/* Email (disabled) */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                className="bg-muted border-border text-muted-foreground cursor-not-allowed"
-                disabled
-              />
-            </div>
-
-            {/* Mobile */}
-            <div className="space-y-2">
-              <Label htmlFor="mobile_number" className="text-sm font-medium">
-                Mobile Number <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="mobile_number"
-                value={formData.mobile_number}
-                onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
-                placeholder="+91 9876543210"
-                className="bg-background border-border focus:border-primary"
-                required
-              />
-            </div>
-
-            {/* College */}
-            <div className="space-y-2">
-              <Label htmlFor="college_org_name" className="text-sm font-medium">
-                College/Organization <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="college_org_name"
-                value={formData.college_org_name}
-                onChange={(e) => setFormData({ ...formData, college_org_name: e.target.value })}
-                placeholder="Your institution"
-                className="bg-background border-border focus:border-primary"
-                required
-              />
-            </div>
-
-            {/* City/Country */}
-            <div className="space-y-2">
-              <Label htmlFor="country_city" className="text-sm font-medium">
-                City, Country <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="country_city"
-                value={formData.country_city}
-                onChange={(e) => setFormData({ ...formData, country_city: e.target.value })}
-                placeholder="Mumbai, India"
-                className="bg-background border-border focus:border-primary"
-                required
-              />
-            </div>
-
-            {/* Current Status */}
-            <div className="space-y-2">
-              <Label htmlFor="current_status" className="text-sm font-medium">
-                Current Status <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.current_status}
-                onValueChange={(value) => setFormData({ ...formData, current_status: value })}
-              >
-                <SelectTrigger className="bg-background border-border">
-                  <SelectValue placeholder="Select your status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Student">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4 text-muted-foreground" /> Student
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Working Professional">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-muted-foreground" /> Working Professional
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Freelancer">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-muted-foreground" /> Freelancer
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Founder">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-muted-foreground" /> Founder
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Experience Level */}
-            <div className="space-y-2">
-              <Label htmlFor="experience_level" className="text-sm font-medium">
-                Experience Level
-              </Label>
-              <Select
-                value={formData.experience_level}
-                onValueChange={(value) => setFormData({ ...formData, experience_level: value })}
-              >
-                <SelectTrigger className="bg-background border-border">
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Beginner">Beginner</SelectItem>
-                  <SelectItem value="Intermediate">Intermediate</SelectItem>
-                  <SelectItem value="Advanced">Advanced</SelectItem>
-                  <SelectItem value="Expert">Expert</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* GitHub */}
-            <div className="space-y-2">
-              <Label htmlFor="github_link" className="text-sm font-medium flex items-center gap-1.5">
-                <Github className="w-3.5 h-3.5" /> GitHub <span className="text-muted-foreground text-xs">(Optional)</span>
-              </Label>
-              <Input
-                id="github_link"
-                value={formData.github_link}
-                onChange={(e) => setFormData({ ...formData, github_link: e.target.value })}
-                placeholder="https://github.com/username"
-                className="bg-background border-border focus:border-primary"
-              />
-            </div>
-
-            {/* LinkedIn */}
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="linkedin_link" className="text-sm font-medium flex items-center gap-1.5">
-                <Linkedin className="w-3.5 h-3.5" /> LinkedIn <span className="text-muted-foreground text-xs">(Optional)</span>
-              </Label>
-              <Input
-                id="linkedin_link"
-                value={formData.linkedin_link}
-                onChange={(e) => setFormData({ ...formData, linkedin_link: e.target.value })}
-                placeholder="https://linkedin.com/in/username"
-                className="bg-background border-border focus:border-primary"
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <Button
+        {/* Final Action */}
+        <div className="mt-[60px]">
+          <button
             type="submit"
             disabled={loading}
-            className="w-full h-11 font-semibold"
-            size="lg"
+            className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer transition-all hover:bg-white disabled:opacity-50 flex items-center justify-center"
           >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <CheckCircle2 className="w-5 h-5 mr-2" />
-                Complete Registration & Join Team
-              </>
-            )}
-          </Button>
-
-          {/* Payment note if paid event */}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : 'Register and Join Team'}
+          </button>
+          
           {isPaid && registrationFee > 0 && (
-            <p className="text-xs text-muted-foreground text-center">
-              After registration, you'll need to complete payment of {currency} {registrationFee}
+            <p className="text-center text-[0.65rem] text-[#666666] uppercase tracking-[2px] mt-[20px]">
+              A registration fee of {currency} {registrationFee} is required to finish
             </p>
           )}
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </form>
+    </div>
   );
 }
