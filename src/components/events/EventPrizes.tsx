@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Trophy, Medal, Award, Gift, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Prize {
   id: string;
@@ -17,9 +18,9 @@ interface EventPrizesProps {
 }
 
 const positionIcons = [
-  { icon: Trophy, color: 'text-yellow-400', bg: 'bg-yellow-500/20', border: 'border-yellow-500/30' },
-  { icon: Medal, color: 'text-gray-300', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
-  { icon: Award, color: 'text-orange-400', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
+  { icon: Trophy, label: 'LAUREL 01' },
+  { icon: Medal, label: 'LAUREL 02' },
+  { icon: Award, label: 'LAUREL 03' },
 ];
 
 export function EventPrizes({ eventId, prizePool }: EventPrizesProps) {
@@ -46,73 +47,94 @@ export function EventPrizes({ eventId, prizePool }: EventPrizesProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin h-6 w-6 text-purple-500" />
+        <Loader2 className="animate-spin h-6 w-6 text-[#ff8c00]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-        <div className="w-1 h-6 bg-yellow-500 rounded-full" />
-        Prizes & Rewards
-      </h3>
+    <div className="w-full max-w-[850px] mx-auto font-sans selection:bg-orange-500/30">
+      
+      {/* --- Section Header --- */}
+      <div className="flex items-center gap-[15px] mb-[50px]">
+        <div className="w-[2px] h-[24px] bg-[#ff8c00]" />
+        <h3 className="font-serif text-[2.2rem] font-normal tracking-[-0.5px] text-white">
+          Rewards & Laurels
+        </h3>
+      </div>
 
-      {/* Total Prize Pool */}
+      {/* --- Total Prize Pool (Stakes) --- */}
       {prizePool && (
-        <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-2xl p-8 text-center">
-          <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-          <div className="text-sm text-yellow-400/80 uppercase tracking-wider mb-2">Total Prize Pool</div>
-          <div className="text-4xl md:text-5xl font-bold text-white">{prizePool}</div>
+        <div className="bg-[#050505] border border-[#1a1a1a] py-[60px] px-[40px] text-center mb-[30px] relative overflow-hidden group">
+          <label className="block text-[0.7rem] uppercase tracking-[4px] text-[#666666] mb-[20px] font-bold">
+            Total Combined Stakes
+          </label>
+          <div className="font-serif text-[2.5rem] md:text-[4rem] font-bold text-white leading-none transition-transform duration-500 group-hover:scale-105">
+            {prizePool}
+          </div>
+          {/* Subtle accent light */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-[#ff8c00]/30 to-transparent" />
         </div>
       )}
 
+      {/* --- Prize Breakdown Grid --- */}
       {prizes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[20px]">
           {prizes.map((prize, index) => {
             const styling = positionIcons[index] || { 
               icon: Gift, 
-              color: 'text-purple-400', 
-              bg: 'bg-purple-500/20',
-              border: 'border-purple-500/30'
+              label: `LAUREL ${String(prize.position).padStart(2, '0')}` 
             };
             const Icon = styling.icon;
 
             return (
               <div
                 key={prize.id}
-                className={`relative p-6 rounded-2xl border ${styling.border} ${styling.bg} transition-all hover:scale-105`}
+                className="bg-[#050505] border border-[#1a1a1a] p-[40px_30px] text-center transition-all duration-300 hover:border-[#666666] group"
               >
-                <div className="absolute -top-3 left-4">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${styling.bg} ${styling.color} border ${styling.border}`}>
-                    #{prize.position}
-                  </span>
+                <span className="block text-[0.7rem] text-[#ff8c00] tracking-[2px] mb-[25px] font-semibold">
+                  {styling.label}
+                </span>
+
+                <div className="flex justify-center mb-[20px] text-[#e0e0e0] group-hover:text-white transition-colors">
+                  <Icon size={32} strokeWidth={1.5} />
                 </div>
 
-                <div className="pt-4 text-center">
-                  <Icon className={`w-10 h-10 ${styling.color} mx-auto mb-3`} />
-                  <h4 className="text-lg font-bold text-white mb-1">{prize.title}</h4>
-                  {prize.prize_value && (
-                    <div className={`text-2xl font-bold ${styling.color}`}>{prize.prize_value}</div>
-                  )}
-                  {prize.description && (
-                    <p className="text-sm text-gray-400 mt-2">{prize.description}</p>
-                  )}
-                </div>
+                <h4 className="font-serif text-[1.4rem] font-normal text-white mb-[10px]">
+                  {prize.title}
+                </h4>
+
+                {prize.prize_value && (
+                  <div className="text-[1.2rem] font-light text-[#e0e0e0] mb-[15px]">
+                    {prize.prize_value}
+                  </div>
+                )}
+
+                {prize.description && (
+                  <p className="text-[0.8rem] text-[#666666] leading-[1.5] font-light">
+                    {prize.description}
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
-      ) : !prizePool ? (
-        <div className="text-center py-12 bg-[#151518] rounded-2xl border border-white/10">
-          <Gift className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Prize details will be announced soon!</p>
-        </div>
       ) : (
-        <div className="bg-[#151518] rounded-2xl border border-white/10 p-6">
-          <p className="text-gray-300">
-            Plus certificates, swag kits, and exciting opportunities for all participants!
-          </p>
+        !prizePool && (
+          <div className="py-[100px] text-center border border-dashed border-[#1a1a1a] bg-[#050505]/50">
+             <Gift className="w-8 h-8 text-[#1a1a1a] mx-auto mb-4" />
+             <p className="text-[0.8rem] text-[#666666] uppercase tracking-[2px] font-bold">
+               Bounties Pending
+             </p>
+             <p className="text-[#333] text-sm mt-2">Prize protocols will be initiated soon.</p>
+          </div>
+        )
+      )}
+
+      {/* --- Footer Swag Info --- */}
+      {(prizes.length > 0 || prizePool) && (
+        <div className="mt-[30px] p-[25px] border border-dashed border-[#1a1a1a] text-center text-[0.85rem] text-[#666666] font-light tracking-[0.5px]">
+          Special recognition, physical swag kits, and digital credentials provided to all verified participants.
         </div>
       )}
     </div>
