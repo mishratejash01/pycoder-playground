@@ -12,14 +12,15 @@ export default function AdminScanner() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   useEffect(() => {
-    // Initialize scanner once on mount
+    // Initialize scanner with CAMERA ONLY support
     const scanner = new Html5QrcodeScanner(
       "reader",
       {
         fps: 10,
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
-        showTorchButtonIfSupported: true,
+        // This line removes the "Scan Image File" option
+        supportedScanTypes: [0], // 0 corresponds to Html5QrcodeScanType.SCAN_TYPE_CAMERA
       },
       /* verbose= */ false
     );
@@ -28,14 +29,12 @@ export default function AdminScanner() {
     scannerRef.current = scanner;
 
     async function onScanSuccess(decodedText: string) {
-      // Prevent multiple simultaneous scans
       if (verifying || result) return;
 
       setVerifying(true);
       setResult(null);
 
       try {
-        // 1. Fetch registration record
         const { data, error } = await supabase
           .from('event_registrations')
           .select('id, full_name, current_status')
@@ -45,7 +44,6 @@ export default function AdminScanner() {
         if (error || !data) throw new Error("Invalid Pass: Not Found");
         if (data.current_status === 'attended') throw new Error("Already Checked In");
 
-        // 2. Mark as attended
         const { error: updateError } = await supabase
           .from('event_registrations')
           .update({
@@ -56,22 +54,20 @@ export default function AdminScanner() {
 
         if (updateError) throw updateError;
 
-        // 3. Success state
         setResult({ success: true, message: "Verified", name: data.full_name });
         toast.success(`${data.full_name} Verified`);
       } catch (err: any) {
-        // 4. Failure state
         setResult({ success: false, message: err.message });
         toast.error(err.message);
       } finally {
         setVerifying(false);
-        // Clear status after 3 seconds to allow next scan
+        // Automatically reset for the next person after 3 seconds
         setTimeout(() => setResult(null), 3000);
       }
     }
 
     function onScanFailure() {
-      // Quietly ignore errors while searching
+      // Ignore failures during the continuous search process
     }
 
     return () => {
@@ -86,61 +82,63 @@ export default function AdminScanner() {
       <div className="w-full max-w-sm space-y-8">
         <header className="text-center space-y-2">
           <ShieldCheck className="w-10 h-10 text-[#00ff88] mx-auto mb-4" />
-          <h1 className="text-lg font-bold tracking-widest uppercase">Admin Entry Terminal</h1>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Scan QR Pass below</p>
+          <h1 className="text-lg font-bold tracking-widest uppercase font-serif">Attendance Terminal</h1>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Authorized Personnel Only</p>
         </header>
 
-        {/* The Square Scanner Box */}
+        {/* QR Scanner Container */}
         <div className="relative border-2 border-zinc-800 bg-zinc-950 overflow-hidden rounded-xl aspect-square">
           <div id="reader" className="w-full h-full"></div>
           
-          {/* Simple Guide Overlay (only visible when not processing) */}
+          {/* Alignment Guide (Hidden when showing results) */}
           {!verifying && !result && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-48 h-48 border border-[#00ff88]/30 rounded-lg animate-pulse" />
+              <div className="w-48 h-48 border border-[#00ff88]/20 rounded-lg animate-pulse" />
             </div>
           )}
         </div>
 
-        {/* Status Area Below QR */}
-        <div className="min-h-[100px] flex flex-col items-center justify-center text-center p-4 border border-dashed border-zinc-800 rounded-lg">
+        {/* Status Display Area (Strictly Below QR) */}
+        <div className="min-h-[120px] flex flex-col items-center justify-center text-center p-6 border border-zinc-800 rounded-lg bg-zinc-950/50">
           {verifying && (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-3">
               <Loader2 className="animate-spin text-[#00ff88] w-8 h-8" />
-              <span className="text-xs font-medium uppercase tracking-widest text-[#00ff88]">Verifying...</span>
+              <span className="text-xs font-medium uppercase tracking-[0.3em] text-[#00ff88]">Searching...</span>
             </div>
           )}
 
           {!verifying && result && (
             <div className={cn(
-              "flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-300",
+              "flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300",
               result.success ? "text-[#00ff88]" : "text-red-500"
             )}>
               {result.success ? (
                 <>
-                  <UserCheck className="w-10 h-10" />
-                  <div>
-                    <p className="text-sm font-bold uppercase tracking-widest">Entry Verified</p>
-                    <p className="text-xl font-serif text-white">{result.name}</p>
-                  </div>
+                  <UserCheck className="w-12 h-12 mb-1" />
+                  <Badge className="bg-[#00ff88] text-black hover:bg-[#00ff88] rounded-none px-3">VERIFIED</Badge>
+                  <p className="text-xl font-serif text-white mt-1">{result.name}</p>
                 </>
               ) : (
                 <>
-                  <XCircle className="w-10 h-10" />
-                  <p className="text-sm font-bold uppercase tracking-widest">Rejected</p>
-                  <p className="text-xs text-white/70">{result.message}</p>
+                  <XCircle className="w-12 h-12 mb-1" />
+                  <Badge variant="destructive" className="rounded-none px-3">REJECTED</Badge>
+                  <p className="text-xs text-white/70 mt-2 uppercase tracking-widest">{result.message}</p>
                 </>
               )}
             </div>
           )}
 
           {!verifying && !result && (
-            <p className="text-[10px] text-zinc-600 uppercase tracking-[0.2em]">Ready for next scan</p>
+            <div className="flex flex-col items-center gap-2 opacity-40">
+              <p className="text-[10px] uppercase tracking-[0.4em]">Waiting for Pass</p>
+            </div>
           )}
         </div>
 
-        <footer className="text-center pt-8">
-          <p className="text-[9px] text-zinc-700 uppercase tracking-widest italic">All check-ins are logged to secure database</p>
+        <footer className="text-center pt-4">
+          <p className="text-[9px] text-zinc-700 uppercase tracking-widest">
+            Cloud Sync Active • Security Node v2.4
+          </p>
         </footer>
       </div>
     </div>
