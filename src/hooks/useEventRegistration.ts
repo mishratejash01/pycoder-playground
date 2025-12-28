@@ -67,19 +67,17 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
         return;
       }
 
-      // Call the safer RPC function
       const { data, error } = await supabase.rpc('get_my_event_access_status', {
         p_event_id: eventId
       });
 
       if (error) {
-        console.error('Error checking event access status:', error);
+        console.error('Error checking status:', error);
         setStatus(prev => ({ ...prev, loading: false, state: 'error' }));
         return;
       }
 
-      console.log('[useEventRegistration] RPC response:', data);
-
+      console.log('Status RPC:', data);
       const responseState = data.state as 'registered' | 'invited_pending' | 'invited_accepted' | 'none';
 
       setStatus({
