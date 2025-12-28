@@ -72,7 +72,7 @@ export function AlreadyRegisteredCard({
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) { setLoading(false); return; }
 
-    // 1. Fetch current user's registration
+    // 1. Fetch current user's registration to identify the team
     const { data: reg } = await supabase
       .from('event_registrations')
       .select('*')
@@ -83,10 +83,11 @@ export function AlreadyRegisteredCard({
     if (!reg) { setLoading(false); return; }
     setCurrentUserReg(reg);
     
+    // The leader is either the user themselves or the one identified by invited_by_registration_id
     const leaderId = reg.invited_by_registration_id || reg.id;
     setIsLeader(!reg.invited_by_registration_id);
 
-    // 2. Fetch all team components relative to the Leader ID
+    // 2. Fetch all team components (Leader, Members, and Invitations) relative to the Leader ID
     const [leaderRes, membersRes, invitesRes] = await Promise.all([
       supabase.from('event_registrations').select('*').eq('id', leaderId).single(),
       supabase.from('event_registrations').select('*').eq('invited_by_registration_id', leaderId),
@@ -114,6 +115,7 @@ export function AlreadyRegisteredCard({
       ? { full_name: editingMember.name, team_role: editingMember.role }
       : { invitee_name: editingMember.name, role: editingMember.role };
 
+    // Update the correct table based on whether the member is registered or just invited
     const { error } = await supabase.from(table).update(payload).eq('id', editingMember.id);
     
     if (error) {
@@ -154,7 +156,7 @@ export function AlreadyRegisteredCard({
 
   if (loading || !currentUserReg || !leaderReg) return null;
 
-  // STATUS BLOCK COMPONENT
+  // STATUS BLOCK COMPONENT WITH GLOW REQUIREMENTS
   const StatusBadge = ({ status }: { status: 'completed' | 'pending' | 'declined' | 'expired' | 'accepted' }) => {
     const isConfirmed = status === 'completed';
     const isPending = status === 'pending' || status === 'accepted';
@@ -168,9 +170,9 @@ export function AlreadyRegisteredCard({
           )}
           <span className={cn(
             "relative inline-flex rounded-full h-2 w-2",
-            isConfirmed && "bg-[#00ff88] shadow-[0_0_10px_rgba(0,255,136,0.8)]",
-            isPending && "bg-yellow-500",
-            isRejected && "bg-red-600"
+            isConfirmed && "bg-[#00ff88] shadow-[0_0_10px_rgba(0,255,136,0.8)]", // Green glow for confirmed
+            isPending && "bg-yellow-500", // Yellow for pending
+            isRejected && "bg-red-600" // Red for rejected
           )}></span>
         </div>
         <span className="text-[10px] uppercase tracking-[1px] text-[#e0e0e0] font-medium">
@@ -217,7 +219,7 @@ export function AlreadyRegisteredCard({
 
         {showTeamDetails && (
           <div className="bg-[#050505] border-t border-[#1a1a1a] divide-y divide-[#1a1a1a]">
-            {/* 1. Leader Row (Always First) */}
+            {/* 1. Leader Row - Always visible to everyone */}
             <div className="p-6 flex justify-between items-center gap-5 text-white">
               <div className="flex gap-4 items-center flex-1">
                 <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">01</div>
@@ -234,7 +236,7 @@ export function AlreadyRegisteredCard({
               </div>
             </div>
 
-            {/* 2. Registered Members Row */}
+            {/* 2. Registered Members Row - Visible to everyone */}
             {teamMembers.map((member, idx) => (
               <div key={member.id} className="p-6 flex justify-between items-center gap-5 text-white">
                 <div className="flex gap-4 items-center flex-1">
@@ -253,10 +255,10 @@ export function AlreadyRegisteredCard({
               </div>
             ))}
 
-            {/* 3. Pending/Rejected Invitations Row */}
+            {/* 3. Pending/Rejected Invitations Row - Mixed Visibility */}
             {invitations.filter(inv => inv.status !== 'completed').map((invite) => {
               const showToAll = invite.status === 'pending' || invite.status === 'accepted';
-              // If rejected/expired, only the Leader sees it. Confirmed/Pending are seen by everyone.
+              // If the invitation is rejected or expired, only the Leader sees it
               if (!isLeader && !showToAll) return null;
 
               return (
@@ -281,7 +283,7 @@ export function AlreadyRegisteredCard({
         )}
       </div>
 
-      {/* Edit & Invite Modals (Dialogs remain standard from previous steps) */}
+      {/* Modals for Edit and Invite (Standard neutral styling) */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Modify Registry</DialogTitle></DialogHeader>
@@ -311,7 +313,6 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
-      {/* QR Badge Modal */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm">
           <DialogHeader className="items-center"><DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle></DialogHeader>
