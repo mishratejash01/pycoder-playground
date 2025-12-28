@@ -1,17 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
 import { format } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, 
-  Users, Clock, Star, MessageCircle, HelpCircle, CheckCircle, 
-  Sparkles, Zap, ChevronRight, Globe, Handshake // Added Handshake
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
@@ -28,13 +21,12 @@ import { InviteeRegistrationForm } from '@/components/events/InviteeRegistration
 import { useEventRegistration } from '@/hooks/useEventRegistration';
 import { EventStagesTimeline } from '@/components/events/EventStagesTimeline';
 import { EventDetailsContent } from '@/components/events/EventDetails';
-import { EventDatesDeadlines } from '@/components/events/EventDatesDeadlines';
 import { EventPrizes } from '@/components/events/EventPrizes';
 import { EventReviews } from '@/components/events/EventReviews';
 import { EventFAQs } from '@/components/events/EventFAQs';
 import { EventDiscussions } from '@/components/events/EventDiscussions';
 import { EventEligibility } from '@/components/events/EventEligibility';
-import { EventSponsors } from '@/components/events/EventSponsors'; // Added Import
+import { EventSponsors } from '@/components/events/EventSponsors';
 
 export default function EventDetailsPage() {
   const { slug } = useParams();
@@ -44,8 +36,7 @@ export default function EventDetailsPage() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('stages');
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   const { 
     isRegistered, 
@@ -56,7 +47,6 @@ export default function EventDetailsPage() {
     refetch: refetchRegistration
   } = useEventRegistration(event?.id);
 
-  // Auth & Data Fetching
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setSession(session);
@@ -71,11 +61,17 @@ export default function EventDetailsPage() {
 
   useEffect(() => {
     if (!authLoading && !session) navigate('/auth');
-  }, [authLoading, session, navigate]);
+    if (session) fetchProfile();
+  }, [authLoading, session]);
 
   useEffect(() => {
     if (session) getEvent();
   }, [slug, session]);
+
+  async function fetchProfile() {
+    const { data } = await supabase.from('profiles').select('*').eq('id', session?.user.id).single();
+    if (data) setUserProfile(data);
+  }
 
   async function getEvent() {
     const { data, error } = await supabase
@@ -88,335 +84,242 @@ export default function EventDetailsPage() {
     setLoading(false);
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
   const handleRegisterClick = () => {
     if (hasPendingInvitation) { toast.info("You have a pending team invitation."); return; }
     if (hasAcceptedInvitation) { toast.info("Please complete your team registration."); return; }
     if (isRegistered) { toast.info("You're already registered!"); return; }
 
-    // Logic to determine if we should open modal or external link
     const effectiveType = (event.form_type || event.event_type || '').toLowerCase();
     const internalTypes = ['hackathon', 'workshop', 'webinar', 'meetup', 'contest'];
 
-    // 1. If it matches a known internal type (like 'workshop'), ALWAYS open the modal
     if (internalTypes.includes(effectiveType)) {
       setIsRegisterOpen(true);
       return;
     }
 
-    // 2. If no internal type matched, but we have a link, go to the link (External events)
     if (event.registration_link) {
        window.open(event.registration_link, '_blank');
        return;
     }
-
-    // 3. Fallback to normal registration modal
     setIsRegisterOpen(true);
   };
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({ title: event.title, text: `Check out ${event.title}!`, url: window.location.href });
-    } catch { toast.info("Link copied!"); navigator.clipboard.writeText(window.location.href); }
-  };
-
-  // Helper function to render the correct modal based on form_type
   const renderRegistrationModal = () => {
     if (!event) return null;
-
-    // Logic: Use form_type if available, otherwise fallback to event_type, default to 'normal'
     const type = (event.form_type || event.event_type || 'normal').toLowerCase();
-
-    const commonProps = {
-      event,
-      isOpen: isRegisterOpen,
-      onOpenChange: setIsRegisterOpen
-    };
+    const commonProps = { event, isOpen: isRegisterOpen, onOpenChange: setIsRegisterOpen };
 
     switch (type) {
-      case 'hackathon':
-        return <HackathonRegistrationModal {...commonProps} />;
-      case 'workshop':
-        return <WorkshopRegistrationModal {...commonProps} />;
-      case 'webinar':
-        return <WebinarRegistrationModal {...commonProps} />;
-      case 'meetup':
-        return <MeetupRegistrationModal {...commonProps} />;
-      case 'contest':
-        return <ContestRegistrationModal {...commonProps} />;
-      case 'normal':
-      default:
-        return <NormalEventRegistrationModal {...commonProps} />;
+      case 'hackathon': return <HackathonRegistrationModal {...commonProps} />;
+      case 'workshop': return <WorkshopRegistrationModal {...commonProps} />;
+      case 'webinar': return <WebinarRegistrationModal {...commonProps} />;
+      case 'meetup': return <MeetupRegistrationModal {...commonProps} />;
+      case 'contest': return <ContestRegistrationModal {...commonProps} />;
+      default: return <NormalEventRegistrationModal {...commonProps} />;
     }
   };
 
   if (authLoading || loading) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <Loader2 className="animate-spin h-8 w-8 text-primary" />
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <Loader2 className="animate-spin h-8 w-8 text-[#ff8c00]" />
     </div>
   );
 
-  const isHackathon = event?.event_type === 'hackathon';
-
-  // --- Dynamic Content Renders ---
-  const renderSidebarContent = () => {
-    if (regLoading) return <div className="flex justify-center py-6"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>;
-    
-    if (isRegistered) {
-      return (
-        <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-          <div className="absolute inset-0 bg-emerald-500/10 blur-xl opacity-50" />
-          <AlreadyRegisteredCard 
-            eventId={event.id} 
-            eventTitle={event.title} 
-            eventType={event.event_type || 'normal'} 
-            isPaid={event.is_paid} 
-            registrationFee={event.registration_fee} 
-            currency={event.currency} 
-          />
-        </div>
-      );
-    }
-    
-    if (hasPendingInvitation && invitation) return <PendingInvitationCard invitation={invitation as any} eventTitle={event.title} onAccept={refetchRegistration} onDecline={refetchRegistration} />;
-    
-    if (hasAcceptedInvitation && invitation) return <InviteeRegistrationForm eventId={event.id} eventTitle={event.title} isPaid={event.is_paid} registrationFee={event.registration_fee} currency={event.currency} invitation={{ id: invitation.id, team_name: invitation.team_name, inviter_name: invitation.inviter_name, role: invitation.role, registration_id: invitation.registration_id }} onComplete={refetchRegistration} />;
-    
-    return (
-      <div className="space-y-4 pt-2">
-        <Button 
-          onClick={handleRegisterClick} 
-          className="w-full h-14 text-base font-bold bg-white text-black hover:bg-zinc-200 hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
-        >
-          {isHackathon && <Code className="w-5 h-5 mr-2" />} 
-          Initialize Registration
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={handleShare} 
-          className="w-full h-12 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
-        >
-          <Share2 className="w-4 h-4 mr-2" /> Share Protocol
-        </Button>
-      </div>
-    );
-  };
-
-  const tabs = [
-    { id: 'stages', label: 'Timeline', icon: Clock },
-    { id: 'details', label: 'Briefing', icon: Zap },
-    { id: 'dates', label: 'Deadlines', icon: Calendar },
-    { id: 'prizes', label: 'Bounties', icon: Trophy },
-    { id: 'sponsors', label: 'Partners', icon: Handshake }, // Added Tab
-    { id: 'eligibility', label: 'Criteria', icon: CheckCircle },
-    { id: 'reviews', label: 'Intel', icon: Star },
-    { id: 'faqs', label: 'Comms', icon: MessageCircle },
-  ];
-
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 font-inter relative overflow-x-hidden">
-      <Header session={session} onLogout={handleLogout} />
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-orange-500/30 overflow-x-hidden">
+      <Header session={session} onLogout={() => supabase.auth.signOut()} />
       
-      {/* Background Noise & Ambient Light */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-         <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/20 rounded-full blur-[150px] animate-pulse opacity-40" />
-      </div>
+      <div className="max-w-[1200px] mx-auto px-10">
+        
+        {/* Navigation Bar */}
+        <nav className="py-[30px] flex justify-between items-center border-b border-[#1a1a1a]">
+          <div className="flex items-center gap-[30px]">
+            <button onClick={() => navigate('/events')} className="bg-transparent border-none text-[#777777] text-[0.65rem] tracking-[2px] uppercase cursor-pointer hover:text-white transition-colors">
+              ← GO BACK
+            </button>
+            <div className="text-[1.1rem] tracking-[5px] uppercase font-light">STUDIO.DEI</div>
+          </div>
+          <div className="text-[0.65rem] tracking-[2px] text-[#777777] uppercase">EVENT_DETAILS_2025</div>
+        </nav>
 
-      {/* --- CINEMATIC HERO --- */}
-      <div className="relative h-[60vh] md:h-[70vh] w-full flex items-end pb-20 overflow-hidden border-b border-white/5">
-        {/* Hero Image */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505] z-10" />
-          <motion.img 
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 10, ease: "easeOut" }}
-            src={event.image_url} 
-            alt="Cover" 
-            className="w-full h-full object-cover opacity-80" 
-          />
-        </div>
-
-        {/* Hero Content */}
-        <div className="container relative z-20 mx-auto px-4 md:px-8 max-w-[1600px]">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-4xl"
-          >
-             <Button variant="ghost" className="mb-8 text-zinc-400 hover:text-white pl-0 hover:bg-transparent group" onClick={() => navigate('/events')}>
-               <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center mr-3 group-hover:border-white/30 transition-colors bg-black/50 backdrop-blur-md">
-                 <ArrowLeft className="h-4 w-4" />
-               </div>
-               <span className="text-xs font-bold tracking-widest uppercase">Abort & Return</span>
-             </Button>
-             
-             <div className="flex flex-wrap items-center gap-4 mb-6">
-               <span className="px-3 py-1 rounded border border-primary/30 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
-                 {event.category}
-               </span>
-               <span className="flex items-center gap-2 px-3 py-1 rounded border border-white/10 bg-white/5 text-zinc-300 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">
-                 <Globe className="w-3 h-3" /> {event.mode}
-               </span>
-               {event.is_featured && (
-                 <span className="flex items-center gap-1 text-amber-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
-                   <Sparkles className="w-3 h-3" /> Featured Event
-                 </span>
-               )}
-             </div>
-
-             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 leading-[0.9]">
-               {event.title}
-             </h1>
-             
-             <p className="text-lg md:text-xl text-zinc-400 max-w-2xl line-clamp-2 leading-relaxed">
-               {event.short_description}
-             </p>
+        {/* Hero Section */}
+        <section className="py-[80px] grid grid-cols-1 lg:grid-cols-2 gap-[60px] items-center">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <span className="uppercase text-[0.7rem] tracking-[3px] text-[#ff8c00] mb-5 block font-bold">
+              2025 {event.mode} Access
+            </span>
+            <h1 className="font-serif text-[4.5rem] leading-[1] mb-6 font-bold tracking-tight">
+              {event.title.split(' ').slice(0, -1).join(' ')} <br /> {event.title.split(' ').slice(-1)}
+            </h1>
+            <p className="text-[1.1rem] text-[#777777] font-light leading-relaxed max-w-[500px]">
+              {event.short_description}
+            </p>
           </motion.div>
-        </div>
-      </div>
+          <motion.div 
+            initial={{ opacity: 0, grayscale: 1 }} 
+            animate={{ opacity: 0.8, grayscale: 0 }} 
+            className="w-full h-[500px] bg-cover bg-center border border-[#1a1a1a] grayscale md:grayscale hover:grayscale-0 transition-all duration-700" 
+            style={{ backgroundImage: `url(${event.image_url})` }}
+          />
+        </section>
 
-      {/* --- NAVIGATION HUD --- */}
-      <div className="sticky top-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto max-w-[1600px] px-4 md:px-8">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            <div className="flex gap-1 overflow-x-auto no-scrollbar mask-linear-fade py-2 w-full md:w-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 rounded-full min-w-max",
-                    activeTab === tab.id 
-                      ? "text-black" 
-                      : "text-zinc-500 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  {activeTab === tab.id && (
-                    <motion.div 
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-white rounded-full"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <tab.icon className="w-3.5 h-3.5" />
-                    {tab.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-            
-            {/* Desktop Quick Action (Hidden on Mobile) */}
-            <div className="hidden md:block">
-              <Button size="sm" onClick={handleShare} variant="ghost" className="text-zinc-500 hover:text-white">
-                <Share2 className="w-4 h-4 mr-2" /> Share
-              </Button>
-            </div>
+        {/* Status Dashboard Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 py-[50px] border-y border-[#1a1a1a] mb-[80px]">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[0.6rem] uppercase text-[#777777] tracking-[2px]">Your Name</span>
+            <strong className="text-[1rem] font-light text-[#e0e0e0]">{userProfile?.full_name || session?.user.email?.split('@')[0]}</strong>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[0.6rem] uppercase text-[#777777] tracking-[2px]">Sector</span>
+            <strong className="text-[1rem] font-light text-[#e0e0e0]">{event.location || event.mode}</strong>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[0.6rem] uppercase text-[#777777] tracking-[2px]">Email Address</span>
+            <strong className="text-[1rem] font-light text-[#e0e0e0] truncate pr-4">{session?.user.email}</strong>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[0.6rem] uppercase text-[#777777] tracking-[2px]">Mission Status</span>
+            <strong className={cn(
+              "text-[1rem] font-light uppercase tracking-wider",
+              isRegistered ? "text-[#00ff88]" : "text-[#ff8c00]"
+            )}>
+              {isRegistered ? 'Active Operative' : hasPendingInvitation ? 'Invite Detected' : 'Pending Entry'}
+            </strong>
           </div>
         </div>
-      </div>
 
-      {/* --- MAIN GRID LAYOUT --- */}
-      <div className="container mx-auto px-4 md:px-8 py-12 max-w-[1600px]">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-[100px] mb-[100px]">
           
-          {/* LEFT COLUMN: Content */}
-          <div className="lg:col-span-8 space-y-12">
-             <InvitationBanner />
-             
-             <div className="min-h-[500px]">
-               <AnimatePresence mode="wait">
-                 <motion.div
-                   key={activeTab}
-                   initial={{ opacity: 0, y: 10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   exit={{ opacity: 0, y: -10 }}
-                   transition={{ duration: 0.3 }}
-                 >
-                   {activeTab === 'stages' && <EventStagesTimeline eventId={event.id} eventStartDate={event.start_date} eventEndDate={event.end_date} registrationDeadline={event.registration_deadline} />}
-                   {activeTab === 'details' && <EventDetailsContent event={event} />}
-                   {activeTab === 'dates' && <EventDatesDeadlines startDate={event.start_date} endDate={event.end_date} registrationDeadline={event.registration_deadline} />}
-                   {activeTab === 'prizes' && <EventPrizes eventId={event.id} prizePool={event.prize_pool} />}
-                   {activeTab === 'sponsors' && <EventSponsors eventId={event.id} />} {/* Added Render */}
-                   {activeTab === 'eligibility' && <EventEligibility eligibilityCriteria={event.eligibility_criteria} minTeamSize={event.min_team_size} maxTeamSize={event.max_team_size} allowSolo={event.allow_solo} mode={event.mode} location={event.location} />}
-                   {activeTab === 'reviews' && <EventReviews eventId={event.id} />}
-                   {activeTab === 'faqs' && <div className="space-y-12"><EventFAQs eventId={event.id} /><EventDiscussions eventId={event.id} /></div>}
-                 </motion.div>
-               </AnimatePresence>
-             </div>
+          <div className="content-col space-y-[100px]">
+            
+            <InvitationBanner />
+
+            {/* Registration Sub-manifests (Invites/Forms) */}
+            {hasPendingInvitation && invitation && (
+               <PendingInvitationCard invitation={invitation as any} eventTitle={event.title} onAccept={refetchRegistration} onDecline={refetchRegistration} />
+            )}
+            
+            {hasAcceptedInvitation && invitation && (
+               <InviteeRegistrationForm eventId={event.id} eventTitle={event.title} isPaid={event.is_paid} registrationFee={event.registration_fee} currency={event.currency} invitation={{ id: invitation.id, team_name: invitation.team_name, inviter_name: invitation.inviter_name, role: invitation.role, registration_id: invitation.registration_id }} onComplete={refetchRegistration} />
+            )}
+
+            {/* Team Members / Already Registered Logic */}
+            {isRegistered && (
+              <section>
+                <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Team Composition</h2>
+                <AlreadyRegisteredCard 
+                  eventId={event.id} 
+                  eventTitle={event.title} 
+                  eventType={event.event_type || 'normal'} 
+                  isPaid={event.is_paid} 
+                  registrationFee={event.registration_fee} 
+                  currency={event.currency} 
+                />
+              </section>
+            )}
+
+            {/* Timeline */}
+            <section id="schedule">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Event Schedule</h2>
+              <EventStagesTimeline eventId={event.id} eventStartDate={event.start_date} eventEndDate={event.end_date} registrationDeadline={event.registration_deadline} />
+            </section>
+
+            {/* About Content */}
+            <section id="about">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">About the Assembly</h2>
+              <EventDetailsContent event={event} />
+            </section>
+
+            {/* Eligibility */}
+            <section id="eligibility">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Who Can Join</h2>
+              <EventEligibility eligibilityCriteria={event.eligibility_criteria} minTeamSize={event.min_team_size} maxTeamSize={event.max_team_size} allowSolo={event.allow_solo} mode={event.mode} location={event.location} />
+            </section>
+
+            {/* Prizes */}
+            <section id="prizes">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Rewards & Laurels</h2>
+              <EventPrizes eventId={event.id} prizePool={event.prize_pool} />
+            </section>
+
+            {/* Partners */}
+            <section id="partners">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Patrons & Partners</h2>
+              <EventSponsors eventId={event.id} />
+            </section>
+
+            {/* Intel (Reviews) */}
+            <section id="intel">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Participant Intel</h2>
+              <EventReviews eventId={event.id} />
+            </section>
+
+            {/* Comms (FAQs) */}
+            <section id="comms">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Common Protocols</h2>
+              <EventFAQs eventId={event.id} />
+            </section>
+
+            {/* Community Discussion */}
+            <section id="discussion">
+              <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Mission Debrief</h2>
+              <EventDiscussions eventId={event.id} />
+            </section>
           </div>
 
-          {/* RIGHT COLUMN: Sidebar / "Mission Card" */}
-          <div className="lg:col-span-4 relative">
-            <div className="sticky top-32 space-y-6">
+          {/* Sidebar */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-10 bg-[#0a0a0a] p-10 border border-[#1a1a1a]">
+              <h3 className="font-serif text-[1.6rem] mb-[30px] font-normal tracking-tight">Event Summary</h3>
               
-              {/* Glass Card */}
-              <div className="relative overflow-hidden rounded-[2rem] bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 p-8 shadow-[0_0_50px_-20px_rgba(0,0,0,0.5)]">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
-                
-                <h3 className="text-lg font-bold uppercase tracking-widest text-zinc-500 mb-8 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Mission Status
-                </h3>
+              {/* Main Action Button */}
+              {!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation ? (
+                <button 
+                  onClick={handleRegisterClick}
+                  className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-center text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer mb-[30px] transition-all hover:bg-white"
+                >
+                  Initialize Entry
+                </button>
+              ) : isRegistered && event.is_paid ? (
+                <button 
+                  className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-center text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer mb-[30px] transition-all hover:bg-white"
+                  onClick={() => toast.info("Redirecting to payment portal...")}
+                >
+                  Complete Payment
+                </button>
+              ) : null}
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                   <div className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group">
-                      <div className="text-zinc-500 mb-2 group-hover:text-primary transition-colors"><Calendar className="w-5 h-5" /></div>
-                      <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Start Date</div>
-                      <div className="text-sm font-bold text-white mt-1">{format(new Date(event.start_date), 'MMM dd')}</div>
-                   </div>
-                   <div className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group">
-                      <div className="text-zinc-500 mb-2 group-hover:text-blue-400 transition-colors"><MapPin className="w-5 h-5" /></div>
-                      <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Sector</div>
-                      <div className="text-sm font-bold text-white mt-1 truncate">{event.location || event.mode}</div>
-                   </div>
-                   <div className="col-span-2 bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group flex items-center justify-between">
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1">Squad Size</div>
-                        <div className="text-sm font-bold text-white">{event.min_team_size} - {event.max_team_size} Operatives</div>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 group-hover:text-white transition-colors">
-                        <Users className="w-5 h-5" />
-                      </div>
-                   </div>
-                </div>
+              <ul className="list-none space-y-4">
+                <li className="flex justify-between py-4 border-b border-[#1a1a1a] text-[0.8rem]">
+                  <span className="text-[#777777] uppercase tracking-wider">Starts On</span>
+                  <strong className="font-medium">{format(new Date(event.start_date), 'MMMM dd, yyyy')}</strong>
+                </li>
+                <li className="flex justify-between py-4 border-b border-[#1a1a1a] text-[0.8rem]">
+                  <span className="text-[#777777] uppercase tracking-wider">Format</span>
+                  <strong className="font-medium">{event.mode} Assembly</strong>
+                </li>
+                <li className="flex justify-between py-4 border-b border-[#1a1a1a] text-[0.8rem]">
+                  <span className="text-[#777777] uppercase tracking-wider">Location</span>
+                  <strong className="font-medium truncate ml-4">{event.location || 'Global Protocol'}</strong>
+                </li>
+              </ul>
 
-                <div className="w-full h-px bg-white/10 mb-8" />
-                
-                {renderSidebarContent()}
+              <div className="mt-10 pt-[25px] border-t border-[#1a1a1a]">
+                <span className="text-[0.6rem] text-[#777777] tracking-[2px] uppercase block mb-1">Support Manifest</span>
+                <p className="text-[0.85rem] text-[#e0e0e0] font-light">{event.contact_email || 'support@studio-dei.it'}</p>
               </div>
-
-              {/* Support Card */}
-              <div className="rounded-2xl border border-white/5 bg-[#0c0c0e]/50 p-6 flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                    <HelpCircle className="w-5 h-5 text-zinc-400" />
-                 </div>
-                 <div className="flex-1">
-                    <h4 className="text-sm font-bold text-white">Need Intel?</h4>
-                    <p className="text-xs text-zinc-500 mt-1">Contact mission control for support.</p>
-                 </div>
-                 <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full">
-                    <ChevronRight className="w-4 h-4" />
-                 </Button>
-              </div>
-
             </div>
-          </div>
+          </aside>
         </div>
       </div>
 
-      {/* Modals - Dynamically Rendered based on form_type */}
+      <footer className="py-[80px] text-center border-t border-[#1a1a1a]">
+        <p className="text-[0.6rem] tracking-[4px] text-[#777777] uppercase font-light">
+          © {new Date().getFullYear()} STUDIO DEI MILANO • CREATED BY HAND
+        </p>
+      </footer>
+
       {renderRegistrationModal()}
     </div>
   );
