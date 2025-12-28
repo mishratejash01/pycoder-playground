@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { Circle, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { format, isPast } from 'date-fns';
+import { Check, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Stage {
   id: string;
@@ -10,8 +11,6 @@ interface Stage {
   start_date: string;
   end_date: string | null;
   order_index: number;
-  stage_type: string;
-  is_active: boolean;
 }
 
 interface EventStagesTimelineProps {
@@ -41,130 +40,53 @@ export function EventStagesTimeline({
       .eq('event_id', eventId)
       .order('order_index', { ascending: true });
 
-    if (!error && data) {
-      setStages(data);
-    }
+    if (!error && data) setStages(data);
     setLoading(false);
   }
 
-  const getStageStatus = (startDate: string, endDate: string | null) => {
-    const now = new Date();
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : null;
-
-    if (now < start) return 'upcoming';
-    if (end && now > end) return 'completed';
-    return 'active';
-  };
-
-  // If no custom stages, show default timeline
-  const defaultStages = [
-    {
-      id: 'registration',
-      title: 'Registration Opens',
-      description: 'Register for the event and secure your spot.',
-      start_date: eventStartDate,
-      end_date: registrationDeadline,
-      status: getStageStatus(eventStartDate, registrationDeadline),
-    },
-    {
-      id: 'event',
-      title: 'Event Begins',
-      description: 'The main event kicks off.',
-      start_date: eventStartDate,
-      end_date: eventEndDate,
-      status: getStageStatus(eventStartDate, eventEndDate),
-    },
-    {
-      id: 'end',
-      title: 'Event Ends',
-      description: 'Final submissions and event conclusion.',
-      start_date: eventEndDate,
-      end_date: null,
-      status: getStageStatus(eventEndDate, null),
-    },
+  const defaultStages: Stage[] = [
+    { id: '1', title: 'Registration Opens', description: 'Secure your spot for the assembly.', start_date: eventStartDate, end_date: registrationDeadline || null, order_index: 0 },
+    { id: '2', title: 'Main Event', description: 'Protocol execution phase.', start_date: eventStartDate, end_date: eventEndDate, order_index: 1 },
+    { id: '3', title: 'Conclusion', description: 'Final termination and review.', start_date: eventEndDate, end_date: null, order_index: 2 },
   ];
 
-  const displayStages = stages.length > 0 
-    ? stages.map(s => ({ ...s, status: getStageStatus(s.start_date, s.end_date) }))
-    : defaultStages;
+  const displayStages = stages.length > 0 ? stages : defaultStages;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin h-6 w-6 text-purple-500" />
-      </div>
-    );
-  }
+  if (loading) return <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-white" /></div>;
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-        <div className="w-1 h-6 bg-purple-500 rounded-full" />
-        Stages & Timeline
-      </h3>
+    <div className="w-full max-w-[800px] mx-auto font-sans">
+      <div className="flex items-center gap-4 mb-12">
+        <div className="w-0.5 h-6 bg-[#ff8c00]" />
+        <h2 className="font-serif text-4xl font-normal text-white">Stages & Timeline</h2>
+      </div>
 
-      <div className="relative">
-        {/* Timeline line */}
-        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500 via-purple-500/50 to-white/10" />
+      <div className="relative pl-10 before:absolute before:left-[10px] before:top-1 before:bottom-1 before:w-px before:bg-[#1a1a1a]">
+        {displayStages.map((stage, index) => {
+          const isCompleted = isPast(new Date(stage.start_date));
+          const isActive = !isCompleted && index === 0; // Simplified logic for demo
 
-        <div className="space-y-8">
-          {displayStages.map((stage, index) => (
-            <div key={stage.id} className="relative pl-12">
-              {/* Timeline dot */}
-              <div className="absolute left-0 w-9 flex items-center justify-center">
-                {stage.status === 'completed' ? (
-                  <CheckCircle2 className="w-8 h-8 text-green-500 bg-[#09090b] rounded-full" />
-                ) : stage.status === 'active' ? (
-                  <div className="relative">
-                    <Circle className="w-8 h-8 text-purple-500 fill-purple-500/20 bg-[#09090b] rounded-full" />
-                    <div className="absolute inset-0 animate-ping">
-                      <Circle className="w-8 h-8 text-purple-500 opacity-50" />
-                    </div>
-                  </div>
-                ) : (
-                  <Clock className="w-8 h-8 text-gray-500 bg-[#09090b] rounded-full" />
-                )}
+          return (
+            <div key={stage.id} className="relative mb-8">
+              <div className={cn(
+                "absolute -left-[35px] top-1 w-5 h-5 bg-black border flex items-center justify-center z-10",
+                isCompleted ? "border-[#00ff88] text-[#00ff88]" : "border-[#1a1a1a]"
+              )}>
+                {isCompleted && <Check className="w-3 h-3 stroke-[3]" />}
               </div>
 
-              {/* Stage content */}
-              <div className={`bg-[#151518] border rounded-xl p-6 transition-all hover:border-purple-500/50 ${
-                stage.status === 'active' 
-                  ? 'border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.15)]' 
-                  : 'border-white/10'
-              }`}>
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">{stage.title}</h4>
-                    {stage.description && (
-                      <p className="text-gray-400 mt-1 text-sm">{stage.description}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-purple-400">
-                      {format(new Date(stage.start_date), 'MMM dd, yyyy')}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      {format(new Date(stage.start_date), 'h:mm a')}
-                    </div>
-                  </div>
+              <div className={cn("bg-[#050505] border border-[#1a1a1a] p-8", isCompleted && "opacity-50")}>
+                <h4 className="text-[10px] uppercase tracking-[3px] text-[#555555] mb-3">Protocol {String(index + 1).padStart(2, '0')}</h4>
+                <h3 className="font-serif text-2xl text-white mb-2">{stage.title}</h3>
+                <p className="text-[#555555] text-sm font-light leading-relaxed">{stage.description}</p>
+                
+                <div className="mt-6 text-sm text-[#e0e0e0]">
+                  {format(new Date(stage.start_date), 'MMM dd, yyyy')}
                 </div>
-
-                {stage.status === 'active' && (
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <span className="inline-flex items-center gap-2 text-sm text-green-400">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                      </span>
-                      Currently Active
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
