@@ -130,5 +130,5 @@ export function useCheckPendingInvitations() {
     check();
   }, []);
 
-  return { pendingCount, loading };
+  return { pendingCount, loadin };
 }
