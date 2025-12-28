@@ -58,12 +58,6 @@ export function AlreadyRegisteredCard({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   eventTitle, 
   maxTeamSize = 4,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  isPaid,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  registrationFee,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  currency
 }: AlreadyRegisteredCardProps) {
   const [currentUserReg, setCurrentUserReg] = useState<Registration | null>(null);
   const [leaderReg, setLeaderReg] = useState<Registration | null>(null);
@@ -107,7 +101,6 @@ export function AlreadyRegisteredCard({
       setCurrentUserReg(myReg as any);
 
       // 2. Fetch Team Members via RPC (SECURE WAY)
-      // This uses the function we created to bypass RLS safely
       if (myReg.participation_type === 'Team' && myReg.team_name) {
         const { data: allMembers, error: rpcError } = await supabase.rpc('get_event_team_members', {
           p_event_id: eventId,
@@ -116,12 +109,11 @@ export function AlreadyRegisteredCard({
 
         if (rpcError) {
           console.error("RPC Error:", rpcError);
-          // Fallback: show only self if RPC fails
+          // If RPC fails, fallback to showing just the user to prevent crash
           setLeaderReg(myReg as any);
           setIsLeader(true); 
         } else if (allMembers && allMembers.length > 0) {
-          // Identify Leader: 
-          // Priority: 1. Role is 'Leader', 2. Not invited by anyone (root), 3. First user found
+          // Identify Leader
           const leader = allMembers.find((m: any) => m.team_role === 'Leader') || 
                          allMembers.find((m: any) => !m.invited_by_registration_id) || 
                          allMembers[0];
@@ -139,7 +131,9 @@ export function AlreadyRegisteredCard({
             .from('team_invitations')
             .select('*')
             .eq('event_id', eventId)
-            .ilike('team_name', myReg.team_name.trim()); // Case-insensitive match
+            // FIX: Using JS comment syntax now
+            // Loose match for invitations
+            .ilike('team_name', myReg.team_name.trim());
 
           setInvitations(invites as TeamInvitation[] || []);
         } else {
@@ -389,7 +383,6 @@ export function AlreadyRegisteredCard({
         )}
       </div>
 
-      {/* Edit Modal */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Modify Registry</DialogTitle></DialogHeader>
@@ -407,7 +400,6 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
-      {/* Invite Modal */}
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Squad Expansion</DialogTitle></DialogHeader>
@@ -420,7 +412,6 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
-      {/* QR Modal */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm">
           <DialogHeader className="items-center"><DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle></DialogHeader>
@@ -429,7 +420,6 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
-      {/* Footer Info */}
       <div className="px-6 md:px-10 pb-10">
         <div className="border border-[#1a1a1a] p-4 bg-[#0d0d0d] flex items-start gap-4">
           <Info className="w-4 h-4 text-[#777777] shrink-0 mt-0.5" />
