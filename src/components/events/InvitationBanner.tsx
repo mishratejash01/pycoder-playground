@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, Mail, CheckCircle2, X, ChevronRight, Loader2, Trophy, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Mail, CheckCircle2, X, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +31,10 @@ interface PendingInvitationCardProps {
   onDecline: () => void;
 }
 
+/**
+ * --- PROTOCOL CARD DESIGN ---
+ * Used for specific invitation displays (e.g., on the Event Details page)
+ */
 export function PendingInvitationCard({ 
   invitation, 
   eventTitle,
@@ -43,7 +45,6 @@ export function PendingInvitationCard({
 
   async function handleResponse(accept: boolean) {
     setProcessing(true);
-    
     try {
       const { error } = await supabase
         .from('team_invitations')
@@ -54,85 +55,77 @@ export function PendingInvitationCard({
         .eq('id', invitation.id);
 
       if (error) {
-        console.error('Invitation response error:', error);
-        toast.error(`Failed to respond: ${error.message}`);
+        toast.error(`Protocol Error: ${error.message}`);
         setProcessing(false);
         return;
       }
 
       if (accept) {
-        toast.success("Invitation accepted! Complete your registration below.");
+        toast.success("Integration successful. Complete your squad manifest.");
         onAccept();
       } else {
-        toast.info("Invitation declined");
+        toast.info("Protocol aborted.");
         onDecline();
       }
     } catch (err) {
-      console.error('Error responding to invitation:', err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error("System error. Verify connection and retry.");
     }
-    
     setProcessing(false);
   }
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-b from-card to-background overflow-hidden">
-      {/* Header */}
-      <CardHeader className="bg-primary/5 border-b border-primary/10 pb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-            <Mail className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">You're Invited!</h3>
-            <p className="text-sm text-muted-foreground">{eventTitle}</p>
-          </div>
-        </div>
-      </CardHeader>
+    <div className="w-full max-w-[500px] mx-auto bg-[#050505] border border-[#1a1a1a] font-sans selection:bg-orange-500/30">
+      <div className="p-[30px] border-b border-[#1a1a1a] text-center">
+        <span className="block text-[0.6rem] uppercase tracking-[3px] text-[#666666] mb-[10px] font-bold">
+          Entry Request • {eventTitle}
+        </span>
+        <h3 className="font-serif text-[1.8rem] font-normal text-white">
+          You're Invited!
+        </h3>
+      </div>
 
-      {/* Content */}
-      <CardContent className="p-6 space-y-5">
-        <div className="bg-muted/50 rounded-xl p-4 text-center border border-border">
-          <p className="text-muted-foreground mb-1">
-            <span className="text-foreground font-medium">{invitation.inviter_name}</span> wants you to join
+      <div className="p-[40px] text-center">
+        <div className="mb-[35px]">
+          <p className="text-[0.85rem] text-[#666666] mb-[10px] font-light italic">
+            {invitation.inviter_name} has requested your presence in
           </p>
-          <p className="text-xl font-bold text-primary">{invitation.team_name}</p>
-          <Badge variant="secondary" className="mt-2 text-xs">
+          <h4 className="font-serif text-[2rem] text-[#ff8c00] mb-[15px] leading-tight">
+            {invitation.team_name}
+          </h4>
+          <div className="inline-block text-[0.65rem] uppercase tracking-[2px] border border-[#1a1a1a] px-[12px] py-[6px] text-[#e0e0e0] font-semibold">
             Role: {invitation.role}
-          </Badge>
+          </div>
         </div>
 
-        <p className="text-sm text-muted-foreground text-center">
-          Accept to join the team and complete your registration.
+        <p className="text-[0.85rem] text-[#666666] leading-[1.6] font-light max-w-[300px] mx-auto mb-[40px]">
+          By accepting this protocol, you will be integrated into the squad manifest for the assembly.
         </p>
 
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50"
+        <div className="flex flex-col sm:flex-row gap-[15px]">
+          <button
+            className="flex-1 bg-transparent border border-[#1a1a1a] text-[#666666] p-[18px] text-[0.7rem] uppercase tracking-[2px] cursor-pointer transition-all hover:border-red-500 hover:text-red-500 disabled:opacity-50"
             onClick={() => handleResponse(false)}
             disabled={processing}
           >
-            <X className="w-4 h-4 mr-2" /> Decline
-          </Button>
-          <Button
-            className="flex-1"
+            Decline
+          </button>
+          <button
+            className="flex-[1.5] bg-[#ff8c00] text-black border-none p-[18px] text-[0.75rem] font-extrabold uppercase tracking-[3px] cursor-pointer transition-all hover:bg-white disabled:opacity-50 flex items-center justify-center"
             onClick={() => handleResponse(true)}
             disabled={processing}
           >
-            {processing ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-            )}
-            Accept & Join
-          </Button>
+            {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Accept & Join Squad'}
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
+/**
+ * --- SYSTEM BANNER DESIGN ---
+ * Used as a top-level alert for pending invitations
+ */
 export function InvitationBanner() {
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,28 +146,20 @@ export function InvitationBanner() {
 
       const { data, error } = await supabase
         .from('team_invitations')
-        .select(`
-          *,
-          event:events(title, slug, image_url, start_date)
-        `)
+        .select(`*, event:events(title, slug, image_url, start_date)`)
         .ilike('invitee_email', session.user.email)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching invitations:', error);
-      } else if (data) {
-        setInvitations(data as any);
-      }
+      if (!error && data) setInvitations(data as any);
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Fetch Error:', err);
     }
     setLoading(false);
   }
 
   async function handleResponse(invitationId: string, accept: boolean) {
     setProcessing(true);
-    
     try {
       const { error } = await supabase
         .from('team_invitations')
@@ -185,151 +170,109 @@ export function InvitationBanner() {
         .eq('id', invitationId);
 
       if (error) {
-        console.error('Invitation response error:', error);
-        toast.error(`Failed to respond: ${error.message}`);
+        toast.error(`Action Failed: ${error.message}`);
         setProcessing(false);
         return;
       }
 
-      if (accept) {
-        toast.success("Invitation accepted! Complete your registration on the event page.");
-      } else {
-        toast.info("Invitation declined");
-      }
-
+      toast.success(accept ? "Protocol accepted." : "Invitation declined.");
       setSelectedInvite(null);
       fetchPendingInvitations();
     } catch (err) {
-      console.error('Error responding to invitation:', err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error("System communication error.");
     }
-    
     setProcessing(false);
   }
 
   if (loading || invitations.length === 0) return null;
 
   return (
-    <>
-      {/* Banner */}
-      <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 mb-6">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-              <Mail className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-grow min-w-0">
-              <h3 className="text-base font-semibold text-foreground">
-                You have {invitations.length} pending invitation{invitations.length > 1 ? 's' : ''}!
-              </h3>
-              <p className="text-sm text-muted-foreground truncate">
-                {invitations[0].inviter_name} invited you to join <span className="text-primary font-medium">{invitations[0].team_name}</span>
-              </p>
-            </div>
-            <Button 
-              onClick={() => setSelectedInvite(invitations[0])}
-              size="sm"
-            >
-              View <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+    <div className="w-full max-w-[800px] mx-auto mb-10 font-sans">
+      {/* SYSTEM BANNER */}
+      <div className="bg-[#050505] border border-[#ff8c00] p-[20px_30px] flex justify-between items-center relative overflow-hidden">
+        <div className="flex items-center gap-[20px]">
+          <div className="w-[10px] h-[10px] bg-[#ff8c00] rounded-full shadow-[0_0_10px_#ff8c00] animate-pulse" />
+          <div className="text-left">
+            <h4 className="text-[0.9rem] font-semibold tracking-[0.5px] text-white">
+              {invitations.length} Pending Invitation{invitations.length > 1 ? 's' : ''} Detected
+            </h4>
+            <p className="text-[0.75rem] text-[#666666] mt-[2px] font-light">
+              {invitations[0].team_name} has requested your presence in the assembly.
+            </p>
           </div>
+        </div>
+        <button 
+          onClick={() => setSelectedInvite(invitations[0])}
+          className="bg-transparent border border-[#ff8c00] text-[#ff8c00] p-[8px_16px] text-[0.65rem] uppercase tracking-[2px] cursor-pointer transition-all hover:bg-[#ff8c00] hover:text-black"
+        >
+          Details
+        </button>
+      </div>
 
-          {/* Mini preview of other invitations */}
-          {invitations.length > 1 && (
-            <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-2">
-              {invitations.slice(1).map((invite) => (
-                <button
-                  key={invite.id}
-                  onClick={() => setSelectedInvite(invite)}
-                  className="flex items-center gap-2 bg-muted hover:bg-muted/80 rounded-lg px-3 py-2 text-xs transition-colors shrink-0 border border-border"
-                >
-                  <Users className="w-3 h-3 text-primary" />
-                  <span className="text-foreground">{invite.team_name}</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {invite.event?.title?.slice(0, 15)}...
-                  </Badge>
-                </button>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* MINI TABS (Carousel for multiple invites) */}
+      {invitations.length > 1 && (
+        <div className="flex gap-[10px] overflow-x-auto pb-[10px] mt-[20px] no-scrollbar">
+          {invitations.slice(1).map((invite) => (
+            <button
+              key={invite.id}
+              onClick={() => setSelectedInvite(invite)}
+              className="bg-transparent border border-[#1a1a1a] p-[10px_15px] whitespace-nowrap text-[0.65rem] text-[#666666] uppercase tracking-[1px] hover:border-[#666666] transition-colors"
+            >
+              SQUAD: {invite.team_name.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Invitation Detail Modal */}
+      {/* INVITATION MODAL (Uses Protocol Card Style) */}
       <Dialog open={!!selectedInvite} onOpenChange={() => setSelectedInvite(null)}>
-        <DialogContent className="sm:max-w-[480px] bg-card border-border text-foreground p-0 gap-0">
+        <DialogContent className="max-w-[500px] p-0 bg-transparent border-none">
           {selectedInvite && (
-            <>
-              {/* Header with Event Image */}
-              {selectedInvite.event?.image_url && (
-                <div className="h-36 relative overflow-hidden">
-                  <img 
-                    src={selectedInvite.event.image_url} 
-                    alt="" 
-                    className="w-full h-full object-cover opacity-70"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                  <div className="absolute bottom-4 left-6 right-6">
-                    <Badge className="bg-primary/80 mb-2">
-                      <Trophy className="w-3 h-3 mr-1" /> Hackathon
-                    </Badge>
-                    <h3 className="text-lg font-bold text-foreground">{selectedInvite.event?.title}</h3>
+            <div className="bg-[#050505] border border-[#1a1a1a] w-full animate-in fade-in zoom-in-95 duration-300">
+              <div className="p-[30px] border-b border-[#1a1a1a] text-center">
+                <span className="block text-[0.6rem] uppercase tracking-[3px] text-[#666666] mb-[10px] font-bold">
+                  Entry Request • {selectedInvite.event?.title}
+                </span>
+                <h3 className="font-serif text-[1.8rem] font-normal text-white">
+                  Incoming Intel
+                </h3>
+              </div>
+              <div className="p-[40px] text-center">
+                <div className="mb-[35px]">
+                  <p className="text-[0.85rem] text-[#666666] mb-[10px] font-light italic">
+                    {selectedInvite.inviter_name} has invited you to join
+                  </p>
+                  <h4 className="font-serif text-[2rem] text-[#ff8c00] mb-[15px] leading-tight">
+                    {selectedInvite.team_name}
+                  </h4>
+                  <div className="inline-block text-[0.65rem] uppercase tracking-[2px] border border-[#1a1a1a] px-[12px] py-[6px] text-[#e0e0e0] font-semibold">
+                    Role: {selectedInvite.role}
                   </div>
                 </div>
-              )}
-
-              <div className="p-6 space-y-5">
-                <DialogHeader>
-                  <DialogTitle className="text-center">
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 border border-primary/20">
-                      <Sparkles className="w-7 h-7 text-primary" />
-                    </div>
-                    <span className="block text-xl">You've been invited!</span>
-                  </DialogTitle>
-                </DialogHeader>
-
-                <div className="bg-muted/50 rounded-xl p-4 text-center border border-border">
-                  <p className="text-muted-foreground mb-1">
-                    <span className="text-foreground font-medium">{selectedInvite.inviter_name}</span> wants you to join
-                  </p>
-                  <p className="text-xl font-bold text-primary">{selectedInvite.team_name}</p>
-                  <Badge variant="secondary" className="mt-2 text-xs">
-                    Role: {selectedInvite.role}
-                  </Badge>
-                </div>
-
-                <div className="text-center text-sm text-muted-foreground space-y-1">
-                  <p>By accepting, you'll join the team for this hackathon.</p>
-                  <p>You'll need to complete your registration details.</p>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50"
+                <p className="text-[0.85rem] text-[#666666] leading-[1.6] font-light max-w-[300px] mx-auto mb-[40px]">
+                  By accepting this protocol, you will be integrated into the squad manifest for the assembly.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-[15px]">
+                  <button
+                    className="flex-1 bg-transparent border border-[#1a1a1a] text-[#666666] p-[18px] text-[0.7rem] uppercase tracking-[2px] cursor-pointer transition-all hover:border-red-500 hover:text-red-500 disabled:opacity-50"
                     onClick={() => handleResponse(selectedInvite.id, false)}
                     disabled={processing}
                   >
-                    <X className="w-4 h-4 mr-2" /> Decline
-                  </Button>
-                  <Button
-                    className="flex-1"
+                    Decline
+                  </button>
+                  <button
+                    className="flex-[1.5] bg-[#ff8c00] text-black border-none p-[18px] text-[0.75rem] font-extrabold uppercase tracking-[3px] cursor-pointer transition-all hover:bg-white disabled:opacity-50 flex items-center justify-center"
                     onClick={() => handleResponse(selectedInvite.id, true)}
                     disabled={processing}
                   >
-                    {processing ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                    )}
-                    Accept & Join
-                  </Button>
+                    {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Accept & Join Squad'}
+                  </button>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
