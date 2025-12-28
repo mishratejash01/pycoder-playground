@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
@@ -16,9 +15,6 @@ import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { AppRoutes } from "./routes";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import AvailabilityGuard from "@/components/AvailabilityGuard";
-
-// --- IMPORT THE VERIFICATION PAGE ---
-import VerifyRegistration from "@/pages/VerifyRegistration";
 
 const queryClient = new QueryClient();
 
@@ -55,17 +51,22 @@ const AppContent = () => {
     syncRoutes();
   }, []);
 
-  // --- HIDE NAVIGATION ON VERIFICATION PAGE ---
-  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth', '/verify']; 
+  /**
+   * NAVIGATION VISIBILITY LOGIC
+   * We hide the Dock and Footer on utility pages like Authentication, 
+   * the Gate Check-in terminal, and the Digital Pass verification screen.
+   */
+  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth', '/verify', '/admin']; 
   const showDock = !hideDockRoutes.some(path => 
     location.pathname === path || 
     location.pathname.startsWith('/practice') || 
     location.pathname.startsWith('/exam') || 
     location.pathname.startsWith('/compiler') ||
-    location.pathname.startsWith('/verify')
+    location.pathname.startsWith('/verify') ||
+    location.pathname.startsWith('/admin')
   );
   
-  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile', '/verify'];
+  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile', '/verify', '/admin'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
@@ -83,7 +84,6 @@ const AppContent = () => {
   const getSectionKey = (path: string): string | null => {
     if (path.startsWith('/degree') || path === '/exam' || path.startsWith('/exam/')) return 'iitm_bs';
     if (path === '/practice-arena' || path.startsWith('/practice-arena/') || path === '/practice' || path.startsWith('/practice/')) return 'practice';
-    // --- MAP VERIFY PAGE TO EVENTS GUARD ---
     if (path === '/events' || path.startsWith('/events/') || path.startsWith('/verify/')) return 'events';
     if (path === '/compiler') return 'compiler';
     if (path === '/leaderboard') return 'leaderboard';
@@ -93,18 +93,9 @@ const AppContent = () => {
 
   return (
     <AvailabilityGuard sectionKey="main_website">
+      {showSplash && <SplashScreen />}
       <AnnouncementBanner />
       <Routes>
-        {/* --- MANUAL ROUTE FOR QR SCAN VERIFICATION --- */}
-        <Route 
-          path="/verify/:registrationId" 
-          element={
-            <AvailabilityGuard sectionKey="events">
-              <VerifyRegistration />
-            </AvailabilityGuard>
-          } 
-        />
-
         {AppRoutes.map((route) => {
           const sectionKey = getSectionKey(route.path);
           const RouteElement = <route.component />;
