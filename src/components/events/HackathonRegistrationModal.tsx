@@ -279,10 +279,23 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="college_org_name" render={({ field }) => (
-                        <FormItem className="md:col-span-2 space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">College or Company Name</label>
+                        <FormItem className="space-y-2.5">
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">College or Company</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="Where do you study or work?" /></FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="current_status" render={({ field }) => (
+                        <FormItem className="space-y-2.5">
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Current Status</label>
+                          <FormControl>
+                            <select className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" value={field.value} onChange={field.onChange}>
+                              <option value="Student" className="bg-black">Student</option>
+                              <option value="Working Professional" className="bg-black">Working Professional</option>
+                              <option value="Freelancer" className="bg-black">Freelancer</option>
+                              <option value="Founder" className="bg-black">Founder</option>
+                            </select>
+                          </FormControl>
                         </FormItem>
                       )} />
                     </div>
