@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { 
-  Check, Users, RefreshCw, ChevronDown, ChevronUp, Layers, 
-  UserPlus, Pencil, Trash2, ShieldCheck, QrCode, Info 
+  Check, Users, ChevronDown, ChevronUp, 
+  Pencil, Trash2, QrCode, Info, ExternalLink 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -36,8 +37,12 @@ interface Registration {
   team_name: string | null;
   team_role: string;
   participation_type: string;
-  payment_status: string;
+  payment_status?: string; // Optional as per RPC return
   invited_by_registration_id: string | null;
+  // Extra fields from RPC
+  avatar_url?: string | null;
+  github_link?: string | null;
+  linkedin_link?: string | null;
 }
 
 interface AlreadyRegisteredCardProps {
@@ -51,10 +56,14 @@ interface AlreadyRegisteredCardProps {
 
 export function AlreadyRegisteredCard({ 
   eventId, 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   eventTitle, 
   maxTeamSize = 4,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isPaid,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   registrationFee,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   currency
 }: AlreadyRegisteredCardProps) {
   const [currentUserReg, setCurrentUserReg] = useState<Registration | null>(null);
@@ -63,7 +72,7 @@ export function AlreadyRegisteredCard({
   const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
   
   const [loading, setLoading] = useState(true);
-  const [showTeamDetails, setShowTeamDetails] = useState(false);
+  const [showTeamDetails, setShowTeamDetails] = useState(true); // Default open for better UX
   const [isLeader, setIsLeader] = useState(false);
   
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -74,39 +83,75 @@ export function AlreadyRegisteredCard({
 
   useEffect(() => {
     fetchTeamData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   async function fetchTeamData() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) { setLoading(false); return; }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setLoading(false); return; }
 
-    const { data: reg } = await supabase
-      .from('event_registrations')
-      .select('*')
-      .eq('event_id', eventId)
-      .eq('user_id', session.user.id)
-      .maybeSingle();
+      // 1. Get Current User's Registration (To know who I am & my team name)
+      const { data: myReg } = await supabase
+        .from('event_registrations')
+        .select('*')
+        .eq('event_id', eventId)
+        .eq('user_id', session.user.id)
+        .maybeSingle();
 
-    if (!reg) { setLoading(false); return; }
-    setCurrentUserReg(reg);
-    
-    const leaderId = reg.invited_by_registration_id || reg.id;
-    setIsLeader(!reg.invited_by_registration_id);
+      if (!myReg) { setLoading(false); return; }
+      setCurrentUserReg(myReg as any);
 
-    const [leaderRes, membersRes, invitesRes] = await Promise.all([
-      supabase.from('event_registrations').select('*').eq('id', leaderId).single(),
-      supabase.from('event_registrations').select('*').eq('invited_by_registration_id', leaderId),
-      supabase.from('team_invitations').select('*').eq('registration_id', leaderId)
-    ]);
+      // 2. Fetch ALL Team Members using the SECURE RPC (Fixes invisible members)
+      if (myReg.participation_type === 'Team' && myReg.team_name) {
+        const { data: allMembers, error: rpcError } = await supabase.rpc('get_event_team_members', {
+          p_event_id: eventId,
+          p_team_name: myReg.team_name
+        });
 
-    setLeaderReg(leaderRes.data);
-    setTeamMembers(membersRes.data || []);
-    setInvitations((invitesRes.data || []) as TeamInvitation[]);
-    setLoading(false);
+        if (rpcError) {
+          console.error("RPC Error:", rpcError);
+          toast.error("Could not load team details");
+        } 
+        
+        if (allMembers) {
+          // Identify Leader vs Members
+          // Logic: The one with role 'Leader' OR the one with no 'invited_by_registration_id'
+          const leader = allMembers.find((m: any) => m.team_role === 'Leader' || !m.invited_by_registration_id) || allMembers[0];
+          const members = allMembers.filter((m: any) => m.id !== leader.id);
+
+          setLeaderReg(leader as any);
+          setTeamMembers(members as any);
+          
+          // Determine if current user is leader
+          const amILeader = leader.user_id === session.user.id;
+          setIsLeader(amILeader);
+
+          // 3. Fetch Invitations (Only if Leader, or just fetch all for this team context)
+          // RLS allows reading invites if you are the inviter or invitee.
+          // Since we want to show pending invites, we query by team/event or leader ID.
+          const { data: invites } = await supabase
+            .from('team_invitations')
+            .select('*')
+            .eq('event_id', eventId)
+            .eq('team_name', myReg.team_name); // Safer to query by team name if possible, or use leader ID
+
+          setInvitations(invites as TeamInvitation[] || []);
+        }
+      } else {
+        // Solo Logic
+        setLeaderReg(myReg as any);
+        setTeamMembers([]);
+        setIsLeader(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const confirmedCount = teamMembers.length + 1; // +1 for leader
-  const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
   const isTeamFull = confirmedCount >= maxTeamSize;
 
   const handleDeleteInvitation = async (inviteId: string) => {
@@ -120,6 +165,8 @@ export function AlreadyRegisteredCard({
   };
 
   const handleRemoveMember = async (memberId: string) => {
+    // Determine if we are deleting a registration or invitation (logic handled by caller usually)
+    // Here we are removing a registered member.
     const { error } = await supabase.from('event_registrations').delete().eq('id', memberId);
     if (error) {
       toast.error("Remove failed: " + error.message);
@@ -155,12 +202,13 @@ export function AlreadyRegisteredCard({
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data: { session } } = await supabase.auth.getSession();
+    
     const { error } = await supabase.from('team_invitations').insert({
-      registration_id: leaderReg?.id,
+      registration_id: leaderReg?.id, // Link to leader's registration
       event_id: eventId,
       inviter_user_id: session?.user.id,
       invitee_name: inviteForm.name,
-      invitee_email: inviteForm.email,
+      invitee_email: inviteForm.email.toLowerCase(),
       role: inviteForm.role,
       team_name: leaderReg?.team_name || 'Team',
       inviter_name: leaderReg?.full_name || 'Leader',
@@ -216,7 +264,9 @@ export function AlreadyRegisteredCard({
           </div>
           <div className="space-y-1">
             <span className="text-[10px] tracking-[3px] uppercase text-[#777777] block">Registry Verified</span>
-            <h2 className="font-serif text-3xl md:text-[2.4rem] font-normal leading-none text-white">Squad Profile</h2>
+            <h2 className="font-serif text-3xl md:text-[2.4rem] font-normal leading-none text-white">
+              {currentUserReg.team_name || 'Solo Entry'}
+            </h2>
           </div>
         </div>
         <button onClick={() => setShowQR(true)} className="w-[45px] h-[45px] border border-[#1a1a1a] flex items-center justify-center text-[#777777] hover:text-[#00ff88] transition-colors">
@@ -232,7 +282,7 @@ export function AlreadyRegisteredCard({
             Squad Manifest ({confirmedCount}/{maxTeamSize})
           </div>
           <div className="flex items-center gap-4">
-             {isLeader && !isTeamFull && (
+             {isLeader && !isTeamFull && currentUserReg.participation_type === 'Team' && (
                 <button onClick={(e) => { e.stopPropagation(); setIsInviteOpen(true); }} className="text-[9px] uppercase tracking-[2px] text-[#00ff88] border border-[#00ff88]/20 px-2 py-1 hover:bg-[#00ff88]/10">
                   + Add Member
                 </button>
@@ -246,9 +296,17 @@ export function AlreadyRegisteredCard({
             {/* 1. Leader (Always visible to everyone) */}
             <div className="p-6 flex justify-between items-center gap-5 text-white">
               <div className="flex gap-4 items-center flex-1">
-                <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">01</div>
+                <Avatar className="h-9 w-9 border border-[#1a1a1a]">
+                  <AvatarImage src={leaderReg.avatar_url || undefined} />
+                  <AvatarFallback className="bg-[#1a1a1a] text-[#666666] text-xs">
+                    {leaderReg.full_name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <h4 className="text-sm font-medium">{leaderReg.full_name} (Leader)</h4>
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    {leaderReg.full_name} 
+                    <span className="text-[9px] bg-[#ff8c00]/10 text-[#ff8c00] px-1 rounded border border-[#ff8c00]/20">LEADER</span>
+                  </h4>
                   <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{leaderReg.team_role || 'Squad Alpha'}</p>
                 </div>
               </div>
@@ -257,23 +315,42 @@ export function AlreadyRegisteredCard({
                 {isLeader && (
                   <button onClick={() => handleEditOpen(leaderReg.id, leaderReg.full_name, leaderReg.team_role, 'reg')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
                 )}
+                {leaderReg.github_link && (
+                  <a href={leaderReg.github_link} target="_blank" rel="noreferrer" className="text-[#777777] hover:text-white"><ExternalLink className="w-3.5 h-3.5" /></a>
+                )}
               </div>
             </div>
 
             {/* 2. Confirmed Members (Visible to everyone) */}
-            {teamMembers.map((member, idx) => (
+            {teamMembers.map((member) => (
               <div key={member.id} className="p-6 flex justify-between items-center gap-5 text-white">
                 <div className="flex gap-4 items-center flex-1">
-                  <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">{String(idx + 2).padStart(2, '0')}</div>
+                  <Avatar className="h-9 w-9 border border-[#1a1a1a]">
+                    <AvatarImage src={member.avatar_url || undefined} />
+                    <AvatarFallback className="bg-[#1a1a1a] text-[#666666] text-xs">
+                      {member.full_name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h4 className="text-sm font-medium">{member.full_name}</h4>
                     <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{member.team_role}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                   <StatusBadge status="completed" />
+                  
+                  {/* Actions: Leader can edit anyone; Members can edit themselves */}
                   {(isLeader || member.user_id === currentUserReg.user_id) && (
                     <button onClick={() => handleEditOpen(member.id, member.full_name, member.team_role, 'reg')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
+                  )}
+                  
+                  {/* Remove: Leader can remove anyone */}
+                  {isLeader && (
+                    <button onClick={() => handleRemoveMember(member.id)} className="text-[#777777] hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                  )}
+
+                  {member.github_link && (
+                    <a href={member.github_link} target="_blank" rel="noreferrer" className="text-[#777777] hover:text-white"><ExternalLink className="w-3.5 h-3.5" /></a>
                   )}
                 </div>
               </div>
@@ -286,7 +363,7 @@ export function AlreadyRegisteredCard({
               return (
                 <div key={invite.id} className="p-6 flex justify-between items-center gap-5 text-white bg-white/[0.02]">
                   <div className="flex gap-4 items-center flex-1 opacity-60">
-                    <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">--</div>
+                    <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">INVITE</div>
                     <div>
                       <h4 className="text-sm font-medium">{invite.invitee_name || invite.invitee_email}</h4>
                       <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{invite.role || 'Member'}</p>
