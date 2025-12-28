@@ -78,7 +78,7 @@
   font-family: 'Neuropol X', sans-serif;
 }
 
-/* --- ANIMATIONS --- */
+/* --- 1. FASTER CURTAIN REVEAL --- */
 @keyframes curtain-reveal {
   0% {
     clip-path: inset(0 100% 0 0);
@@ -93,11 +93,13 @@
 }
 
 .animate-curtain-reveal {
+  /* Duration reduced to 1.8s to fit within 3s window */
   animation: curtain-reveal 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: 0.2s;
   opacity: 0;
 }
 
+/* --- 2. FASTER LIGHT RAY PASS --- */
 @keyframes light-ray-pass {
   0% {
     background-position: 200% center;
@@ -123,34 +125,9 @@
   color: transparent;
   background-clip: text;
   -webkit-background-clip: text;
+  
+  /* Speed up: 2s duration, starts earlier at 1.2s */
   animation: light-ray-pass 2s ease-out forwards;
   animation-delay: 1.2s; 
   opacity: 0;
-}
-
-/* --- NEW ATTENDANCE WATERMARK LOGIC --- */
-.watermark-attended {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-30deg);
-  font-size: 5rem;
-  font-weight: 900;
-  color: rgba(0, 255, 136, 0.15); /* Brand green at low opacity */
-  border: 10px solid rgba(0, 255, 136, 0.15);
-  padding: 1rem 3rem;
-  text-transform: uppercase;
-  pointer-events: none;
-  z-index: 50;
-  letter-spacing: 12px;
-  white-space: nowrap;
-  user-select: none;
-}
-
-@media print {
-  .watermark-attended {
-    /* Ensures watermark remains visible but subtle when pass is printed to PDF */
-    color: rgba(0, 0, 0, 0.1) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-  }
 }
