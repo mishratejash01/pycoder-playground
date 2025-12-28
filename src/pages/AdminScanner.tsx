@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Html5QrcodeScanner } from 'html5-qr-code';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { ShieldCheck, Loader2, UserCheck, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
