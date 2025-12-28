@@ -58,6 +58,7 @@ export function AlreadyRegisteredCard({
 }: AlreadyRegisteredCardProps) {
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
+  const [teamMembers, setTeamMembers] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [isLeader, setIsLeader] = useState(false);
@@ -72,7 +73,8 @@ export function AlreadyRegisteredCard({
     id: string;
     name: string;
     role: string;
-    type: 'leader' | 'member';
+    email?: string;
+    type: 'leader' | 'member' | 'invite';
   } | null>(null);
 
   // Invite Form State
@@ -102,26 +104,31 @@ export function AlreadyRegisteredCard({
     }
 
     setRegistration(reg as any);
+    const leaderId = reg.invited_by_registration_id || reg.id;
     setIsLeader(!reg.invited_by_registration_id);
 
     if (reg.participation_type === 'Team') {
-      const primaryId = reg.invited_by_registration_id || reg.id;
-      const { data: invites } = await supabase
-        .from('team_invitations')
-        .select('*')
-        .eq('registration_id', primaryId)
-        .order('created_at', { ascending: true });
+      // Fetch both confirmed members and invitations
+      const [membersRes, invitesRes] = await Promise.all([
+        supabase.from('event_registrations').select('*').eq('invited_by_registration_id', leaderId),
+        supabase.from('team_invitations').select('*').eq('registration_id', leaderId)
+      ]);
 
-      if (invites) setInvitations(invites as any);
+      setTeamMembers(membersRes.data || []);
+      setInvitations(invitesRes.data || []);
     }
     setLoading(false);
   }
 
-  const handleEditOpen = (member: any, type: 'leader' | 'member') => {
+  const confirmedCount = teamMembers.length + 1; // Members + Leader
+  const isTeamFull = confirmedCount >= maxTeamSize;
+
+  const handleEditOpen = (member: any, type: 'leader' | 'member' | 'invite') => {
     setEditingMember({
       id: member.id,
-      name: type === 'leader' ? member.full_name : member.invitee_name,
-      role: type === 'leader' ? member.team_role : member.role,
+      name: type === 'leader' ? member.full_name : (member.full_name || member.invitee_name),
+      role: type === 'leader' ? member.team_role : (member.team_role || member.role),
+      email: member.email || member.invitee_email,
       type
     });
     setIsEditOpen(true);
@@ -131,7 +138,7 @@ export function AlreadyRegisteredCard({
     if (!editingMember) return;
     
     try {
-      if (editingMember.type === 'leader') {
+      if (editingMember.type === 'leader' || editingMember.type === 'member') {
         const { error } = await supabase
           .from('event_registrations')
           .update({ 
@@ -151,7 +158,7 @@ export function AlreadyRegisteredCard({
         if (error) throw error;
       }
       
-      toast.success("Identity updated successfully");
+      toast.success("Identity updated");
       setIsEditOpen(false);
       fetchRegistration();
     } catch (err: any) {
@@ -161,15 +168,12 @@ export function AlreadyRegisteredCard({
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (invitations.length + 1 >= maxTeamSize) {
-      toast.error(`Squad capacity reached (Max: ${maxTeamSize})`);
-      return;
-    }
-
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const { error } = await supabase.from('team_invitations').insert({
         registration_id: registration?.id,
         event_id: eventId,
+        inviter_user_id: session?.user.id,
         invitee_name: inviteForm.name,
         invitee_email: inviteForm.email,
         role: inviteForm.role,
@@ -181,44 +185,46 @@ export function AlreadyRegisteredCard({
       });
 
       if (error) throw error;
-
-      toast.success("Invitation dispatched");
+      toast.success("Subject invited to squad");
       setInviteForm({ name: '', email: '', role: '' });
       setIsInviteOpen(false);
       fetchRegistration();
     } catch (err: any) {
-      toast.error(err.message || "Failed to send invitation");
-    }
-  };
-
-  const removeMember = async (id: string) => {
-    try {
-      const { error } = await supabase.from('team_invitations').delete().eq('id', id);
-      if (error) throw error;
-      toast.success("Member removed from squad");
-      fetchRegistration();
-    } catch (err: any) {
-      toast.error(err.message || "Removal failed");
+      toast.error(err.message || "Invitation failed");
     }
   };
 
   if (loading || !registration) return null;
 
-  // CUSTOM STATUS BLOCK COMPONENT
-  const StatusBadge = ({ isConfirmed }: { isConfirmed: boolean }) => (
-    <div className="flex items-center gap-3 px-3 py-1.5 border border-[#1a1a1a] bg-transparent rounded-none">
-      <div className="relative flex h-2 w-2">
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.9)]"></span>
+  // STATUS BLOCK COMPONENT
+  const StatusBadge = ({ status }: { status: 'completed' | 'pending' | 'declined' | 'expired' | 'accepted' }) => {
+    const isConfirmed = status === 'completed';
+    const isPending = status === 'pending' || status === 'accepted';
+    const isRejected = status === 'declined' || status === 'expired';
+
+    return (
+      <div className="flex items-center gap-3 px-3 py-1.5 border border-[#1a1a1a] bg-transparent">
+        <div className="relative flex h-2 w-2">
+          {isConfirmed && (
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00ff88] opacity-75"></span>
+          )}
+          <span className={cn(
+            "relative inline-flex rounded-full h-2 w-2",
+            isConfirmed && "bg-[#00ff88] shadow-[0_0_10px_rgba(0,255,136,0.8)]",
+            isPending && "bg-yellow-500",
+            isRejected && "bg-red-600"
+          )}></span>
+        </div>
+        <span className="text-[10px] uppercase tracking-[1px] text-[#e0e0e0] font-medium">
+          {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : 'Rejected'}
+        </span>
       </div>
-      <span className="text-[10px] uppercase tracking-[1px] text-[#e0e0e0] font-medium">
-        {isConfirmed ? 'Confirmed' : 'Awaiting'}
-      </span>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="w-full max-w-[700px] bg-[#0a0a0a] border border-[#1a1a1a] mx-auto font-sans overflow-hidden">
-      {/* HEADER - CLEAN NO PURPLE */}
+      {/* HEADER */}
       <header className="p-6 md:p-10 border-b border-[#1a1a1a] flex justify-between items-center">
         <div className="flex items-center gap-5">
           <div className="w-[50px] h-[50px] border border-[#00ff88] rounded-full flex items-center justify-center text-[#00ff88]">
@@ -226,7 +232,7 @@ export function AlreadyRegisteredCard({
           </div>
           <div className="space-y-1">
             <span className="text-[10px] tracking-[3px] uppercase text-[#777777] block">Registry Verified</span>
-            <h2 className="font-serif text-3xl md:text-[2.4rem] font-normal leading-none text-white">Active Profile</h2>
+            <h2 className="font-serif text-3xl md:text-[2.4rem] font-normal leading-none text-white">Squad Profile</h2>
           </div>
         </div>
         <button 
@@ -237,7 +243,7 @@ export function AlreadyRegisteredCard({
         </button>
       </header>
 
-      {/* TEAM MANIFEST SECTION */}
+      {/* TEAM MANIFEST */}
       {registration.participation_type === 'Team' && (
         <div className="mx-6 md:mx-10 my-10 border border-[#1a1a1a]">
           <button
@@ -246,15 +252,15 @@ export function AlreadyRegisteredCard({
           >
             <div className="text-[11px] tracking-[2px] uppercase flex items-center gap-3 text-white">
               <Users className="w-3.5 h-3.5" />
-              Squad Manifest ({invitations.length + 1}/{maxTeamSize})
+              Manifest ({confirmedCount}/{maxTeamSize})
             </div>
             <div className="flex items-center gap-4">
-               {isLeader && invitations.length + 1 < maxTeamSize && (
+               {isLeader && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); setIsInviteOpen(true); }}
                     className="text-[9px] uppercase tracking-[2px] text-[#00ff88] border border-[#00ff88]/20 px-2 py-1 hover:bg-[#00ff88]/10"
                   >
-                    + Add Subject
+                    + Dispatch Invite
                   </button>
                )}
                {showTeamDetails ? <ChevronUp className="w-3 h-3 text-[#777777]" /> : <ChevronDown className="w-3 h-3 text-[#777777]" />}
@@ -263,7 +269,7 @@ export function AlreadyRegisteredCard({
 
           {showTeamDetails && (
             <div className="bg-[#050505] border-t border-[#1a1a1a] divide-y divide-[#1a1a1a]">
-              {/* Leader Row */}
+              {/* Leader Row - Visible to Everyone */}
               <div className="p-6 flex justify-between items-center gap-5 text-white">
                 <div className="flex gap-4 items-center flex-1">
                   <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">01</div>
@@ -273,7 +279,7 @@ export function AlreadyRegisteredCard({
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
-                  <StatusBadge isConfirmed={true} />
+                  <StatusBadge status="completed" />
                   {isLeader && (
                     <button onClick={() => handleEditOpen(registration, 'leader')} className="text-[#777777] hover:text-white">
                       <Pencil className="w-3.5 h-3.5" />
@@ -282,53 +288,59 @@ export function AlreadyRegisteredCard({
                 </div>
               </div>
 
-              {/* Members Rows */}
-              {invitations.map((invite, index) => {
-                const canEdit = isLeader || invite.invitee_email === registration.email;
-                return (
-                  <div key={invite.id} className="p-6 flex justify-between items-center gap-5 text-white">
-                    <div className="flex gap-4 items-center flex-1">
-                      <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">
-                        {String(index + 2).padStart(2, '0')}
-                      </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-sm font-medium">{invite.invitee_name || 'Pending Subject'}</h4>
-                        <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{invite.role}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-6">
-                      <StatusBadge isConfirmed={invite.status === 'completed'} />
-                      <div className="flex items-center gap-3">
-                        {canEdit && (
-                          <button onClick={() => handleEditOpen(invite, 'member')} className="text-[#777777] hover:text-white">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {isLeader && (
-                          <button onClick={() => removeMember(invite.id)} className="text-[#777777] hover:text-red-500">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+              {/* Registered Members - Visible to Everyone */}
+              {teamMembers.map((member, index) => (
+                <div key={member.id} className="p-6 flex justify-between items-center gap-5 text-white">
+                  <div className="flex gap-4 items-center flex-1">
+                    <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">{String(index + 2).padStart(2, '0')}</div>
+                    <div className="space-y-0.5">
+                      <h4 className="text-sm font-medium">{member.full_name}</h4>
+                      <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{member.team_role}</p>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-6">
+                    <StatusBadge status="completed" />
+                    {(isLeader || member.user_id === registration.user_id) && (
+                      <button onClick={() => handleEditOpen(member, 'member')} className="text-[#777777] hover:text-white">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Pending/Rejected Invites - Visible ONLY to Leader */}
+              {isLeader && invitations.filter(inv => inv.status !== 'completed').map((invite, index) => (
+                <div key={invite.id} className="p-6 flex justify-between items-center gap-5 text-white bg-white/[0.02]">
+                  <div className="flex gap-4 items-center flex-1 opacity-60">
+                    <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">--</div>
+                    <div className="space-y-0.5">
+                      <h4 className="text-sm font-medium">{invite.invitee_name}</h4>
+                      <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{invite.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <StatusBadge status={invite.status as any} />
+                    <button onClick={() => handleEditOpen(invite, 'invite')} className="text-[#777777] hover:text-white">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
       )}
 
-      {/* MODALS - OVERRIDDEN TO REMOVE PURPLE */}
+      {/* EDIT DIALOG */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">Modify Identity</DialogTitle>
+            <DialogTitle className="font-serif text-2xl">Modify Entry</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-4">
              <div className="space-y-2">
-               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Full Identity Name</Label>
+               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Identity Name</Label>
                <Input 
                 value={editingMember?.name || ''} 
                 onChange={e => setEditingMember(prev => prev ? {...prev, name: e.target.value} : null)}
@@ -336,7 +348,7 @@ export function AlreadyRegisteredCard({
                />
              </div>
              <div className="space-y-2">
-               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Squad Designation/Role</Label>
+               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Designated Role</Label>
                <Input 
                 value={editingMember?.role || ''} 
                 onChange={e => setEditingMember(prev => prev ? {...prev, role: e.target.value} : null)}
@@ -344,55 +356,64 @@ export function AlreadyRegisteredCard({
                />
              </div>
              <Button onClick={saveMemberChanges} className="w-full bg-[#00ff88] text-black font-bold uppercase tracking-widest rounded-none h-12 hover:bg-[#00ff88]/90">
-               Sync Protocol
+               Confirm Changes
              </Button>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* INVITE DIALOG */}
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">New Subject Invite</DialogTitle>
+            <DialogTitle className="font-serif text-2xl">Squad Expansion</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleInvite} className="space-y-6 pt-4">
              <div className="space-y-2">
-               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Name</Label>
+               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Subject Name</Label>
                <Input required value={inviteForm.name} onChange={e => setInviteForm({...inviteForm, name: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88] focus:ring-0" />
              </div>
              <div className="space-y-2">
-               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Email Address</Label>
+               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Registry Email</Label>
                <Input required type="email" value={inviteForm.email} onChange={e => setInviteForm({...inviteForm, email: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88] focus:ring-0" />
              </div>
              <div className="space-y-2">
-               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Designated Role</Label>
+               <Label className="text-[10px] uppercase tracking-widest text-[#777777]">Assigned Role</Label>
                <Input required value={inviteForm.role} onChange={e => setInviteForm({...inviteForm, role: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88] focus:ring-0" />
              </div>
-             <Button type="submit" className="w-full bg-[#00ff88] text-black font-bold uppercase tracking-widest rounded-none h-12 hover:bg-[#00ff88]/90">
-               Dispatch Invite
+             <Button type="submit" className="w-full bg-[#00ff88] text-black font-bold uppercase tracking-widest rounded-none h-12">
+               Dispatch Access Key
              </Button>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* QR MODAL */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm">
           <DialogHeader className="items-center">
-            <DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle>
+            <DialogTitle className="font-serif text-2xl">Entry Badge</DialogTitle>
           </DialogHeader>
           <div className="bg-white p-4 mx-auto my-6">
-            <QRCodeSVG 
-              value={`${window.location.origin}/verify/${registration.id}`} 
-              size={200}
-              level="H"
-            />
+            <QRCodeSVG value={`${window.location.origin}/verify/${registration.id}`} size={200} level="H" />
           </div>
-          <div className="text-center space-y-1">
+          <div className="text-center pb-4">
              <p className="text-sm font-medium uppercase tracking-widest">{registration.full_name}</p>
-             <p className="text-[10px] text-[#777777] uppercase tracking-widest">{registration.team_name}</p>
+             <p className="text-[10px] text-[#777777] uppercase tracking-widest">{registration.team_name || 'Individual'}</p>
           </div>
         </DialogContent>
       </Dialog>
+
+      <div className="px-6 md:px-10 pb-10">
+        <div className="border border-[#1a1a1a] p-4 bg-[#0d0d0d] flex items-start gap-4">
+          <Info className="w-4 h-4 text-[#777777] shrink-0 mt-0.5" />
+          <p className="text-[10px] text-[#777777] leading-relaxed uppercase tracking-wider">
+            {isTeamFull 
+              ? "Squad capacity reached. No further registrations possible for this team." 
+              : `New confirmations will be accepted until the team reaches ${maxTeamSize} members.`}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
