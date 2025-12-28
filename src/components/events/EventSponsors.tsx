@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ExternalLink, Globe, Handshake, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2, ExternalLink, Globe } from "lucide-react";
 
 interface Sponsor {
   id: string;
@@ -33,69 +32,79 @@ export function EventSponsors({ eventId }: { eventId: string }) {
     setLoading(false);
   }
 
-  if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin h-8 w-8 text-zinc-500" /></div>;
+  if (loading) return (
+    <div className="flex justify-center p-12">
+      <Loader2 className="animate-spin h-8 w-8 text-[#ff8c00]" />
+    </div>
+  );
 
   const sponsors = items.filter(i => i.type === 'sponsor');
   const partners = items.filter(i => i.type === 'partner');
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 text-zinc-500 bg-white/5 rounded-3xl border border-white/5 border-dashed">
-        <Handshake className="w-12 h-12 mb-4 opacity-50" />
-        <p>No sponsors or partners have been announced yet.</p>
+      <div className="py-[100px] text-center border border-dashed border-[#1a1a1a] bg-[#050505]/50 rounded-none">
+        <p className="text-[0.8rem] text-[#666666] uppercase tracking-[2px] font-bold">
+          Patrons Pending
+        </p>
+        <p className="text-[#333] text-sm mt-2">No sponsors or partners have been announced yet.</p>
       </div>
     );
   }
 
-  // Reusable Grid Component for consistency
-  const Grid = ({ title, data, icon: Icon }: { title: string, data: Sponsor[], icon: any }) => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-        <div className="p-2 bg-white/10 rounded-lg"><Icon className="w-5 h-5 text-primary" /></div>
-        {title}
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  const PatronGrid = ({ title, data }: { title: string, data: Sponsor[] }) => (
+    <div className="w-full">
+      {/* Section Header */}
+      <div className="flex items-center gap-[15px] mb-[50px] mt-[80px] first:mt-0">
+        <div className="w-[2px] h-[24px] bg-[#ff8c00]" />
+        <h3 className="font-serif text-[2.2rem] font-normal tracking-[-0.5px] text-white">
+          {title}
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px]">
         {data.map((item) => (
-          <div key={item.id} className="group relative overflow-hidden rounded-2xl bg-[#151518] border border-white/10 p-6 hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_30px_-10px_rgba(var(--primary),0.3)]">
-            <div className="relative z-10 flex flex-col items-center text-center h-full">
-              {/* Logo Box */}
-              <div className="w-full h-32 mb-6 rounded-xl bg-black/40 flex items-center justify-center p-6 overflow-hidden border border-white/5 group-hover:border-white/20 transition-colors">
-                {item.logo_url ? (
-                  <img src={item.logo_url} alt={item.name} className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-500" />
-                ) : (
-                  <Globe className="w-12 h-12 text-zinc-800 group-hover:text-zinc-600 transition-colors" />
-                )}
-              </div>
-              
-              {/* Tier Badge (Optional) */}
-              {item.tier && (
-                <div className="mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                    {item.tier}
-                  </span>
-                </div>
+          <div key={item.id} className="bg-[#050505] border border-[#1a1a1a] p-[40px_30px] flex flex-col items-center text-center transition-all duration-400 hover:border-[#666666] group">
+            {/* Logo Box */}
+            <div className="w-full h-[120px] flex items-center justify-center mb-[30px] border-b border-[#1a1a1a] pb-[30px]">
+              {item.logo_url ? (
+                <img 
+                  src={item.logo_url} 
+                  alt={item.name} 
+                  className="max-w-[140px] max-h-[60px] grayscale brightness-[0.8] opacity-70 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-400" 
+                />
+              ) : (
+                <Globe className="w-12 h-12 text-[#1a1a1a] group-hover:text-[#333] transition-colors" />
               )}
-              
-              <h4 className="text-xl font-bold text-white mb-2 group-hover:text-primary transition-colors">{item.name}</h4>
-              
-              {item.description && (
-                <p className="text-sm text-zinc-400 mb-6 line-clamp-2 leading-relaxed">
-                  {item.description}
-                </p>
-              )}
-              
-              <div className="mt-auto w-full pt-4 border-t border-white/5">
-                {item.website_url ? (
-                  <Button 
-                    variant="ghost" 
-                    className="w-full h-9 text-zinc-500 hover:text-white hover:bg-white/5"
-                    onClick={() => window.open(item.website_url!, '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" /> Visit Website
-                  </Button>
-                ) : <div className="h-9" />}
-              </div>
             </div>
+            
+            {/* Metadata */}
+            {item.tier && (
+              <span className="text-[0.6rem] uppercase tracking-[3px] text-[#ff8c00] mb-[15px] font-bold">
+                {item.tier}
+              </span>
+            )}
+            
+            <h4 className="font-serif text-[1.5rem] font-normal text-white mb-[12px]">
+              {item.name}
+            </h4>
+            
+            {item.description && (
+              <p className="text-[0.85rem] text-[#666666] leading-[1.6] font-light mb-[30px] min-h-[50px] line-clamp-3">
+                {item.description}
+              </p>
+            )}
+            
+            {/* Action Link */}
+            {item.website_url && (
+              <button 
+                className="mt-auto inline-flex items-center gap-[10px] text-white bg-transparent border border-[#1a1a1a] px-[20px] py-[12px] text-[0.7rem] uppercase tracking-[2px] cursor-pointer transition-all duration-300 hover:bg-white hover:text-black hover:border-white"
+                onClick={() => window.open(item.website_url!, '_blank')}
+              >
+                Visit Website
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -103,9 +112,9 @@ export function EventSponsors({ eventId }: { eventId: string }) {
   );
 
   return (
-    <div className="space-y-16 animate-in fade-in duration-500">
-      {sponsors.length > 0 && <Grid title="Official Sponsors" data={sponsors} icon={Star} />}
-      {partners.length > 0 && <Grid title="Community Partners" data={partners} icon={Handshake} />}
+    <div className="w-full max-w-[900px] mx-auto font-sans selection:bg-orange-500/30">
+      {sponsors.length > 0 && <PatronGrid title="Official Patrons" data={sponsors} />}
+      {partners.length > 0 && <PatronGrid title="Community Partners" data={partners} />}
     </div>
   );
 }
