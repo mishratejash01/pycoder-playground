@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
-// --- DATA TYPES ---
+// --- DATA SCHEMA ---
 interface HackathonEvent {
   id: string;
   title: string;
@@ -31,7 +31,7 @@ interface HackathonRegistrationModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// --- ROBUST VALIDATION SCHEMA ---
+// --- VALIDATION SCHEMA ---
 const formSchema = z.object({
   full_name: z.string().min(2, "Name is required").max(100),
   email: z.string().email("Invalid email").max(255),
@@ -42,33 +42,29 @@ const formSchema = z.object({
   experience_level: z.enum(['Beginner', 'Intermediate', 'Advanced', 'Expert']),
   primary_languages: z.string().min(1, "Enter at least one language"),
   tech_stack_skills: z.string().optional(),
-  github_link: z.string().optional(),
-  linkedin_link: z.string().optional(),
-  resume_url: z.string().optional(),
-  portfolio_url: z.string().optional(),
+  github_link: z.string().optional().or(z.literal("")),
+  linkedin_link: z.string().optional().or(z.literal("")),
+  resume_url: z.string().optional().or(z.literal("")),
+  portfolio_url: z.string().optional().or(z.literal("")),
   prior_experience: z.boolean().default(false),
   participation_type: z.enum(['Solo', 'Team']),
   team_name: z.string().optional(),
   team_members: z.array(z.object({
-    name: z.string().min(1, "Name required"),
-    email: z.string().email("Email required"),
+    name: z.string().min(1, "Member Name required"),
+    email: z.string().email("Member Email required"),
     mobile: z.string().optional(),
     role: z.string().default("Member")
   })).optional(),
   preferred_track: z.string().optional(),
-  motivation_answer: z.string().min(10, "Motivation must be at least 10 characters").max(1000),
+  motivation_answer: z.string().min(10, "Please provide more details (min 10 chars)").max(1000),
   custom_answers: z.record(z.string()).optional(),
+  // Checkbox validation must be strictly true
   agreed_to_rules: z.boolean().refine(val => val === true, "You must agree to the rules"),
   agreed_to_privacy: z.boolean().refine(val => val === true, "You must agree to the privacy policy"),
 }).superRefine((data, ctx) => {
-  // Only validate team name if participation is Team
   if (data.participation_type === 'Team') {
     if (!data.team_name || data.team_name.trim().length < 2) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Team Name is required for team participation",
-        path: ["team_name"]
-      });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Team Name is required for teams", path: ["team_name"] });
     }
   }
 });
@@ -82,7 +78,6 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Ensure arrays are safe
   const tracks = Array.isArray(event.tracks) ? event.tracks : [];
   const customQuestions = Array.isArray(event.custom_questions) ? event.custom_questions : [];
 
@@ -97,7 +92,6 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       preferred_track: tracks[0] || "",
       motivation_answer: "", custom_answers: {},
       agreed_to_rules: false, agreed_to_privacy: false,
-      github_link: "", linkedin_link: ""
     },
     mode: "onChange"
   });
@@ -105,39 +99,33 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "team_members" });
   const watchParticipation = form.watch("participation_type");
 
-  // Load user profile on open
   useEffect(() => {
     async function loadProfile() {
       if (!isOpen) return;
-      
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         form.setValue('email', session.user.email || '');
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         if (profile) {
-          if (profile.full_name) form.setValue('full_name', profile.full_name);
-          if (profile.contact_no) form.setValue('mobile_number', profile.contact_no);
-          if (profile.institute_name) form.setValue('college_org_name', profile.institute_name);
-          if (profile.country) form.setValue('country_city', profile.country);
-          if (profile.github_handle) form.setValue('github_link', `https://github.com/${profile.github_handle}`);
-          if (profile.linkedin_url) form.setValue('linkedin_link', profile.linkedin_url);
+          if(profile.full_name) form.setValue('full_name', profile.full_name);
+          if(profile.contact_no) form.setValue('mobile_number', profile.contact_no);
+          if(profile.institute_name) form.setValue('college_org_name', profile.institute_name);
+          if(profile.country) form.setValue('country_city', profile.country);
+          if(profile.github_handle) form.setValue('github_link', `https://github.com/${profile.github_handle}`);
+          if(profile.linkedin_url) form.setValue('linkedin_link', profile.linkedin_url);
+          if(profile.experience_level) form.setValue('experience_level', (profile.experience_level as any));
         }
       }
     }
     loadProfile();
   }, [isOpen, form]);
 
-  // Handle Form Submission
   async function onSubmit(values: FormValues) {
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        toast.error("You must be logged in to register");
-        return;
-      }
+      if (!session?.user) throw new Error("Please log in to register");
 
-      // Prepare payload
       const registrationData = {
         event_id: event.id,
         user_id: session.user.id,
@@ -155,7 +143,6 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         resume_url: values.resume_url || null,
         prior_experience: values.prior_experience,
         participation_type: values.participation_type,
-        // Critical: Only send team name if Team mode
         team_name: values.participation_type === 'Team' ? values.team_name : null,
         team_members_data: values.participation_type === 'Team' ? values.team_members : [],
         team_role: 'Leader',
@@ -168,18 +155,9 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         status: event.is_paid ? 'pending_payment' : 'confirmed',
       };
 
-      const { data: registration, error } = await supabase
-        .from('event_registrations')
-        .insert(registrationData as any)
-        .select()
-        .single();
+      const { data: registration, error } = await supabase.from('event_registrations').insert(registrationData as any).select().single();
+      if (error) throw error;
 
-      if (error) {
-        if (error.code === '23505') throw new Error("You are already registered for this event.");
-        throw error;
-      }
-
-      // Handle Invitations
       if (values.participation_type === 'Team' && values.team_members && values.team_members.length > 0) {
         const invitations = values.team_members.map(member => ({
           registration_id: registration.id,
@@ -199,38 +177,45 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       }
 
       setIsSuccess(true);
-      toast.success("Registration Successful!");
-
+      toast.success("Registration successful!");
     } catch (err: any) {
-      console.error("Registration Error:", err);
-      toast.error(err.message || "Registration failed. Please try again.");
+      console.error("Registration error:", err);
+      toast.error(err.code === '23505' ? "You are already registered for this event." : (err.message || "Registration failure"));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // --- ERROR HANDLER ---
-  const onFormError = (errors: any) => {
-    // Extract first error message to show to user
-    const firstErrorKey = Object.keys(errors)[0];
-    const firstError = errors[firstErrorKey];
-    
-    let errorMessage = "Please check the form for errors.";
-    if (firstError?.message) {
-      errorMessage = firstError.message;
-    } else if (firstError?.root?.message) {
-      errorMessage = firstError.root.message;
-    }
-
-    // Special handling for checkboxes
-    if (errors.agreed_to_rules) errorMessage = "You must agree to the rules.";
-    if (errors.agreed_to_privacy) errorMessage = "You must agree to the privacy policy.";
-    if (errors.team_name) errorMessage = "Team Name is required.";
-
-    toast.error("Validation Failed", {
-      description: errorMessage
+  // --- FIXED ERROR LOGGING ---
+  // This helper function extracts all error messages from nested objects
+  const getErrorMessages = (errors: any): string[] => {
+    let messages: string[] = [];
+    Object.entries(errors).forEach(([key, value]: [string, any]) => {
+      if (value?.message) {
+        messages.push(value.message);
+      } else if (typeof value === 'object' && value !== null) {
+        messages = [...messages, ...getErrorMessages(value)];
+      }
     });
-    console.error("Form Validation Errors:", errors);
+    return messages;
+  };
+
+  const onFormError = (errors: any) => {
+    console.log("Full Form Validation Errors:", errors);
+    const messages = getErrorMessages(errors);
+    const uniqueMessages = Array.from(new Set(messages));
+    
+    if (uniqueMessages.length > 0) {
+      toast.error("Validation Failed", {
+        description: (
+          <ul className="list-disc pl-4 text-xs mt-2 space-y-1">
+            {uniqueMessages.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}
+          </ul>
+        )
+      });
+    } else {
+      toast.error("Please fill in all required fields correctly.");
+    }
   };
 
   const nextStep = async () => {
@@ -244,28 +229,31 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
     if (isValid) {
       setStep(s => Math.min(s + 1, totalSteps));
     } else {
-       toast.error("Please fill all required fields correctly.");
+       toast.error("Please complete the required fields in this step.");
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!isSubmitting) onOpenChange(open); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!isSubmitting) onOpenChange(open);
+    }}>
       <DialogContent className="max-w-[700px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto block">
         <VisuallyHidden>
           <DialogTitle>Registration</DialogTitle>
-          <DialogDescription>Event Registration Form</DialogDescription>
+          <DialogDescription>Event Registration</DialogDescription>
         </VisuallyHidden>
 
         <div className="w-full bg-[#050505] border border-[#1a1a1a] font-sans selection:bg-orange-500/30">
+          
           {!isSuccess ? (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit, onFormError)}>
-                {/* Header */}
+                {/* --- Header --- */}
                 <header className="p-[40px] bg-[#0a0a0a] border-b border-[#1a1a1a]">
                   <div className="flex justify-between items-start mb-[40px]">
                     <div>
-                      <span className="text-[0.6rem] uppercase tracking-[3px] text-[#777777] block mb-2">2025 Event</span>
-                      <h2 className="font-serif text-[2.2rem] font-normal text-white leading-tight">Registration</h2>
+                      <span className="text-[0.6rem] uppercase tracking-[3px] text-[#777777] block mb-2">2025 Event Registration</span>
+                      <h2 className="font-serif text-[2.2rem] font-normal text-white leading-tight">Join the Hackathon</h2>
                     </div>
                     <div className="w-[2px] h-[40px] bg-[#ff8c00]" />
                   </div>
@@ -277,14 +265,11 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                       const sNum = index + 1;
                       return (
                         <div key={title} className="relative z-10 bg-[#0a0a0a] flex flex-col items-center">
-                          <div 
-                            className={cn(
-                              "w-[32px] h-[32px] border flex items-center justify-center text-[0.6rem] transition-all duration-400 font-mono cursor-pointer",
-                              step === sNum ? "border-[#ff8c00] text-[#ff8c00] shadow-[0_0_10px_rgba(255,140,0,0.15)]" : 
-                              step > sNum ? "border-[#00ff88] text-[#00ff88]" : "border-[#1a1a1a] text-[#777777]"
-                            )}
-                            onClick={() => { if (step > sNum) setStep(sNum); }}
-                          >
+                          <div className={cn(
+                            "w-[32px] h-[32px] border flex items-center justify-center text-[0.6rem] transition-all duration-400 font-mono",
+                            step === sNum ? "border-[#ff8c00] text-[#ff8c00] shadow-[0_0_10px_rgba(255,140,0,0.15)]" : 
+                            step > sNum ? "border-[#00ff88] text-[#00ff88]" : "border-[#1a1a1a] text-[#777777]"
+                          )}>
                             {step > sNum ? <Check size={12} /> : `0${sNum}`}
                           </div>
                           <span className={cn(
@@ -297,50 +282,50 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                   </div>
                 </header>
 
-                {/* Body */}
+                {/* --- Body --- */}
                 <div className="p-[40px] min-h-[480px]">
-                  {/* STEP 1: PERSONAL */}
+                  {/* Step 1: Personal */}
                   {step === 1 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[25px] gap-y-[25px] animate-in fade-in slide-in-from-bottom-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[25px] gap-y-[25px] animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <FormField control={form.control} name="full_name" render={({ field }) => (
                         <FormItem className="md:col-span-2 space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Full Name</label>
-                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
-                          <FormMessage className="text-red-500 text-xs" />
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Your Full Name</label>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="e.g. John Doe" /></FormControl>
+                          <FormMessage className="text-[10px] uppercase text-red-500" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem className="md:col-span-2 space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Email</label>
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Email Address</label>
                           <FormControl><input className="w-full bg-[#0a0a0a] border border-[#1a1a1a] text-[#777777] p-[14px] text-[0.9rem] cursor-not-allowed" {...field} disabled /></FormControl>
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="mobile_number" render={({ field }) => (
                         <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Mobile</label>
-                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Phone Number</label>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="+91 00000 00000" /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="country_city" render={({ field }) => (
                         <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Location</label>
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">City & Country</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="college_org_name" render={({ field }) => (
-                        <FormItem className="md:col-span-2 space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">College / Organization</label>
+                        <FormItem className="space-y-2.5">
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">College or Company</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="current_status" render={({ field }) => (
-                        <FormItem className="md:col-span-2 space-y-2.5">
+                        <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Current Status</label>
                           <FormControl>
-                            <select className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" {...field}>
+                            <select className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" value={field.value} onChange={field.onChange}>
                               <option value="Student" className="bg-black">Student</option>
                               <option value="Working Professional" className="bg-black">Working Professional</option>
                               <option value="Freelancer" className="bg-black">Freelancer</option>
@@ -352,14 +337,14 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                     </div>
                   )}
 
-                  {/* STEP 2: SKILLS */}
+                  {/* Step 2: Skills */}
                   {step === 2 && (
-                    <div className="grid grid-cols-1 gap-[25px] animate-in fade-in slide-in-from-bottom-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-[25px] animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <FormField control={form.control} name="experience_level" render={({ field }) => (
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Experience Level</label>
                           <FormControl>
-                            <select className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" {...field}>
+                            <select className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" value={field.value} onChange={field.onChange}>
                               <option value="Beginner" className="bg-black">Beginner</option>
                               <option value="Intermediate" className="bg-black">Intermediate</option>
                               <option value="Advanced" className="bg-black">Advanced</option>
@@ -370,45 +355,51 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                       )} />
                       <FormField control={form.control} name="primary_languages" render={({ field }) => (
                         <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Primary Languages</label>
-                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="e.g. Python, JS" /></FormControl>
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Main Languages</label>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="e.g. JavaScript, Python" /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="github_link" render={({ field }) => (
                         <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">GitHub (Optional)</label>
-                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">GitHub Link</label>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="https://github.com/..." /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="linkedin_link" render={({ field }) => (
+                        <FormItem className="space-y-2.5">
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">LinkedIn</label>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="https://linkedin.com/..." /></FormControl>
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="tech_stack_skills" render={({ field }) => (
-                        <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Tech Stack / Skills</label>
-                          <FormControl><textarea className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none h-[100px] resize-none focus:border-[#777777]" {...field} placeholder="Tools & Frameworks you use..." /></FormControl>
+                        <FormItem className="md:col-span-2 space-y-2.5">
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">About your background</label>
+                          <FormControl><textarea className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none h-[100px] focus:border-[#777777] resize-none" {...field} placeholder="Tell us a bit about your previous projects..." /></FormControl>
                         </FormItem>
                       )} />
                     </div>
                   )}
 
-                  {/* STEP 3: TEAM */}
+                  {/* Step 3: Team */}
                   {step === 3 && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div className="grid grid-cols-2 gap-[20px]">
                         {event.allow_solo && (
                           <div 
                             onClick={() => form.setValue('participation_type', 'Solo')}
                             className={cn("border p-[25px] cursor-pointer transition-all text-center bg-[#080808]", watchParticipation === 'Solo' ? "border-[#ff8c00]" : "border-[#1a1a1a] opacity-50")}
                           >
-                            <h4 className="text-[0.8rem] uppercase tracking-[2px] text-white mb-2.5 font-bold">Solo</h4>
-                            <p className="text-[0.7rem] text-[#777777]">Work alone</p>
+                            <h4 className="text-[0.8rem] uppercase tracking-[2px] text-white mb-2.5 font-bold">Join Solo</h4>
+                            <p className="text-[0.7rem] text-[#777777]">I will work by myself</p>
                           </div>
                         )}
                         <div 
                           onClick={() => form.setValue('participation_type', 'Team')}
                           className={cn("border p-[25px] cursor-pointer transition-all text-center bg-[#080808]", watchParticipation === 'Team' ? "border-[#ff8c00]" : "border-[#1a1a1a] opacity-50", !event.allow_solo && "col-span-2")}
                         >
-                          <h4 className="text-[0.8rem] uppercase tracking-[2px] text-white mb-2.5 font-bold">Team</h4>
-                          <p className="text-[0.7rem] text-[#777777]">With others</p>
+                          <h4 className="text-[0.8rem] uppercase tracking-[2px] text-white mb-2.5 font-bold">Form a Team</h4>
+                          <p className="text-[0.7rem] text-[#777777]">Invite friends to join me</p>
                         </div>
                       </div>
 
@@ -416,28 +407,39 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <div className="space-y-6">
                           <FormField control={form.control} name="team_name" render={({ field }) => (
                             <FormItem className="space-y-2.5">
-                              <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Team Name</label>
+                              <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Your Team Name</label>
                               <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#ff8c00]" {...field} /></FormControl>
                               <FormMessage className="text-red-500 text-xs" />
                             </FormItem>
                           )} />
-                          
+
                           <div className="border border-[#1a1a1a]">
                             <div className="bg-[#0a0a0a] p-[15px_20px] border-b border-[#1a1a1a] flex justify-between items-center">
-                              <span className="text-[0.65rem] uppercase tracking-[2px] text-[#777777]">Members</span>
+                              <span className="text-[0.65rem] uppercase tracking-[2px] text-[#777777]">Team Members</span>
                               {fields.length < (event.max_team_size - 1) && (
-                                <button type="button" onClick={() => append({ name: "", email: "", role: "Member" })} className="text-[10px] text-[#ff8c00] border border-[#ff8c00]/30 px-2 py-0.5 hover:bg-[#ff8c00] hover:text-black">ADD</button>
+                                <button type="button" onClick={() => append({ name: "", email: "", role: "Member" })} className="text-[10px] text-[#ff8c00] border border-[#ff8c00]/30 px-2 py-0.5 hover:bg-[#ff8c00] hover:text-black transition-all">ADD MEMBER</button>
                               )}
                             </div>
+                            
                             <div className="divide-y divide-[#1a1a1a]">
                               {fields.map((field, index) => (
-                                <div key={field.id} className="p-5 flex justify-between items-center gap-2">
-                                  <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Name" {...form.register(`team_members.${index}.name`)} />
-                                  <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Email" {...form.register(`team_members.${index}.email`)} />
-                                  <button type="button" onClick={() => remove(index)} className="text-[#777777] hover:text-red-500"><Trash2 size={16} /></button>
+                                <div key={field.id} className="p-5 flex justify-between items-center group">
+                                  <div className="space-y-4 w-full mr-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="space-y-1">
+                                         <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Name" {...form.register(`team_members.${index}.name`)} />
+                                         {form.formState.errors.team_members?.[index]?.name && <span className="text-red-500 text-[10px] block">Name required</span>}
+                                      </div>
+                                      <div className="space-y-1">
+                                         <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Email" {...form.register(`team_members.${index}.email`)} />
+                                         {form.formState.errors.team_members?.[index]?.email && <span className="text-red-500 text-[10px] block">Valid email required</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <button type="button" onClick={() => remove(index)} className="text-[#777777] hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                 </div>
                               ))}
-                              {fields.length === 0 && <p className="p-5 text-[0.7rem] text-[#777777] italic text-center">No members added yet.</p>}
+                              {fields.length === 0 && <p className="text-center p-4 text-[#777777] text-xs">No members added yet.</p>}
                             </div>
                           </div>
                         </div>
@@ -445,78 +447,81 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                     </div>
                   )}
 
-                  {/* STEP 4: MOTIVATION */}
+                  {/* Step 4: Details */}
                   {step === 4 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                      <FormField control={form.control} name="preferred_track" render={({ field }) => (
-                        <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Preferred Track</label>
-                          <FormControl>
-                            <select className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" {...field}>
-                              {tracks.map(t => <option key={t} value={t} className="bg-black">{t}</option>)}
-                            </select>
-                          </FormControl>
-                        </FormItem>
-                      )} />
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {tracks.length > 0 && (
+                        <FormField control={form.control} name="preferred_track" render={({ field }) => (
+                          <FormItem className="space-y-2.5">
+                            <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Which track interests you most?</label>
+                            <FormControl>
+                              <select className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" value={field.value} onChange={field.onChange}>
+                                {tracks.map(t => <option key={t} value={t} className="bg-black">{t}</option>)}
+                              </select>
+                            </FormControl>
+                          </FormItem>
+                        )} />
+                      )}
                       <FormField control={form.control} name="motivation_answer" render={({ field }) => (
                         <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Motivation</label>
-                          <FormControl><textarea className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none h-[120px] resize-none focus:border-[#777777]" {...field} placeholder="Why do you want to join? (min 10 chars)" /></FormControl>
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Why do you want to join this hackathon?</label>
+                          <FormControl><textarea className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none h-[120px] focus:border-[#777777] resize-none" {...field} placeholder="Tell us what you hope to learn or build..." /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
-                      {/* Render custom questions if any */}
                       {customQuestions.map((q: any) => (
                         <FormField key={q.id} control={form.control} name={`custom_answers.${q.id}`} render={({ field }) => (
                           <FormItem className="space-y-2.5">
                             <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">{q.question}</label>
-                            <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none" {...field} /></FormControl>
+                            <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
                           </FormItem>
                         )} />
                       ))}
                     </div>
                   )}
 
-                  {/* STEP 5: CONFIRM */}
+                  {/* Step 5: Final Check */}
                   {step === 5 && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-[30px]">
-                        <span className="text-[0.6rem] uppercase tracking-[3px] text-[#777777] block mb-2.5">Fee</span>
-                        <p className="text-[1.5rem] font-light text-white">{event.is_paid ? `${event.currency} ${event.registration_fee}` : 'FREE'}</p>
+                        <span className="text-[0.6rem] uppercase tracking-[3px] text-[#777777] block mb-2.5">Registration Fee</span>
+                        <p className="text-[1.5rem] font-light text-white">{event.is_paid ? `${event.currency} ${event.registration_fee}.00` : 'NO_FEE'}</p>
+                        <p className="text-[0.65rem] text-[#777777] mt-[5px] uppercase tracking-[1px]">Standard Entry Fee Protocol</p>
                       </div>
 
                       <div className="space-y-4">
                         <FormField control={form.control} name="agreed_to_rules" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
                             <FormControl>
-                              <input 
-                                type="checkbox" 
-                                checked={field.value} 
-                                onChange={(e) => field.onChange(e.target.checked)}
-                                className="w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer"
-                              />
+                                {/* FIXED: Explicitly handle checkbox change to pass boolean */}
+                                <input 
+                                    type="checkbox" 
+                                    checked={field.value} 
+                                    onChange={(e) => field.onChange(e.target.checked)} 
+                                    className={cn("w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer", form.formState.errors.agreed_to_rules && "outline outline-1 outline-red-500")}
+                                />
                             </FormControl>
                             <div className="flex flex-col">
                               <span className={cn("text-[0.75rem] leading-relaxed", form.formState.errors.agreed_to_rules ? "text-red-400" : "text-white")}>
-                                I agree to the Rules & Code of Conduct.
+                                I agree to follow the event rules and assembly code of conduct protocol.
                               </span>
                             </div>
                           </FormItem>
                         )} />
-                        
                         <FormField control={form.control} name="agreed_to_privacy" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
                             <FormControl>
-                              <input 
-                                type="checkbox" 
-                                checked={field.value} 
-                                onChange={(e) => field.onChange(e.target.checked)}
-                                className="w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer"
-                              />
+                                {/* FIXED: Explicitly handle checkbox change to pass boolean */}
+                                <input 
+                                    type="checkbox" 
+                                    checked={field.value} 
+                                    onChange={(e) => field.onChange(e.target.checked)} 
+                                    className={cn("w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer", form.formState.errors.agreed_to_privacy && "outline outline-1 outline-red-500")}
+                                />
                             </FormControl>
                             <div className="flex flex-col">
                               <span className={cn("text-[0.75rem] leading-relaxed", form.formState.errors.agreed_to_privacy ? "text-red-400" : "text-white")}>
-                                I authorize data processing for this event.
+                                I authorize event organizers to process my data for assembly communication.
                               </span>
                             </div>
                           </FormItem>
@@ -526,7 +531,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                   )}
                 </div>
 
-                {/* Footer */}
+                {/* --- Footer --- */}
                 <footer className="p-[30px_40px] bg-[#0a0a0a] border-t border-[#1a1a1a] flex justify-between items-center">
                   <div>
                     {step > 1 && (
@@ -546,21 +551,25 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
               </form>
             </Form>
           ) : (
-            // Success State
+            /* --- Success View --- */
             <div className="flex flex-col items-center justify-center p-[80px_40px] text-center min-h-[700px] animate-in zoom-in duration-500">
               <div className="w-[60px] h-[60px] border border-[#00ff88] rounded-full text-[#00ff88] flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]">
                 <Check size={30} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">Registered</h2>
-              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">Welcome to the 2025 Event</p>
+              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">You're Registered</h2>
+              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">Welcome to the 2025 Assembly</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.9rem] font-light leading-relaxed text-[#e0e0e0]">
-                  {event.is_paid ? 'Please complete the payment to finalize.' : 'Your spot is confirmed. Check your email.'}
+                  Your application is successful. {event.is_paid ? 'Please complete the payment below to finalize your spot.' : 'Check your comms (email) for joining instructions.'}
                 </p>
               </div>
               
-              <button onClick={() => onOpenChange(false)} className="w-full bg-white text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] hover:bg-[#ff8c00] transition-all">Close</button>
+              {event.is_paid ? (
+                <button className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] hover:bg-white transition-all flex items-center justify-center gap-2">Complete Payment <ExternalLink size={14} /></button>
+              ) : (
+                <button onClick={() => onOpenChange(false)} className="w-full bg-white text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] hover:bg-[#ff8c00] transition-all">Return to Briefing</button>
+              )}
             </div>
           )}
         </div>
