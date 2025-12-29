@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Loader2, ShieldCheck, ShieldAlert, 
-  Calendar, MapPin, CheckCircle2, XCircle 
+  Calendar, MapPin, Clock, CheckCircle2, XCircle 
 } from 'lucide-react';
 import { format, isBefore, parseISO } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,8 +59,11 @@ export default function VerifyRegistration() {
   );
 
   const event = data.events;
+  const now = new Date();
+  const eventEndTime = event.end_date ? parseISO(event.end_date) : null;
+  
   const isVerified = ['confirmed', 'completed', 'attended'].includes(data.current_status);
-  const isValid = event.end_date ? isBefore(new Date(), parseISO(event.end_date)) : true;
+  const isValid = eventEndTime ? isBefore(now, eventEndTime) : true;
   const isAttended = data.current_status === 'attended';
 
   return (
@@ -141,10 +144,11 @@ export default function VerifyRegistration() {
             </div>
 
             <div className="pt-6 border-t border-[#1a1a1a] flex flex-col items-center">
-              <div className="bg-white p-4 w-fit flex justify-center overflow-hidden rounded-xl shadow-inner">
+              <div className="bg-white p-4 w-fit flex justify-center rounded-lg">
+                {/* Admin scans this specific QR on the pass */}
                 <QRCodeSVG value={data.id} size={150} level="H" />
               </div>
-              <p className="mt-4 text-[9px] font-mono tracking-[4px] text-[#777777] uppercase">ID: {data.id.substring(0, 8)}</p>
+              <p className="mt-2 text-[9px] font-mono tracking-[4px] text-[#777777]">{data.id.toUpperCase()}</p>
             </div>
           </div>
           
@@ -153,6 +157,7 @@ export default function VerifyRegistration() {
               <ShieldCheck className={cn("w-3.5 h-3.5", isVerified ? "text-[#00ff88]" : "text-[#777777]")} />
               <span className="text-[8px] uppercase tracking-widest text-[#777777]">Security Verified</span>
             </div>
+            <img src="/placeholder.svg" className="h-4 opacity-30 grayscale" alt="Logo" />
           </footer>
         </div>
 
