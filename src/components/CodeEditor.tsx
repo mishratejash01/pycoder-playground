@@ -7,14 +7,28 @@ interface CodeEditorProps {
   onChange: (value: string) => void;
   language: string;
   disableCopyPaste?: boolean;
+  fontSize?: number; // Added prop for zoom
 }
 
-export const CodeEditor = ({ value, onChange, language, disableCopyPaste = false }: CodeEditorProps) => {
+export const CodeEditor = ({ 
+  value, 
+  onChange, 
+  language, 
+  disableCopyPaste = false, 
+  fontSize = 14 
+}: CodeEditorProps) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
   
   // Activate IntelliSense Providers
   useIntellisense();
+
+  // Update font size dynamically when prop changes
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({ fontSize });
+    }
+  }, [fontSize]);
 
   // Handle Editor Mount
   const handleEditorDidMount: OnMount = (editor, monaco) => {
@@ -24,7 +38,7 @@ export const CodeEditor = ({ value, onChange, language, disableCopyPaste = false
     // Configure Editor visual settings
     editor.updateOptions({
       minimap: { enabled: false },
-      fontSize: 14,
+      fontSize: fontSize,
       fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
       fontLigatures: true,
       lineHeight: 22,
@@ -35,9 +49,9 @@ export const CodeEditor = ({ value, onChange, language, disableCopyPaste = false
       cursorSmoothCaretAnimation: "on",
       formatOnPaste: !disableCopyPaste,
       formatOnType: true,
+      theme: 'vs-dark' // Ensure dark theme
     });
 
-    // Disable copy/paste if required (for exam mode)
     if (disableCopyPaste) {
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {});
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => {});
@@ -68,7 +82,7 @@ export const CodeEditor = ({ value, onChange, language, disableCopyPaste = false
       options={{
         automaticLayout: true,
         minimap: { enabled: false },
-        fontSize: 14,
+        fontSize: fontSize,
         fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
         lineHeight: 22,
         padding: { top: 16 },
