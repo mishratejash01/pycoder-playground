@@ -503,11 +503,11 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
           ) : (
             /* --- Success View --- */
             <div className="flex flex-col items-center justify-center p-[80px_40px] text-center min-h-[700px] animate-in zoom-in duration-500">
-              <div className="w-[60px] h-[60px] border border-[#00ff88] rounded-full text-[#00ff88] flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]">
+              <div className={cn("w-[60px] h-[60px] border rounded-full flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]", event.is_paid ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
                 <Check size={30} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">You're Registered</h2>
-              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">Welcome to the 2025 Assembly</p>
+              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">{event.is_paid ? "Payment Required" : "You're Registered"}</h2>
+              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">{event.is_paid ? "Final Step Remaining" : "Welcome to the 2025 Assembly"}</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.9rem] font-light leading-relaxed text-[#e0e0e0]">
