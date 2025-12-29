@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Loader2, Check, ArrowRight, ArrowLeft, Globe } from 'lucide-react';
+import { Loader2, Check, ArrowRight, ArrowLeft, Globe, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -82,6 +82,9 @@ export function WebinarRegistrationModal({ event, isOpen, onOpenChange }: Webina
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Authentication session lost');
 
+      const registrationStatus = event.is_paid ? 'pending_payment' : 'confirmed';
+      const paymentStatus = event.is_paid ? 'pending' : 'exempt';
+
       const { error } = await supabase.from('webinar_registrations').insert({
         event_id: event.id,
         user_id: session.user.id,
@@ -94,8 +97,8 @@ export function WebinarRegistrationModal({ event, isOpen, onOpenChange }: Webina
         topics_of_interest: formData.motivation_answer.trim(),
         timezone: formData.timezone,
         questions_for_speaker: formData.questions_for_speaker.trim(),
-        status: 'confirmed',
-        payment_status: 'exempt',
+        status: registrationStatus,
+        payment_status: paymentStatus,
         agreed_to_rules: true,
         agreed_to_privacy: true,
       });
@@ -319,24 +322,33 @@ export function WebinarRegistrationModal({ event, isOpen, onOpenChange }: Webina
           ) : (
             /* Success Screen */
             <div className="flex flex-col items-center justify-center p-[100px_40px] text-center min-h-[650px] animate-in zoom-in duration-500">
-              <div className="w-[60px] h-[60px] border border-[#00ff88] rounded-full text-[#00ff88] flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_15px_rgba(0,255,136,0.1)]">
+              <div className={cn("w-[60px] h-[60px] border rounded-full flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_15px_rgba(0,255,136,0.1)]", event.is_paid ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
                 <Check size={30} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">See You There</h2>
-              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">Registration Successful</p>
+              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">{event.is_paid ? "Payment Required" : "See You There"}</h2>
+              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">{event.is_paid ? "Registration Initiated" : "Registration Successful"}</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.85rem] font-light leading-relaxed text-[#e0e0e0]">
-                  Your presence is confirmed in the mission manifest. Check your email for the invitation link and event details.
+                  {event.is_paid ? 'Your presence is noted, but pending payment. Please complete the transaction.' : 'Your presence is confirmed in the mission manifest. Check your email for the invitation link and event details.'}
                 </p>
               </div>
               
-              <button 
-                onClick={() => onOpenChange(false)}
-                className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer transition-all hover:bg-white"
-              >
-                Return to Briefing
-              </button>
+              {event.is_paid ? (
+                <button 
+                  className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer transition-all hover:bg-white flex items-center justify-center gap-2"
+                  onClick={() => window.location.reload()}
+                >
+                  Complete Payment — {event.currency || 'INR'} {event.registration_fee} <ExternalLink size={14} />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => onOpenChange(false)}
+                  className="w-full bg-white text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer transition-all hover:bg-[#ff8c00]"
+                >
+                  Return to Briefing
+                </button>
+              )}
             </div>
           )}
         </div>
