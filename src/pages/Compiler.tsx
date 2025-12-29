@@ -12,7 +12,7 @@ import { useInteractiveRunner } from '@/hooks/useInteractiveRunner';
 import { TerminalView } from '@/components/TerminalView';
 import { 
   Loader2, Play, RefreshCw, Home, Terminal as TerminalIcon, 
-  Download, Lock, Square, Clock, Plus, Minus
+  Download, Lock, Square, Clock, Plus, Minus, Maximize2, Minimize2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -24,49 +24,49 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const LANGUAGES_CONFIG = [
   { 
     id: 'python', 
-    name: 'Python 3.10', 
+    name: 'Python', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
     color: 'text-blue-400',
     gradient: 'from-blue-400/20 to-yellow-400/20'
   },
   { 
     id: 'javascript', 
-    name: 'NodeJS 18', 
+    name: 'JavaScript', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
     color: 'text-yellow-300',
     gradient: 'from-yellow-300/20 to-orange-500/20'
   },
   { 
     id: 'java', 
-    name: 'Java 17', 
+    name: 'Java', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
     color: 'text-red-400',
     gradient: 'from-red-400/20 to-orange-500/20'
   },
   { 
     id: 'cpp', 
-    name: 'C++ 20', 
+    name: 'C++', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
     color: 'text-blue-500',
     gradient: 'from-blue-500/20 to-cyan-500/20'
   },
   { 
     id: 'c', 
-    name: 'Clang 12', 
+    name: 'C', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
     color: 'text-blue-400',
     gradient: 'from-blue-400/20 to-indigo-500/20'
   },
   { 
     id: 'sql', 
-    name: 'SQLite 3', 
+    name: 'SQL', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
     color: 'text-purple-400',
     gradient: 'from-purple-400/20 to-pink-500/20'
   },
   { 
     id: 'bash', 
-    name: 'Bash 5', 
+    name: 'Bash', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
     color: 'text-zinc-300',
     gradient: 'from-zinc-500/20 to-zinc-300/20'
@@ -256,10 +256,11 @@ const Compiler = () => {
   const [lockedLanguages, setLockedLanguages] = useState<Record<string, boolean>>({});
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   
-  // Design State (NEW)
+  // Design State
   const [fontSizeLeft, setFontSizeLeft] = useState(14);
-  const [fontSizeRight, setFontSizeRight] = useState(12);
+  const [fontSizeRight, setFontSizeRight] = useState(14); // Matched right side default
   const [isReady, setIsReady] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false); // Preserved from original
   
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -296,7 +297,7 @@ const Compiler = () => {
 
   // --- EFFECTS ---
   
-  // Design Ready Effect (NEW)
+  // Design Ready Effect
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 800);
     return () => clearTimeout(timer);
@@ -391,7 +392,7 @@ const Compiler = () => {
     }
   };
 
-  // Zoom Handler (NEW)
+  // Zoom Handler
   const handleZoom = (side: 'left' | 'right', delta: number) => {
     if (side === 'left') {
       setFontSizeLeft(prev => Math.max(10, Math.min(32, prev + delta)));
@@ -400,24 +401,42 @@ const Compiler = () => {
     }
   };
 
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        setIsFullScreen(true);
+    } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        setIsFullScreen(false);
+    }
+  };
+
   const activeLangConfig = LANGUAGES_CONFIG.find(l => l.id === activeLanguage) || LANGUAGES_CONFIG[0];
 
-  // --- RENDER (Nexus Design) ---
+  // --- RENDER (Nexus Design with Codevo branding) ---
   return (
     <div className="h-screen w-full bg-[#050505] text-[#e0e0e0] font-sans flex flex-col overflow-hidden selection:bg-white/20">
       
       {/* HEADER */}
       <header className="h-[60px] flex items-center justify-between px-6 border-b border-white/10 bg-[#050505] z-50 relative shrink-0">
-        <Link to="/" className="text-[#666666] hover:text-white transition-colors duration-300">
-          <Home className="w-5 h-5" strokeWidth={1.5} />
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link to="/" className="text-[#666666] hover:text-white transition-colors duration-300">
+            <Home className="w-5 h-5" strokeWidth={1.5} />
+          </Link>
+        </div>
         
-        {/* BRANDING: Uses font-neuropol */}
+        {/* BRANDING: "Codevo" (e is small, no uppercase) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <span className="font-neuropol text-2xl tracking-[0.2em] uppercase text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">Codévo</span>
+          <span className="font-neuropol text-2xl tracking-[0.2em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+            Codevo
+          </span>
         </div>
 
-        <div className="w-5" />
+        <div className="flex items-center gap-3">
+           <button onClick={toggleFullScreen} className="text-[#666] hover:text-white transition-colors" title="Toggle Fullscreen">
+              {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+           </button>
+        </div>
       </header>
 
       {/* WORKSPACE */}
