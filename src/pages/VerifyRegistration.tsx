@@ -20,7 +20,7 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
-      // 1. Fetch registration details with linked event
+      // 1. Fetch registration details
       const { data: reg, error: regError } = await supabase
         .from('event_registrations')
         .select(`*, events (*)`)
@@ -30,7 +30,7 @@ export default function VerifyRegistration() {
       if (regError || !reg) throw new Error("Registry record not found");
       setData(reg);
 
-      // 2. Fetch the user's actual profile image
+      // 2. Fetch User Profile (Avatar)
       if (reg.user_id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -75,7 +75,7 @@ export default function VerifyRegistration() {
   );
 
   const event = data.events;
-  const isAttended = data.is_attended;
+  const isAttended = data.is_attended; // Correct boolean check
 
   return (
     <div className="verify-registration-container">
@@ -125,7 +125,6 @@ export default function VerifyRegistration() {
         .id-text span { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: var(--silver-muted); }
 
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        /* Removed flex/align-items since icons are gone */
         .info-item label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: var(--silver-muted); margin-bottom: 5px; }
         .info-item p { font-size: 13px; font-weight: 300; color: #ccc; line-height: 1.4; }
         .info-item p span { display: block; }
