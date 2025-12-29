@@ -329,15 +329,15 @@ export function NormalEventRegistrationModal({ event, isOpen, onOpenChange }: No
           ) : (
             /* Success View */
             <div className="flex flex-col items-center justify-center p-[100px_40px] text-center min-h-[650px] animate-in zoom-in duration-500">
-              <div className={cn("w-[64px] h-[64px] border rounded-full flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]", event.is_paid ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
+              <div className="w-[64px] h-[64px] border border-[#00ff88] rounded-full text-[#00ff88] flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]">
                 <Check size={32} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[3rem] text-white mb-[10px]">{event.is_paid ? "Payment Required" : "Confirmed"}</h2>
-              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">{event.is_paid ? "Finalize Entry with Payment" : "Entry Granted to 2025 Assembly"}</p>
+              <h2 className="font-serif text-[3rem] text-white mb-[10px]">Confirmed</h2>
+              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">Entry Granted to 2025 Assembly</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.85rem] font-light leading-relaxed text-[#e0e0e0]">
-                  {event.is_paid ? 'Your registration is initiated. To secure your spot, please complete the payment process below.' : 'Your registration has been logged in the mission manifest. Check your comms (email) for final verification.'}
+                  Your registration has been logged in the mission manifest. {event.is_paid ? 'Complete the payment to finalize your presence.' : 'Check your comms (email) for final verification.'}
                 </p>
               </div>
               

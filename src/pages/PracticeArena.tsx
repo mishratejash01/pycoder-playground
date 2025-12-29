@@ -1,323 +1,485 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { AssignmentSidebar } from '@/components/AssignmentSidebar';
-import { AssignmentView } from '@/components/AssignmentView';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Timer, LogOut, LayoutGrid, Home, Infinity as InfinityIcon, Menu, X, ChevronRight, Terminal } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { 
+  Sheet, SheetContent, SheetTrigger 
+} from "@/components/ui/sheet";
+import { 
+  Popover, PopoverContent, PopoverTrigger 
+} from '@/components/ui/popover';
+import { 
+  Search, ArrowLeft, Layers, Flame, 
+  ChevronDown, Check, User, LogOut, QrCode,
+  Menu 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { FolderSticker } from '@/components/practice/FolderSticker';
+import { UserStatsCard } from '@/components/practice/UserStatsCard';
+import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
+import { QRCodeSVG } from 'qrcode.react';
 
-const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
-const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
+type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- Styled Sub-components ---
-
-const LevelBadge = ({ level, active = true }: { level: string; active?: boolean }) => {
-  const getDotClass = () => {
-    const l = level.toLowerCase();
-    if (l.includes('easy')) return 'bg-[#00ffa3] shadow-[0_0_12px_2px_#00ffa3]';
-    if (l.includes('medium')) return 'bg-[#f39233] shadow-[0_0_12px_2px_#f39233]';
-    return 'bg-[#ff4d4d] shadow-[0_0_12px_2px_#ff4d4d]';
-  };
-
-  return (
-    <div className={cn("flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[1.5px]", active ? "text-white" : "text-[#555]")}>
-      <div className={cn("w-[7px] h-[7px] rounded-full", getDotClass(), !active && "opacity-30 shadow-none")} />
-      {level}
+// --- PREMIUM FOLDER STICKER ---
+const FolderSticker = ({ active }: { active: boolean }) => (
+  <div className={cn(
+    "relative transition-all duration-300 shrink-0", 
+    active ? "scale-105 opacity-100" : "opacity-40 hover:opacity-70"
+  )}>
+    <div className="filter 
+      drop-shadow-[1.5px_0_0_#e0e0e0] 
+      drop-shadow-[-1.5px_0_0_#e0e0e0] 
+      drop-shadow-[0_1.5px_0_#e0e0e0] 
+      drop-shadow-[0_-1.5px_0_#e0e0e0]
+      drop-shadow-[0_0_1px_rgba(255,255,255,0.2)]
+      drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
+    >
+      <div className="relative w-[26px] h-[18px]">
+        <div 
+          className="absolute top-[-4.2px] left-0 w-[16px] h-[5.2px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2.2px] rounded-tr-[3.4px]"
+          style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }}
+        />
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden box-border">
+          <div className="absolute top-0 left-0 w-full h-[3.8px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
+        </div>
+      </div>
     </div>
-  );
-};
-
-const TacticalSwitch = ({ on, onClick }: { on: boolean; onClick: () => void }) => (
-  <div 
-    onClick={onClick}
-    className={cn(
-      "w-[52px] h-[26px] bg-[#0a0a0a] border border-[#222] relative cursor-pointer overflow-hidden transition-colors",
-      on && "border-[#94591f]"
-    )}
-  >
-    <div className={cn(
-      "absolute top-1 w-5 h-4 bg-[#252525] border border-[#333] transition-all duration-300 ease-[cubic-bezier(0.19,1,0.22,1)]",
-      on ? "left-[26px] bg-[#f39233] border-black shadow-[0_0_15px_rgba(243,146,51,0.4)]" : "left-1"
-    )} />
   </div>
 );
 
-const Practice = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const { toast } = useToast();
-  
-  const iitmSubjectId = searchParams.get('iitm_subject');
-  const categoryParam = searchParams.get('category');
-  const limitParam = searchParams.get('limit');
-  const selectedAssignmentId = searchParams.get('q');
-  
-  const timerParam = parseInt(searchParams.get('timer') || '0');
-  const hasTimeLimit = timerParam > 0;
-  const timeLimitSeconds = timerParam * 60;
+// --- TOPIC HASHTAG ICON ---
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
+    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+  </div>
+);
 
-  const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
-  const [questionStatuses, setQuestionStatuses] = useState<Record<string, string>>({});
-  const [elapsedTime, setElapsedTime] = useState(0); 
-  const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [freeMode, setFreeMode] = useState(true);
+const TerminalBoxIcon = () => (
+  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <polyline points="4 17 10 11 4 5"></polyline>
+      <line x1="12" y1="19" x2="20" y2="19"></line>
+    </svg>
+  </div>
+);
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, selectedAssignmentId], 
-    queryFn: async () => {
-      let query = supabase.from(activeTables.assignments as any).select('id, title, category, expected_time, is_unlocked, difficulty');
-      if (selectedAssignmentId) query = query.eq('id', selectedAssignmentId);
-      else if (iitmSubjectId) {
-        query = query.eq('subject_id', iitmSubjectId);
-        if (categoryParam) query = query.eq('category', categoryParam);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []).sort((a: any, b: any) => a.title.localeCompare(b.title));
-    },
-  });
+const LayersBoxIcon = () => (
+  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
+    <Layers size={18} strokeWidth={2.5} />
+  </div>
+);
 
-  useEffect(() => {
-    const interval = setInterval(() => setElapsedTime((prev) => prev + 1), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatTimer = () => {
-    const time = hasTimeLimit ? timeLimitSeconds - elapsedTime : elapsedTime;
-    const absTime = Math.abs(time);
-    const m = Math.floor(absTime / 60).toString().padStart(2, '0');
-    const s = (absTime % 60).toString().padStart(2, '0');
-    return `${time < 0 ? '+' : ''}${m}:${s}`;
-  };
-
-  const handleQuestionSelect = (id: string) => {
-    setSearchParams(prev => {
-        const p = new URLSearchParams(prev);
-        p.set('q', id);
-        return p;
-    });
-    setIsSidebarOpen(false);
-  };
-
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-[#050505] border-r border-[#1a1a1a]">
-      <div className="p-6">
-        <div className="text-[9px] font-black uppercase tracking-[3px] text-[#555] mb-5">Matrix Modules</div>
-        <div className="space-y-2">
-          {['All Assignments', 'Data Processing', 'Logic Gates'].map((module, i) => (
-            <div key={module} className={cn(
-              "flex items-center gap-3.5 p-3 rounded-[3px] border border-transparent cursor-pointer transition-all",
-              i === 0 ? "bg-[#0e0e0e] border-[#1a1a1a]" : "hover:bg-white/5"
-            )}>
-              <FolderSticker active={i === 0} className="scale-75 origin-left" />
-              <span className={cn(
-                "text-[11px] font-extrabold uppercase tracking-wider",
-                i === 0 ? "text-white" : "text-[#555]"
-              )}>{module}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex-1 overflow-hidden">
-        <AssignmentSidebar
-          selectedId={selectedAssignmentId}
-          onSelect={handleQuestionSelect}
-          questionStatuses={questionStatuses as any}
-          preLoadedAssignments={assignments as any} 
-        />
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="h-screen flex flex-col bg-[#050505] text-white overflow-hidden selection:bg-[#f39233]/20 font-sans">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500;800&display=swap');
-        .font-mono { font-family: 'JetBrains Mono', monospace !important; }
-        .logo-font { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: 2px; }
-      `}</style>
-
-      {/* --- Tactical Header --- */}
-      <header className="h-16 border-b border-[#1a1a1a] flex items-center justify-between px-6 md:px-12 bg-[#050505] z-50 shrink-0">
-        <div className="flex items-center gap-6">
-          {isMobile && (
-            <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-[#555] hover:text-white">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] p-0 bg-[#050505] border-[#1a1a1a]">
-                <SidebarContent />
-              </SheetContent>
-            </Sheet>
-          )}
-          <div className="logo-font text-[1.1rem]">COD<span className="lowercase text-[1.2em] relative top-[1px] mx-[1px]">é</span>VO</div>
-        </div>
-
-        <div className="hidden md:block text-[9px] font-black text-[#555] tracking-[5px] uppercase">
-          Tactical Practice Arena
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className={cn(
-            "flex items-center gap-3 px-4 py-2 border font-mono text-xs font-bold transition-all duration-500 bg-black/40",
-            (hasTimeLimit && elapsedTime > timeLimitSeconds) ? "border-red-500/50 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse" : "border-[#1a1a1a] text-[#555]"
-          )}>
-             {hasTimeLimit ? <Timer className="w-4 h-4" /> : <InfinityIcon className="w-4 h-4" />}
-             <span>{formatTimer()}</span>
-          </div>
-
-          <Button 
-            variant="outline" 
-            onClick={() => setIsExitDialogOpen(true)}
-            className="h-9 border-red-500/20 text-red-400 hover:bg-red-500/10 rounded-none px-4 text-[11px] font-black uppercase tracking-wider"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Exit Session</span>
-          </Button>
-        </div>
-      </header>
-
-      <main className="flex-1 overflow-hidden relative">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {!isMobile && (
-            <>
-              <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
-                <SidebarContent />
-              </ResizablePanel>
-              <ResizableHandle className="w-[1px] bg-[#1a1a1a] hover:bg-[#f39233] transition-colors" />
-            </>
-          )}
-          
-          <ResizablePanel defaultSize={80} className="bg-[#050505]">
-            <div className="h-full overflow-hidden flex flex-col">
-              {selectedAssignmentId ? (
-                <ErrorBoundary>
-                  <AssignmentView 
-                    key={selectedAssignmentId}
-                    assignmentId={selectedAssignmentId} 
-                    onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
-                    currentStatus={questionStatuses[selectedAssignmentId] as any}
-                    tables={activeTables} 
-                  />
-                </ErrorBoundary>
-              ) : (
-                /* --- Environment Matrix / Selection View --- */
-                <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
-                  <div className="flex justify-between items-end mb-10">
-                    <div>
-                      <h1 className="text-2xl font-black tracking-tighter text-white mb-1">Environment Matrix</h1>
-                      <div className="text-[9px] font-black text-[#555] tracking-[2px] uppercase">{assignments.length} Data Blocks Available</div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {assignments.map((assignment: any, idx) => (
-                      <div key={assignment.id} className={cn(
-                        "group border transition-all duration-300 rounded-[3px]",
-                        idx === 0 ? "bg-[#080808] border-[#333]" : "bg-[#0c0c0c] border-[#1a1a1a] hover:border-[#222]"
-                      )}>
-                        <div className="p-6 flex items-center justify-between cursor-pointer" onClick={() => handleQuestionSelect(assignment.id)}>
-                          <div className="flex items-center gap-5">
-                            <div className="w-11 h-11 bg-black border border-[#1a1a1a] rounded-[3px] flex items-center justify-center text-[#555] group-hover:text-white transition-colors">
-                              <Terminal className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <div className="text-[17px] font-bold text-white mb-1.5">{assignment.title}</div>
-                              <div className="flex items-center gap-3">
-                                <LevelBadge level={assignment.difficulty || 'Medium'} />
-                                <span className="text-[#222]">|</span>
-                                <div className="text-[10px] font-black uppercase tracking-wider text-[#555]">{assignment.category}</div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {idx === 0 ? (
-                            <ChevronRight className="w-5 h-5 text-[#f39233]" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-[#333]" />
-                          )}
-                        </div>
-
-                        {/* Expanded details for the first/active item */}
-                        {idx === 0 && (
-                          <div className="px-6 pb-8 pt-0 border-t border-[#1a1a1a]">
-                            <div className="mt-6 bg-black border border-[#111] p-8 flex flex-wrap items-center justify-between gap-12 relative">
-                              <div className="flex-1 min-w-[300px]">
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-8">
-                                    <span className="text-[10px] font-extrabold uppercase text-white">Session Clock</span>
-                                    <div className="flex items-center bg-[#050505] border border-[#252525] px-6 py-2.5 shadow-inner relative overflow-hidden">
-                                      <span className="font-mono text-3xl font-extrabold text-white tracking-tighter z-10">{assignment.expected_time || '15'}</span>
-                                      <div className="ml-4 px-2 py-0.5 bg-[#f39233] text-black text-[9px] font-black tracking-wider z-10">MIN</div>
-                                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-black/20 pointer-events-none" />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex flex-col items-end gap-2">
-                                    <span className="text-[9px] font-black text-[#555] tracking-widest uppercase">Free Mode</span>
-                                    <TacticalSwitch on={freeMode} onClick={() => setFreeMode(!freeMode)} />
-                                  </div>
-                                </div>
-                                
-                                <div className="relative h-0.5 bg-[#1a1a1a] my-8">
-                                  <div className="absolute h-full w-2/5 bg-[#333]" />
-                                  <div className="absolute left-[40%] top-1/2 -translate-y-1/2 w-3 h-8 bg-white border-[5px] border-black shadow-lg" />
-                                </div>
-
-                                <div className="flex justify-between text-[8px] font-black text-[#555] tracking-widest uppercase">
-                                  <span>Min_Val: 02</span>
-                                  <span>Optimal: {assignment.expected_time || '15'}</span>
-                                  <span>Limit: 60</span>
-                                </div>
-                              </div>
-
-                              <button 
-                                onClick={() => handleQuestionSelect(assignment.id)}
-                                className="group/btn relative bg-white text-black border border-white px-12 py-5 text-[11px] font-black uppercase tracking-[3px] overflow-hidden transition-all hover:bg-transparent hover:text-white hover:pl-16"
-                              >
-                                <span className="absolute left-[-25px] opacity-0 transition-all duration-400 group-hover/btn:left-6 group-hover/btn:opacity-100 text-lg">→</span>
-                                Start Practice
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </main>
-
-      <Dialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
-        <DialogContent className="bg-[#0c0c0e] border-[#1a1a1a] text-white">
-          <DialogHeader>
-            <DialogTitle className="font-black tracking-tight">End Practice Session?</DialogTitle>
-            <DialogDescription className="text-[#555]">Your local progress for this active matrix will be cleared.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setIsExitDialogOpen(false)} className="hover:bg-white/5 border-transparent">Cancel</Button>
-            <Button onClick={() => { sessionStorage.clear(); navigate('/'); }} className="bg-red-600 hover:bg-red-700 text-white rounded-none">End Session</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+const getDifficultyStyle = (difficulty: string) => {
+  switch (difficulty) {
+    case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
+    case 'Medium': return "bg-[#ffce8c]/[0.03] text-[#ffce8c] border-[#ffce8c]/20";
+    case 'Hard': return "bg-[#ff4d4d]/[0.03] text-[#ff4d4d] border-[#ff4d4d]/20";
+    default: return "bg-[#333]/[0.1] text-zinc-500 border-zinc-700";
+  }
 };
 
-export default Practice;
+export default function PracticeArena() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [userId, setUserId] = useState<string | undefined>();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
+  
+  // Username update states
+  const [newUsername, setNewUsername] = useState('');
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id));
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) setIsProfileOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    const topicsArr = ["Arrays", "Dynamic Programming", "Trees", "Graphs", "Hash Maps"];
+    let index = 0;
+    const intervalId = setInterval(() => {
+      index = (index + 1) % topicsArr.length;
+      setPlaceholderTopic(topicsArr[index]);
+    }, 3000);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  const { data: profile } = useQuery({
+    queryKey: ['user_profile_arena', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      return data;
+    },
+    enabled: !!userId
+  });
+
+  const { data: topics = [] } = useQuery({
+    queryKey: ['practice_topics'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('practice_topics').select('*').order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: problems = [], isLoading } = useQuery({
+    queryKey: ['practice_problems'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('practice_problems').select('*').order('order_index');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: userSubmissions = [] } = useQuery({
+    queryKey: ['user_submissions_arena', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase.from('practice_submissions').select('problem_id, status').eq('user_id', userId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId
+  });
+
+  const solvedProblemIds = new Set(userSubmissions.filter(s => s.status === 'completed').map(s => s.problem_id));
+
+  const filteredProblems = problems.filter(p => {
+    const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDifficulty = selectedDifficulties.length === 0 || selectedDifficulties.includes(p.difficulty);
+    const matchesTopic = !selectedTopic || (p.tags && p.tags.includes(selectedTopic));
+    let matchesStatus = true;
+    if (statusFilter === 'solved') matchesStatus = solvedProblemIds.has(p.id);
+    else if (statusFilter === 'unsolved') matchesStatus = !solvedProblemIds.has(p.id);
+    return matchesSearch && matchesDifficulty && matchesTopic && matchesStatus;
+  });
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUserId(undefined);
+    setIsProfileOpen(false);
+  };
+
+  const toggleDifficulty = (diff: string) => {
+    setSelectedDifficulties(prev => 
+      prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
+    );
+  };
+
+  const handleSetUsername = async () => {
+    if (!userId || !newUsername.trim()) return;
+    setIsUpdatingUsername(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: newUsername.trim() })
+        .eq('id', userId);
+      
+      if (!error) {
+        queryClient.invalidateQueries({ queryKey: ['user_profile_arena', userId] });
+        setNewUsername('');
+      }
+    } catch (err) {
+      console.error('Error updating username:', err);
+    } finally {
+      setIsUpdatingUsername(false);
+    }
+  };
+
+  const TopicNavigation = () => (
+    <nav className="flex flex-col gap-1 pb-10">
+      <div 
+        onClick={() => { setSelectedTopic(null); setIsMobileMenuOpen(false); }}
+        className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+          selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
+        )}
+      >
+        <FolderSticker active={selectedTopic === null} />
+        <span className="tracking-tight font-medium">All Topics</span>
+      </div>
+      {topics.map((topic: any) => (
+        <div 
+          key={topic.id} 
+          onClick={() => { setSelectedTopic(topic.name); setIsMobileMenuOpen(false); }}
+          className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+            selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
+          )}
+        >
+          <SubTopicHashtag active={selectedTopic === topic.name} />
+          <span className="tracking-tight font-medium">{topic.name}</span>
+        </div>
+      ))}
+    </nav>
+  );
+
+  const profileLink = profile?.username 
+    ? `${window.location.origin}/u/${profile.username}` 
+    : `${window.location.origin}/profile`;
+
+  return (
+    <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
+      <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
+        <div className="flex items-center gap-4 md:gap-8 font-sans">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden text-[#555] hover:text-white hover:bg-[#141414]">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-[#050505] border-[#1a1a1a] p-0 w-72">
+              <div className="flex flex-col h-full p-4">
+                <div className="font-neuropol text-xl font-bold text-white mb-8 pt-4 px-2">
+                  COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
+                </div>
+                <ScrollArea className="flex-1">
+                  <TopicNavigation />
+                </ScrollArea>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <div className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white cursor-pointer" onClick={() => navigate('/')}>
+            COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
+          </div>
+        </div>
+
+        <div className="flex-1 max-w-md mx-8 hidden sm:block">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555]" />
+            <Input 
+              placeholder={`Practice ${placeholderTopic}`}
+              className="pl-10 bg-[#0c0c0c] border-[#1a1a1a] focus:border-[#333] rounded-[3px] text-sm h-10 font-sans text-[#ccc] placeholder:text-[#444] placeholder:italic transition-all duration-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 relative" ref={profileDropdownRef}>
+           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-[#555] hover:text-white hover:bg-[#1a1a1a] rounded-full transition-colors">
+             <ArrowLeft className="w-5 h-5" />
+           </Button>
+           
+           <div 
+             className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a] flex items-center justify-center cursor-pointer hover:border-[#333] transition-colors"
+             onClick={() => setIsProfileOpen(!isProfileOpen)}
+           >
+             <User className="w-4 h-4 text-[#777]" />
+           </div>
+           
+           {isProfileOpen && (
+             <div className="absolute top-12 right-0 w-64 bg-[#0c0c0e] border border-white/10 rounded-[4px] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+               <div className="flex flex-col gap-3">
+                 <div className="flex items-center gap-3 border-b border-white/5 pb-3">
+                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+                     {(profile?.full_name || "U").charAt(0).toUpperCase()}
+                   </div>
+                   <div className="flex flex-col overflow-hidden">
+                     <span className="text-sm font-bold text-white uppercase tracking-wider truncate">{profile?.full_name || "User"}</span>
+                     <span className="text-[10px] text-[#555] font-mono truncate">@{profile?.username || "username"}</span>
+                   </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-2">
+                   <div className="bg-white/5 rounded-[2px] p-2 text-center border border-white/5">
+                     <span className="block text-[10px] text-[#555] uppercase tracking-wider">Solved</span>
+                     <span className="text-white font-bold">{solvedProblemIds.size}</span>
+                   </div>
+                   <div className="bg-white/5 rounded-[2px] p-2 text-center border border-white/5">
+                     <span className="block text-[10px] text-[#555] uppercase tracking-wider">Rank</span>
+                     <span className="text-[#00ffa3] font-bold">Top 5%</span>
+                   </div>
+                 </div>
+
+                 {/* Updated QR Section */}
+                 <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2 relative overflow-hidden">
+                    <div className="relative w-[96px] h-[96px]">
+                      {/* Blur logic: active if no username exists (Guest or Logged in without username) */}
+                      <div className={cn("transition-all duration-500", !profile?.username && "blur-md select-none")}>
+                        <QRCodeSVG 
+                          value={profileLink} 
+                          size={96} 
+                          level="H" 
+                          includeMargin={false}
+                        />
+                      </div>
+                      
+                      {/* Input overlay: shown only if logged in AND has no username */}
+                      {userId && !profile?.username && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 px-1">
+                          <div className="w-full flex flex-col gap-1">
+                            <Input 
+                              placeholder="Set username"
+                              value={newUsername}
+                              onChange={(e) => setNewUsername(e.target.value)}
+                              className="h-7 text-[10px] bg-white border-black/20 text-black placeholder:text-black/40 focus-visible:ring-black/40"
+                              onKeyDown={(e) => e.key === 'Enter' && handleSetUsername()}
+                            />
+                            <Button 
+                              onClick={handleSetUsername}
+                              disabled={isUpdatingUsername || !newUsername.trim()}
+                              className="h-6 text-[8px] bg-black text-white hover:bg-black/90 font-bold uppercase tracking-widest"
+                            >
+                              {isUpdatingUsername ? "..." : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <QrCode className="w-3 h-3 text-black" />
+                      <span className="text-[9px] text-black font-bold uppercase tracking-wider">
+                        {!userId ? "Login to view" : !profile?.username ? "Claim Username" : "Scan Profile Card"}
+                      </span>
+                    </div>
+                 </div>
+
+                 {userId && (
+                   <Button variant="ghost" className="w-full justify-start text-[11px] h-8 text-[#ff4d4d] hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 uppercase tracking-widest gap-2 mt-2" onClick={handleLogout}>
+                     <LogOut className="w-3 h-3" /> Log Out
+                   </Button>
+                 )}
+               </div>
+             </div>
+           )}
+        </div>
+      </nav>
+
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
+        <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
+          <div className="flex-1 flex flex-col min-h-0 pt-2">
+            <ScrollArea className="flex-1 pr-2">
+              <TopicNavigation />
+            </ScrollArea>
+          </div>
+        </aside>
+
+        <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
+          <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
+            <ScrollArea className="w-full">
+              <div className="flex items-center gap-2 pb-3 px-1 min-w-max">
+                 {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
+                   <button key={f} onClick={() => setStatusFilter(f)}
+                     className={cn(
+                       "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
+                       statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white font-medium"
+                     )}>{f}</button>
+                 ))}
+                 
+                 <Popover>
+                    <PopoverTrigger asChild>
+                      <button className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
+                          selectedDifficulties.length > 0 ? "bg-[#141414] text-white border-[#333]" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white"
+                      )}>
+                        Level <ChevronDown className="w-3 h-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-40 bg-[#0c0c0c] border-[#333] p-1 shadow-2xl z-[60]">
+                      <div className="flex flex-col gap-0.5">
+                        {['Easy', 'Medium', 'Hard'].map((diff) => (
+                          <div key={diff} onClick={() => toggleDifficulty(diff)} className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group">
+                            <div className={cn("w-3.5 h-3.5 border rounded-[2px] flex items-center justify-center transition-all",
+                              selectedDifficulties.includes(diff) ? "bg-white border-white" : "border-[#555] group-hover:border-[#777]"
+                            )}>{selectedDifficulties.includes(diff) && <Check className="w-2.5 h-2.5 text-black stroke-[4]" />}</div>
+                            <span className={cn("text-[10px] uppercase font-bold tracking-widest", selectedDifficulties.includes(diff) ? "text-white" : "text-[#777] group-hover:text-[#ccc]")}>{diff}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                 </Popover>
+              </div>
+              <ScrollBar orientation="horizontal" className="h-1.5" />
+            </ScrollArea>
+          </div>
+
+          <ScrollArea className="flex-1">
+            <div className="flex flex-col gap-3 pb-10 font-sans">
+              {isLoading ? (
+                [1,2,3,4,5,6].map(i => <div key={i} className="h-24 bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] animate-pulse" />)
+              ) : (
+                filteredProblems.map((problem) => (
+                  <div key={problem.id} className="group relative bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-5 md:px-7 md:py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all duration-300 hover:border-[#333] hover:bg-[#0f0f0f] cursor-default">
+                    <div className="flex items-center gap-5">
+                      {problem.tags?.includes('Arrays') ? <LayersBoxIcon /> : <TerminalBoxIcon />}
+                      <div className="flex flex-col gap-1.5">
+                        <h3 className="text-white text-[1.1rem] font-bold tracking-[-0.01em] m-0 leading-tight group-hover:text-white transition-colors cursor-pointer" onClick={() => navigate(`/practice-arena/${problem.slug}`)}>{problem.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className={cn("text-[0.55rem] font-extrabold uppercase tracking-[1.5px] px-2.5 py-[3px] rounded-[3px] border", getDifficultyStyle(problem.difficulty))}>{problem.difficulty}</span>
+                          <span className="text-[0.55rem] font-extrabold text-[#555] bg-[#1a1a1a] border border-[#252525] uppercase tracking-[1.5px] px-2.5 py-[3px] rounded-[3px]">{problem.tags?.[0] || 'GENERAL'}</span>
+                          {problem.is_daily && <Flame className="w-3 h-3 text-[#ff4d4d] fill-[#ff4d4d]/10 ml-1" />}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-8 md:gap-10 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0">
+                      <div className="text-right">
+                        <span className="block text-[0.55rem] font-bold text-[#555] uppercase tracking-[3px] mb-0.5">Acceptance</span>
+                        <span className="text-[1.4rem] font-light text-white leading-none">{problem.acceptance_rate || 0}%</span>
+                      </div>
+                      <button onClick={() => navigate(`/practice-arena/${problem.slug}`)} className="relative bg-white text-black border border-white px-8 py-3 rounded-[3px] text-[0.65rem] font-extrabold uppercase tracking-[3px] cursor-pointer overflow-hidden flex items-center justify-center transition-all duration-400 group/btn hover:bg-transparent hover:text-white hover:pl-10">
+                        <span className="absolute left-[-20px] opacity-0 text-[1rem] transition-all duration-400 text-white group-hover/btn:left-3 group-hover/btn:opacity-100">→</span>
+                        <span className="transition-all duration-400 group-hover/btn:translate-x-2">SOLVE</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </main>
+
+        <aside className="hidden lg:flex flex-col h-full overflow-hidden">
+          <ScrollArea className="h-full pr-2">
+            <div className="flex flex-col gap-6 pb-10">
+              <div className="flex flex-col gap-6 font-sans">
+                {!userId ? (
+                  <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-6 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="w-12 h-12 rounded-full bg-[#141414] border border-[#1a1a1a] flex items-center justify-center">
+                      <User className="w-6 h-6 text-[#555]" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-white font-bold tracking-tight">Track Your Progress</h3>
+                      <p className="text-xs text-[#555] leading-relaxed">
+                        Sign in to save your solutions, track your daily activity, and compete on the leaderboard.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => navigate('/auth')}
+                      className="w-full bg-white text-black hover:bg-zinc-200 text-[10px] font-bold uppercase tracking-[2px] h-9 rounded-[2px]"
+                    >
+                      Get Started
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <UserStatsCard userId={userId} />
+                    <ActivityCalendar userId={userId} />
+                  </>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
+        </aside>
+      </div>
+    </div>
+  );
+}
