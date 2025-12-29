@@ -590,6 +590,6 @@ export default function Events() {
           )}
         </div>
       </main>
-    </div>
+    </di>
   );
 }
