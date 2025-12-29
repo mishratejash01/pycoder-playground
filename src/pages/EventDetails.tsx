@@ -444,12 +444,7 @@ export default function EventDetailsPage() {
         </div>
       </div>
 
-      <footer className="py-[100px] text-center border-t border-[#1a1a1a]">
-        <p className="text-[0.6rem] tracking-[6px] text-[#777777] uppercase font-light">
-          © {new Date().getFullYear()} STUDIO.DEI • ALL RIGHTS RESERVED
-        </p>
-      </footer>
-
+      
       {/* --- MODAL INJECTIONS --- */}
       {renderRegistrationModal()}
     </div>
