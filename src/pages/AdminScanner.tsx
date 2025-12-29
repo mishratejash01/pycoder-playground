@@ -1,21 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode, Html5QrcodeScanType } from 'html5-qrcode';
-import { ShieldCheck, Loader2, XCircle, Scan, Camera, Building, Mail, Users, Check, X, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 export default function AdminScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [processingVerdict, setProcessingVerdict] = useState(false);
   const [guestData, setGuestData] = useState<any>(null);
-  const [errorStatus, setErrorStatus] = useState<string | null>(null);
   const [alreadyScanned, setAlreadyScanned] = useState(false);
   
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
+    // Initialize scanner
     html5QrCodeRef.current = new Html5Qrcode("reader");
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
@@ -34,7 +33,7 @@ export default function AdminScanner() {
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: { width: 280, height: 280 },
+          qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
           supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
         },
@@ -49,7 +48,6 @@ export default function AdminScanner() {
 
   const resetState = () => {
     setGuestData(null);
-    setErrorStatus(null);
     setVerifying(false);
     setAlreadyScanned(false);
     setProcessingVerdict(false);
@@ -62,7 +60,7 @@ export default function AdminScanner() {
 
     setVerifying(true);
     
-    // Extract ID cleanly from URL or raw text
+    // Clean ID extraction
     const cleanId = decodedText.includes('/verify/') 
       ? decodedText.split('/verify/').pop()?.split('?')[0].trim()
       : decodedText.trim();
@@ -79,27 +77,24 @@ export default function AdminScanner() {
         .eq('id', cleanId)
         .single();
 
-      if (error || !data) throw new Error("Invalid Pass: Record not found");
+      if (error || !data) throw new Error("Invalid Pass");
 
       setGuestData(data);
       
-      // 2. CHECK FOR DUPLICATE SCAN
-      // If is_attended is TRUE, show warning immediately
+      // 2. Check IS_ATTENDED boolean
       if (data.is_attended === true) {
         setAlreadyScanned(true);
-        toast.warning("ALERT: User has already checked in!");
+        toast.warning("ALERT: Already Entered!");
       } else {
         setAlreadyScanned(false);
       }
 
     } catch (err: any) {
-      setErrorStatus(err.message);
       toast.error(err.message);
-      // Auto-reset if scanning failed (e.g. invalid QR)
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
-      }, 3000);
+      }, 2000);
     } finally {
       setVerifying(false);
     }
@@ -109,7 +104,7 @@ export default function AdminScanner() {
     if (!guestData) return;
 
     if (!approved) {
-      toast.error("Entry Rejected");
+      toast.error("Entry Denied");
       resetState();
       if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
       return;
@@ -117,24 +112,16 @@ export default function AdminScanner() {
 
     setProcessingVerdict(true);
     try {
-      // 3. UPDATE DATABASE (Correct Fields Only)
-      // We update 'status' to 'confirmed' (allowed) and 'is_attended' to true.
-      // We DO NOT update 'current_status' because it causes a constraint error.
-      const { error } = await supabase
-        .from('event_registrations')
-        .update({ 
-          is_attended: true,
-          status: 'confirmed', 
-          attended_at: new Date().toISOString(),
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', guestData.id);
+      // 3. USE RPC FUNCTION (Safe DB Update)
+      const { error } = await supabase.rpc('mark_as_attended', {
+        reg_id: guestData.id
+      });
 
       if (error) throw error;
 
-      toast.success(`Access Granted: ${guestData.full_name}`);
+      toast.success(`Welcome, ${guestData.full_name}`);
       
-      // Auto-reset to scan next person
+      // Auto-reset after delay
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
@@ -142,7 +129,8 @@ export default function AdminScanner() {
 
     } catch (err: any) {
       console.error("Verdict Error:", err);
-      toast.error("Update Failed: " + err.message);
+      toast.error("System Error: " + err.message);
+    } finally {
       setProcessingVerdict(false);
     }
   };
@@ -153,114 +141,319 @@ export default function AdminScanner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090B] flex flex-col items-center p-6 font-sans text-[#FAFAFA]">
+    <div className="admin-gate-wrapper">
       <style>{`
-        @keyframes scanline { 0%, 100% { top: 0%; } 50% { top: 100%; } }
-        #reader video { object-fit: cover !important; border-radius: 20px; }
+        /* Import Fonts if not globally available */
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=Inter:wght@300;400;600&display=swap');
+
+        .admin-gate-wrapper {
+            background-color: #080808;
+            color: #e2e2e2;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 30px 20px;
+            min-height: 100vh;
+        }
+
+        .gate-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .gate-header {
+            border-left: 1px solid #e2e2e2;
+            padding: 5px 20px;
+            margin-bottom: 30px;
+        }
+
+        .gate-header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            margin: 0;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .gate-header p {
+            font-size: 10px;
+            color: #555555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 4px;
+        }
+
+        /* Viewfinder Area */
+        .viewfinder {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #111;
+            border: 1px solid #222222;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        #reader {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #reader video {
+            object-fit: cover !important;
+        }
+
+        /* Silver Corner Marks */
+        .mark {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #e2e2e2;
+            opacity: 0.5;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        .scan-beam {
+            position: absolute;
+            width: 80%;
+            height: 1px;
+            background: #e2e2e2;
+            box-shadow: 0 0 15px #e2e2e2;
+            animation: move-beam 4s infinite ease-in-out;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        @keyframes move-beam {
+            0%, 100% { top: 30%; opacity: 0; }
+            50% { top: 70%; opacity: 1; }
+        }
+
+        /* Pass Recognition Card */
+        .pass-info-card {
+            background: #111;
+            border: 1px solid #222222;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            animation: fadeUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .already-entered {
+            background: #1a1600;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 12px;
+            font-size: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .name-heading {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            margin: 0 0 4px 0;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .role-heading {
+            font-size: 11px;
+            color: #555555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            display: block;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-top: 1px solid #1a1a1a;
+            font-size: 12px;
+            color: #cccccc;
+        }
+
+        .row span:first-child { 
+            color: #555555; 
+            text-transform: uppercase; 
+            font-size: 9px; 
+            letter-spacing: 1px; 
+        }
+
+        /* Decision Controls */
+        .gate-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 30px;
+            border-top: 1px solid #222222;
+        }
+
+        .gate-btn {
+            background: transparent;
+            border: none;
+            padding: 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            color: #e2e2e2;
+            transition: all 0.3s ease;
+        }
+
+        .btn-grant {
+            background: #e2e2e2;
+            color: #000;
+            font-weight: 600;
+        }
+        .btn-grant:hover { opacity: 0.9; }
+        .btn-grant:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-deny { color: #555555; }
+        .btn-deny:hover { color: #8a2a2b; background: rgba(138, 42, 43, 0.1); }
+        
+        .scan-btn {
+            width: 100%;
+            background: #e2e2e2;
+            color: #000;
+            border: none;
+            padding: 12px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .next-prompt {
+            text-align: center;
+            font-size: 9px;
+            color: #555555;
+            margin-top: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 100%;
+        }
+        .next-prompt:hover { color: #e2e2e2; }
       `}</style>
 
-      <div className="w-full max-w-[420px] flex flex-col gap-6">
-        <header className="pl-1">
-          <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-[#3B82F6]" /> Entry Terminal
-          </h1>
-          <p className="text-[12px] text-[#A1A1AA] mt-1">Authorized personnel only • Secure Sync Active</p>
+      <div className="gate-container">
+        <header className="gate-header">
+          <h1>Entry Gate</h1>
+          <p>Milan Event Center • Entrance A</p>
         </header>
 
-        {/* Camera Feed */}
-        <div className="relative w-full aspect-square bg-black border border-[#27272A] rounded-[24px] overflow-hidden shadow-2xl">
-          <div id="reader" className="w-full h-full"></div>
-          {!isScanning && (
-            <div className="absolute inset-0 bg-[#09090B] z-10 flex flex-col items-center justify-center text-center p-6">
-              <Camera className="w-12 h-12 text-[#27272A] mb-4" />
-              <button onClick={startScanner} className="bg-[#3B82F6] px-6 py-2 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-[#2563EB] transition-colors">
-                Enable Terminal
-              </button>
+        <div className="viewfinder">
+          <div className="mark tl"></div>
+          <div className="mark tr"></div>
+          <div className="mark bl"></div>
+          <div className="mark br"></div>
+          <div className="scan-beam"></div>
+          
+          <div id="reader"></div>
+          
+          {!isScanning && !guestData && (
+            <div style={{position: 'absolute', zIndex: 20}}>
+               <button onClick={startScanner} className="scan-btn">
+                 ACTIVATE OPTICS
+               </button>
             </div>
+          )}
+          
+          {verifying && (
+             <div style={{position: 'absolute', zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                <Loader2 className="animate-spin text-white mb-2" />
+                <span style={{fontSize: '9px', color: '#555', textTransform: 'uppercase', letterSpacing: '2px'}}>Recognizing...</span>
+             </div>
           )}
         </div>
 
-        {/* Verification Panel */}
-        <div className={cn(
-          "bg-[#18181B] border rounded-[20px] p-6 min-h-[220px] flex flex-col justify-center transition-colors duration-500",
-          alreadyScanned ? "border-yellow-500/50 bg-yellow-500/5" : "border-[#27272A]"
-        )}>
-          {verifying ? (
-            <div className="flex flex-col items-center gap-4 py-8">
-              <Loader2 className="w-10 h-10 animate-spin text-[#3B82F6]" />
-              <p className="text-[11px] uppercase tracking-[0.3em] text-[#A1A1AA]">Validating UID...</p>
+        {guestData ? (
+          <div className="pass-info-card">
+            {/* Appears if Pass was already used based on Boolean Flag */}
+            {alreadyScanned && (
+              <div className="already-entered">
+                This pass has already entered
+              </div>
+            )}
+
+            <h2 className="name-heading">{guestData.full_name}</h2>
+            <span className="role-heading">{guestData.participation_type} • {guestData.team_name || 'Solo'}</span>
+
+            <div className="row">
+              <span>Organization</span>
+              <span>{guestData.college_org_name}</span>
             </div>
-          ) : guestData ? (
-            <div className="space-y-4 animate-in fade-in zoom-in duration-300">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-[#A1A1AA] tracking-widest block mb-1">Guest Details</span>
-                  <h2 className="text-xl font-semibold leading-tight">{guestData.full_name}</h2>
-                </div>
-                {alreadyScanned ? (
-                  <div className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded text-[10px] font-black tracking-tighter">ALREADY IN</div>
-                ) : (
-                  <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded text-[10px] font-black tracking-tighter">SCANNED</div>
-                )}
-              </div>
+            <div className="row">
+              <span>Email</span>
+              <span>{guestData.email}</span>
+            </div>
+            <div className="row">
+              <span>Reference ID</span>
+              <span>{guestData.id.substring(0, 8).toUpperCase()}</span>
+            </div>
+            {guestData.attended_at && (
+               <div className="row">
+                 <span>Last Scan</span>
+                 <span>{new Date(guestData.attended_at).toLocaleTimeString()}</span>
+               </div>
+            )}
 
-              {alreadyScanned && (
-                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
-                  <div className="text-[10px] text-yellow-200 uppercase leading-tight font-bold">
-                    <p>Warning: Pass Already Used</p>
-                    <p className="opacity-70 mt-1">Time: {guestData.attended_at ? new Date(guestData.attended_at).toLocaleTimeString() : 'Unknown'}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-2 pt-2 text-sm">
-                <div className="flex items-center gap-3 text-[#A1A1AA]"><Building className="w-4 h-4 text-[#3B82F6]" /> {guestData.college_org_name}</div>
-                <div className="flex items-center gap-3 text-[#A1A1AA]"><Mail className="w-4 h-4 text-[#3B82F6]" /> {guestData.email}</div>
-                <div className="flex items-center gap-3 text-[#A1A1AA]"><Users className="w-4 h-4 text-[#3B82F6]" /> {guestData.participation_type} • {guestData.team_name || 'Individual'}</div>
-              </div>
-
-              <div className="flex gap-3 pt-2 border-t border-[#27272A] mt-2">
-                {!alreadyScanned ? (
-                  <>
-                    <button 
-                      disabled={processingVerdict}
-                      onClick={() => handleVerdict(true)}
-                      className="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                    >
-                      {processingVerdict ? <Loader2 className="animate-spin" size={18} /> : <><Check size={18} /> Accept</>}
-                    </button>
-                    <button 
-                      disabled={processingVerdict}
-                      onClick={() => handleVerdict(false)}
-                      className="flex-1 bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                    >
-                      <X size={18} /> Reject
-                    </button>
-                  </>
-                ) : (
+            {/* Hide decision buttons if already scanned, show Reset instead */}
+            {!alreadyScanned ? (
+                <div className="gate-actions">
                   <button 
-                    onClick={handleReset}
-                    className="w-full bg-[#27272A] hover:bg-[#3f3f46] py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-[#A1A1AA] hover:text-white"
+                    className="gate-btn btn-deny" 
+                    onClick={() => handleVerdict(false)}
+                    disabled={processingVerdict}
                   >
-                    <RefreshCw size={18} /> Scan Next
+                    Deny
                   </button>
-                )}
-              </div>
-            </div>
-          ) : errorStatus ? (
-            <div className="text-center py-6 animate-in slide-in-from-top-2">
-              <XCircle className="w-14 h-14 text-red-500 mx-auto mb-4" />
-              <p className="text-sm font-bold text-red-500 uppercase tracking-widest">Access Denied</p>
-              <p className="text-xs text-[#A1A1AA] mt-2">{errorStatus}</p>
-            </div>
-          ) : (
-            <div className="text-center text-[#27272A] opacity-50">
-              <Scan className="w-10 h-10 mx-auto mb-3" />
-              <p className="text-sm tracking-widest uppercase">Waiting for scan...</p>
-            </div>
-          )}
-        </div>
+                  <button 
+                    className="gate-btn btn-grant" 
+                    onClick={() => handleVerdict(true)}
+                    disabled={processingVerdict}
+                  >
+                    {processingVerdict ? "Processing..." : "Allow Entry"}
+                  </button>
+                </div>
+            ) : (
+                <button className="next-prompt" onClick={handleReset}>
+                   SCAN NEXT CREDENTIAL
+                </button>
+            )}
+          </div>
+        ) : (
+           <div style={{textAlign: 'center', color: '#333', fontSize: '10px', letterSpacing: '1px', marginTop: '20px'}}>
+              WAITING FOR CREDENTIAL SIGNAL
+           </div>
+        )}
+
+        {/* Option to clear screen manually if needed */}
+        {guestData && !alreadyScanned && (
+            <button className="next-prompt" onClick={handleReset}>
+                Discard & Scan Next
+            </button>
+        )}
       </div>
     </div>
   );
