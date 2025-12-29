@@ -548,7 +548,7 @@ export default function EventDetailsPage() {
             </div>
           </aside>
         </div>
-      </di>
+      </div>
 
       
       {/* --- MODAL INJECTIONS --- */}
