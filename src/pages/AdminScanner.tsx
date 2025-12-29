@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode, Html5QrcodeScanType } from 'html5-qrcode';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export default function AdminScanner() {
   const [isScanning, setIsScanning] = useState(false);
@@ -14,7 +15,6 @@ export default function AdminScanner() {
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    // Initialize scanner
     html5QrCodeRef.current = new Html5Qrcode("reader");
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
@@ -59,11 +59,23 @@ export default function AdminScanner() {
     }
 
     setVerifying(true);
-    
-    // Clean ID extraction
-    const cleanId = decodedText.includes('/verify/') 
-      ? decodedText.split('/verify/').pop()?.split('?')[0].trim()
-      : decodedText.trim();
+
+    // ---------------------------------------------------------
+    // STRICT SECURITY CHECK: Reject Public/Dashboard URLs
+    // ---------------------------------------------------------
+    if (decodedText.includes('http') || decodedText.includes('/verify/')) {
+        toast.error("INVALID QR: This is a Public Dashboard Link.");
+        toast.warning("Please scan the secure ID on the Official Event Pass.");
+        
+        setTimeout(() => {
+            resetState();
+            if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
+        }, 2500);
+        return;
+    }
+    // ---------------------------------------------------------
+
+    const cleanId = decodedText.trim();
 
     try {
       // 1. Fetch Record
@@ -77,7 +89,7 @@ export default function AdminScanner() {
         .eq('id', cleanId)
         .single();
 
-      if (error || !data) throw new Error("Invalid Pass");
+      if (error || !data) throw new Error("Invalid Pass ID: Record not found");
 
       setGuestData(data);
       
@@ -143,7 +155,6 @@ export default function AdminScanner() {
   return (
     <div className="admin-gate-wrapper">
       <style>{`
-        /* Import Fonts if not globally available */
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=Inter:wght@300;400;600&display=swap');
 
         .admin-gate-wrapper {
@@ -156,10 +167,7 @@ export default function AdminScanner() {
             min-height: 100vh;
         }
 
-        .gate-container {
-            width: 100%;
-            max-width: 420px;
-        }
+        .gate-container { width: 100%; max-width: 420px; }
 
         .gate-header {
             border-left: 1px solid #e2e2e2;
@@ -183,7 +191,6 @@ export default function AdminScanner() {
             margin-top: 4px;
         }
 
-        /* Viewfinder Area */
         .viewfinder {
             width: 100%;
             aspect-ratio: 1;
@@ -197,17 +204,9 @@ export default function AdminScanner() {
             overflow: hidden;
         }
         
-        #reader {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        #reader video {
-            object-fit: cover !important;
-        }
+        #reader { width: 100%; height: 100%; object-fit: cover; }
+        #reader video { object-fit: cover !important; }
 
-        /* Silver Corner Marks */
         .mark {
             position: absolute;
             width: 20px;
@@ -238,7 +237,6 @@ export default function AdminScanner() {
             50% { top: 70%; opacity: 1; }
         }
 
-        /* Pass Recognition Card */
         .pass-info-card {
             background: #111;
             border: 1px solid #222222;
@@ -297,7 +295,6 @@ export default function AdminScanner() {
             letter-spacing: 1px; 
         }
 
-        /* Decision Controls */
         .gate-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -317,11 +314,7 @@ export default function AdminScanner() {
             transition: all 0.3s ease;
         }
 
-        .btn-grant {
-            background: #e2e2e2;
-            color: #000;
-            font-weight: 600;
-        }
+        .btn-grant { background: #e2e2e2; color: #000; font-weight: 600; }
         .btn-grant:hover { opacity: 0.9; }
         .btn-grant:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -389,7 +382,7 @@ export default function AdminScanner() {
 
         {guestData ? (
           <div className="pass-info-card">
-            {/* Appears if Pass was already used based on Boolean Flag */}
+            {/* DUPLICATE WARNING */}
             {alreadyScanned && (
               <div className="already-entered">
                 This pass has already entered
@@ -408,17 +401,17 @@ export default function AdminScanner() {
               <span>{guestData.email}</span>
             </div>
             <div className="row">
-              <span>Reference ID</span>
+              <span>UID</span>
               <span>{guestData.id.substring(0, 8).toUpperCase()}</span>
             </div>
             {guestData.attended_at && (
                <div className="row">
-                 <span>Last Scan</span>
+                 <span>Last Check-in</span>
                  <span>{new Date(guestData.attended_at).toLocaleTimeString()}</span>
                </div>
             )}
 
-            {/* Hide decision buttons if already scanned, show Reset instead */}
+            {/* ONLY SHOW DECISION BUTTONS IF NOT ALREADY SCANNED */}
             {!alreadyScanned ? (
                 <div className="gate-actions">
                   <button 
@@ -448,7 +441,7 @@ export default function AdminScanner() {
            </div>
         )}
 
-        {/* Option to clear screen manually if needed */}
+        {/* Manual Reset Option */}
         {guestData && !alreadyScanned && (
             <button className="next-prompt" onClick={handleReset}>
                 Discard & Scan Next
