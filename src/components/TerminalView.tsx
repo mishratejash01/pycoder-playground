@@ -9,6 +9,7 @@ interface TerminalViewProps {
   isWaitingForInput?: boolean;
   language?: string;
   isRunning?: boolean;
+  fontSize?: number; // Added prop for zoom
 }
 
 export const TerminalView = ({ 
@@ -16,7 +17,8 @@ export const TerminalView = ({
   onInput, 
   isWaitingForInput = false, 
   language = 'python',
-  isRunning = false
+  isRunning = false,
+  fontSize = 14
 }: TerminalViewProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
@@ -24,6 +26,17 @@ export const TerminalView = ({
   const writtenCharsRef = useRef<number>(0);
   const currentLineRef = useRef<string>("");
   const isInitializedRef = useRef(false);
+
+  // Update Font Size dynamically
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.options.fontSize = fontSize;
+      // Re-fit terminal when font size changes to adjust rows/cols
+      if (fitAddonRef.current) {
+        fitAddonRef.current.fit();
+      }
+    }
+  }, [fontSize]);
 
   const getCommandPrompt = useCallback(() => {
     switch(language) {
@@ -46,10 +59,10 @@ export const TerminalView = ({
     const term = new Terminal({
       cursorBlink: true,
       cursorStyle: 'bar',
-      fontSize: 14,
+      fontSize: fontSize,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
       theme: {
-        background: '#0c0c0e',
+        background: '#010409', // Deep dark background
         foreground: '#e4e4e7',
         cursor: '#22c55e',
         cursorAccent: '#0c0c0e',
@@ -74,7 +87,7 @@ export const TerminalView = ({
       convertEol: true,
       scrollback: 5000,
       allowTransparency: true,
-      lineHeight: 1.2,
+      lineHeight: 1.5,
     });
 
     const fitAddon = new FitAddon();
@@ -82,48 +95,34 @@ export const TerminalView = ({
 
     term.open(containerRef.current);
     
-    // Initial fit with delay
     requestAnimationFrame(() => {
       try {
         fitAddon.fit();
-      } catch (e) {
-        // Ignore fit errors during initialization
-      }
+      } catch (e) { }
     });
 
-    // Handle user input - ALL languages use interactive mode
+    // Handle user input
     term.onData((data) => {
-      // Enter key
       if (data === '\r') {
         term.write('\r\n');
         onInput('\r');
         currentLineRef.current = "";
-      } 
-      // Backspace
-      else if (data === '\x7f' || data === '\b') {
+      } else if (data === '\x7f' || data === '\b') {
         if (currentLineRef.current.length > 0) {
           currentLineRef.current = currentLineRef.current.slice(0, -1);
           term.write('\b \b');
           onInput('\b');
         }
-      }
-      // Ctrl+C
-      else if (data === '\x03') {
+      } else if (data === '\x03') {
         term.write('^C\r\n');
         onInput('\x03');
         currentLineRef.current = "";
-      }
-      // Ctrl+D (EOF)
-      else if (data === '\x04') {
-        onInput('\r'); // Send what we have
+      } else if (data === '\x04') {
+        onInput('\r');
         currentLineRef.current = "";
-      }
-      // Arrow keys and other escape sequences - ignore
-      else if (data.startsWith('\x1b')) {
+      } else if (data.startsWith('\x1b')) {
         return;
-      }
-      // Regular printable characters
-      else if (data >= ' ' || data === '\t') {
+      } else if (data >= ' ' || data === '\t') {
         term.write(data);
         currentLineRef.current += data;
         onInput(data);
@@ -133,19 +132,15 @@ export const TerminalView = ({
     terminalRef.current = term;
     fitAddonRef.current = fitAddon;
 
-    // Handle resize
     const handleResize = () => {
       requestAnimationFrame(() => {
         try {
           fitAddon.fit();
-        } catch (e) {
-          // Ignore
-        }
+        } catch (e) { }
       });
     };
     
     window.addEventListener('resize', handleResize);
-    
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(containerRef.current);
 
@@ -155,14 +150,13 @@ export const TerminalView = ({
       resizeObserver.disconnect();
       isInitializedRef.current = false;
     };
-  }, [onInput]);
+  }, [onInput]); // fontSize removed from dep array to avoid re-init
 
   // Handle output changes
   useEffect(() => {
     const term = terminalRef.current;
     if (!term) return;
     
-    // Detect reset (new run) - output cleared means start fresh
     if (output.length === 0) {
       term.reset();
       term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
@@ -171,7 +165,6 @@ export const TerminalView = ({
       return;
     }
     
-    // If output is shorter than what we've written, reset
     if (output.length < writtenCharsRef.current) {
       term.reset();
       term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
@@ -179,7 +172,6 @@ export const TerminalView = ({
       currentLineRef.current = "";
     }
 
-    // Write new content
     const newText = output.slice(writtenCharsRef.current);
     if (newText.length > 0) {
       term.write(newText);
@@ -187,14 +179,12 @@ export const TerminalView = ({
     }
   }, [output, getCommandPrompt]);
 
-  // Focus terminal when waiting for input or running
   useEffect(() => {
     if ((isWaitingForInput || isRunning) && terminalRef.current) {
       terminalRef.current.focus();
     }
   }, [isWaitingForInput, isRunning]);
 
-  // Reset current line when language changes
   useEffect(() => {
     currentLineRef.current = "";
   }, [language]);
@@ -202,11 +192,8 @@ export const TerminalView = ({
   return (
     <div 
       ref={containerRef}
-      className="h-full w-full bg-[#0c0c0e] overflow-hidden"
-      style={{ 
-        minHeight: '100px',
-        padding: '8px'
-      }}
+      className="h-full w-full bg-[#010409] overflow-hidden"
+      style={{ minHeight: '100px', padding: '8px' }}
     />
   );
 };
