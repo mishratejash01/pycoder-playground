@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode, Html5QrcodeScanType } from 'html5-qrcode';
-import { ShieldCheck, Loader2, UserCheck, XCircle, RefreshCw, Scan, Camera, CheckCircle, Mail, Building, Users } from 'lucide-react';
+import { ShieldCheck, Loader2, UserCheck, XCircle, RefreshCw, Scan, Camera, CheckCircle, Mail, Building, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ export default function AdminScanner() {
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [guestData, setGuestData] = useState<any>(null);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
+  const [alreadyScanned, setAlreadyScanned] = useState(false);
   
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
@@ -50,6 +51,7 @@ export default function AdminScanner() {
     setGuestData(null);
     setErrorStatus(null);
     setVerifying(false);
+    setAlreadyScanned(false);
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -58,40 +60,36 @@ export default function AdminScanner() {
     }
 
     setVerifying(true);
+    // Support raw IDs from the Pass QR
     const cleanId = decodedText.trim().toLowerCase();
 
     try {
       const { data, error } = await supabase
         .from('event_registrations')
-        .select(`
-          id, 
-          full_name, 
-          email, 
-          college_org_name, 
-          current_status, 
-          payment_status, 
-          participation_type, 
-          team_name,
-          mobile_number
-        `)
+        .select(`id, full_name, email, college_org_name, current_status, participation_type, team_name`)
         .eq('id', cleanId)
         .single();
 
-      if (error || !data) throw new Error("Invalid Pass: Record not found in database");
-      if (data.current_status === 'attended') throw new Error("Security Alert: Already Checked In");
+      if (error || !data) throw new Error("Invalid Pass: Record not found");
 
-      const { error: updateError } = await supabase
-        .from('event_registrations')
-        .update({ 
-          current_status: 'attended',
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', data.id);
+      if (data.current_status === 'attended') {
+        setGuestData(data);
+        setAlreadyScanned(true);
+        toast.warning("Security Alert: User Already Checked In");
+      } else {
+        const { error: updateError } = await supabase
+          .from('event_registrations')
+          .update({ 
+            current_status: 'attended',
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', data.id);
 
-      if (updateError) throw updateError;
-
-      setGuestData(data);
-      toast.success(`Access Granted: ${data.full_name}`);
+        if (updateError) throw updateError;
+        setGuestData(data);
+        setAlreadyScanned(false);
+        toast.success(`Access Granted: ${data.full_name}`);
+      }
     } catch (err: any) {
       setErrorStatus(err.message);
       toast.error(err.message);
@@ -99,10 +97,8 @@ export default function AdminScanner() {
       setVerifying(false);
       setTimeout(() => {
         resetState();
-        if (html5QrCodeRef.current) {
-          html5QrCodeRef.current.resume();
-        }
-      }, 4000);
+        if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
+      }, 5000);
     }
   };
 
@@ -118,71 +114,67 @@ export default function AdminScanner() {
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-[#3B82F6]" /> Entry Terminal
           </h1>
-          <p className="text-[12px] text-[#A1A1AA] mt-1">Authorized personnel only • Secure Sync Active</p>
+          <p className="text-[12px] text-[#A1A1AA] mt-1">Secure Event Node • Alpha-04</p>
         </header>
 
         <div className="relative w-full aspect-square bg-black border border-[#27272A] rounded-[24px] overflow-hidden shadow-2xl">
           <div id="reader" className="w-full h-full"></div>
-
-          {isScanning && !verifying && !guestData && !errorStatus && (
-            <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-              <div className="w-[70%] h-[70%] border-2 border-white/5 rounded-[32px] relative">
-                <div className="absolute w-full h-[2px] bg-[#3B82F6] shadow-[0_0_15px_#3B82F6] top-0 animate-[scanline_2.5s_infinite_ease-in-out]" />
-              </div>
-            </div>
-          )}
-
           {!isScanning && (
             <div className="absolute inset-0 bg-[#09090B] z-10 flex flex-col items-center justify-center">
               <Camera className="w-12 h-12 text-[#27272A] mb-4" />
-              <button onClick={startScanner} className="bg-[#3B82F6] px-6 py-2 rounded-lg font-bold text-sm uppercase tracking-widest">Enable Terminal</button>
+              <button onClick={startScanner} className="bg-[#3B82F6] px-6 py-2 rounded-lg font-bold">Enable Terminal</button>
             </div>
           )}
         </div>
 
-        <div className="bg-[#18181B] border border-[#27272A] rounded-[20px] p-6 min-h-[220px] flex flex-col justify-center">
+        <div className={cn(
+          "bg-[#18181B] border rounded-[20px] p-6 min-h-[220px] flex flex-col justify-center transition-colors duration-500",
+          alreadyScanned ? "border-yellow-500/50 bg-yellow-500/5" : "border-[#27272A]"
+        )}>
           {verifying ? (
-            <div className="flex flex-col items-center gap-4 py-8">
+            <div className="flex flex-col items-center gap-4">
               <Loader2 className="w-10 h-10 animate-spin text-[#3B82F6]" />
-              <p className="text-[11px] uppercase tracking-[0.3em] text-[#A1A1AA]">Validating UID...</p>
+              <p className="text-[11px] uppercase tracking-widest text-[#A1A1AA]">Validating UID...</p>
             </div>
           ) : guestData ? (
             <div className="space-y-4 animate-in fade-in zoom-in duration-300">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-[#A1A1AA] tracking-widest block mb-1">Guest Details</span>
+                  <span className="text-[10px] uppercase font-bold text-[#A1A1AA] block mb-1">Guest Details</span>
                   <h2 className="text-xl font-semibold leading-tight">{guestData.full_name}</h2>
                 </div>
-                <div className="bg-green-500/10 text-[#22C55E] border border-green-500/20 px-3 py-1 rounded text-[10px] font-black tracking-tighter">VERIFIED</div>
+                {alreadyScanned ? (
+                  <div className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded text-[10px] font-black">ALREADY IN</div>
+                ) : (
+                  <div className="bg-green-500/10 text-[#22C55E] border border-green-500/20 px-3 py-1 rounded text-[10px] font-black">GRANTED</div>
+                )}
               </div>
 
+              {alreadyScanned && (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
+                  <p className="text-[10px] text-yellow-200 uppercase leading-tight font-bold">
+                    Warning: This pass was already scanned. Verify the person matches the registry details below.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-3 pt-4 border-t border-[#27272A]">
-                <div className="flex items-center gap-3 text-sm text-[#A1A1AA]">
-                  <Building className="w-4 h-4 text-[#3B82F6]" /> {guestData.college_org_name}
-                </div>
-                <div className="flex items-center gap-3 text-sm text-[#A1A1AA]">
-                  <Mail className="w-4 h-4 text-[#3B82F6]" /> {guestData.email}
-                </div>
-                <div className="flex items-center gap-3 text-sm text-[#A1A1AA]">
-                  <Users className="w-4 h-4 text-[#3B82F6]" /> {guestData.participation_type || 'Solo'} • {guestData.team_name || 'Individual'}
-                </div>
+                <div className="flex items-center gap-3 text-sm text-[#A1A1AA]"><Building className="w-4 h-4 text-[#3B82F6]" /> {guestData.college_org_name}</div>
+                <div className="flex items-center gap-3 text-sm text-[#A1A1AA]"><Mail className="w-4 h-4 text-[#3B82F6]" /> {guestData.email}</div>
+                <div className="flex items-center gap-3 text-sm text-[#A1A1AA]"><Users className="w-4 h-4 text-[#3B82F6]" /> {guestData.participation_type} • {guestData.team_name || 'Individual'}</div>
               </div>
             </div>
           ) : errorStatus ? (
-            <div className="text-center py-6 animate-in slide-in-from-top-2">
+            <div className="text-center py-6">
               <XCircle className="w-14 h-14 text-red-500 mx-auto mb-4" />
-              <p className="text-sm font-bold text-red-500 uppercase tracking-widest">Access Denied</p>
+              <p className="text-sm font-bold text-red-500 uppercase">Access Denied</p>
               <p className="text-xs text-[#A1A1AA] mt-2">{errorStatus}</p>
             </div>
           ) : (
-            <div className="text-center text-[#27272A] opacity-50">
-              <Scan className="w-10 h-10 mx-auto mb-3" />
-              <p className="text-sm tracking-widest uppercase">Waiting for scan...</p>
-            </div>
+            <div className="text-center opacity-50"><Scan className="w-10 h-10 mx-auto mb-3" /><p className="text-sm uppercase tracking-widest">Waiting for scan...</p></div>
           )}
         </div>
-
-        <p className="text-center text-[10px] text-[#27272A] uppercase tracking-[4px]">Secure Node: Alpha-04</p>
       </div>
     </div>
   );
