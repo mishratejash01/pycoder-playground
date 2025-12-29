@@ -3,15 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Loader2, ShieldCheck, ShieldAlert, 
-  Calendar, MapPin, Clock, CheckCircle2, XCircle 
+  Calendar, MapPin, CheckCircle2, XCircle 
 } from 'lucide-react';
 import { format, isBefore, parseISO } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-// @ts-ignore
-import Barcode from 'react-barcode';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function VerifyRegistration() {
   const { registrationId } = useParams();
@@ -35,7 +34,6 @@ export default function VerifyRegistration() {
         .single();
 
       if (regError || !reg) throw new Error("Registry record not found");
-
       setData(reg);
     } catch (err) {
       console.error(err);
@@ -61,18 +59,13 @@ export default function VerifyRegistration() {
   );
 
   const event = data.events;
-  const now = new Date();
-  const eventEndTime = event.end_date ? parseISO(event.end_date) : null;
-  
-  // LOGIC: Verified if confirmed, completed, or attended. 
   const isVerified = ['confirmed', 'completed', 'attended'].includes(data.current_status);
-  const isValid = eventEndTime ? isBefore(now, eventEndTime) : true;
-  const isAttended = data.current_status === 'attended'; // Check for attended status
+  const isValid = event.end_date ? isBefore(new Date(), parseISO(event.end_date)) : true;
+  const isAttended = data.current_status === 'attended';
 
   return (
     <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10 flex flex-col items-center relative overflow-hidden">
       
-      {/* Permanent Non-Removable Watermark */}
       {isAttended && (
         <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center rotate-[-35deg] opacity-20 select-none">
           <h1 className="text-[80px] md:text-[120px] font-black border-[12px] border-red-500 text-red-500 px-12 py-6 uppercase tracking-tighter">
@@ -83,10 +76,9 @@ export default function VerifyRegistration() {
 
       <div className={cn(
         "w-full max-w-[450px] space-y-6 transition-all duration-500",
-        isAttended && "opacity-40 grayscale blur-[1px]" // Visual indication of used pass
+        isAttended && "opacity-40 grayscale blur-[1px]"
       )}>
         
-        {/* Verification Status Banner */}
         <div className={cn(
           "w-full p-4 border flex items-center gap-4",
           isValid && isVerified 
@@ -107,7 +99,6 @@ export default function VerifyRegistration() {
           </Badge>
         </div>
 
-        {/* Digital Pass Card */}
         <div className="relative border border-[#1a1a1a] bg-[#0a0a0a] overflow-hidden shadow-2xl">
           <div className={cn("h-1.5 w-full", isAttended ? "bg-red-500" : isValid ? "bg-[#00ff88]" : "bg-red-500")} />
           
@@ -119,7 +110,6 @@ export default function VerifyRegistration() {
               </div>
             </header>
 
-            {/* Participant Profile */}
             <div className="flex items-center gap-4 py-4 border-y border-[#1a1a1a]">
               <Avatar className="h-14 w-14 border border-[#1a1a1a]">
                 <AvatarImage src={data.avatar_url} />
@@ -133,7 +123,6 @@ export default function VerifyRegistration() {
               </div>
             </div>
 
-            {/* Event Details */}
             <div className="grid grid-cols-2 gap-y-6">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-[#777777]">
@@ -151,19 +140,11 @@ export default function VerifyRegistration() {
               </div>
             </div>
 
-            {/* Barcode Section */}
             <div className="pt-6 border-t border-[#1a1a1a] flex flex-col items-center">
-              <div className="bg-white p-4 w-full flex justify-center overflow-hidden">
-                <Barcode 
-                  value={data.id.toUpperCase()} 
-                  width={1.2} 
-                  height={50} 
-                  displayValue={false}
-                  background="white"
-                  lineColor="black"
-                />
+              <div className="bg-white p-4 w-fit flex justify-center overflow-hidden rounded-xl shadow-inner">
+                <QRCodeSVG value={data.id} size={150} level="H" />
               </div>
-              <p className="mt-2 text-[9px] font-mono tracking-[4px] text-[#777777]">{data.id.toUpperCase()}</p>
+              <p className="mt-4 text-[9px] font-mono tracking-[4px] text-[#777777] uppercase">ID: {data.id.substring(0, 8)}</p>
             </div>
           </div>
           
@@ -172,7 +153,6 @@ export default function VerifyRegistration() {
               <ShieldCheck className={cn("w-3.5 h-3.5", isVerified ? "text-[#00ff88]" : "text-[#777777]")} />
               <span className="text-[8px] uppercase tracking-widest text-[#777777]">Security Verified</span>
             </div>
-            <img src="/placeholder.svg" className="h-4 opacity-30 grayscale" alt="Logo" />
           </footer>
         </div>
 
