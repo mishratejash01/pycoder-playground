@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, Calendar, MapPin, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
@@ -20,7 +20,7 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
-      // 1. Fetch registration details and linked event data
+      // 1. Fetch registration details with linked event
       const { data: reg, error: regError } = await supabase
         .from('event_registrations')
         .select(`*, events (*)`)
@@ -30,7 +30,7 @@ export default function VerifyRegistration() {
       if (regError || !reg) throw new Error("Registry record not found");
       setData(reg);
 
-      // 2. Fetch the user's account avatar from the profiles table
+      // 2. Fetch the user's actual profile image
       if (reg.user_id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -40,7 +40,7 @@ export default function VerifyRegistration() {
         setUserProfile(profile);
       }
 
-      // 3. Fetch Event Sponsors/Partners logos
+      // 3. Fetch Event Sponsors
       const { data: sponsorData } = await supabase
         .from('event_sponsors')
         .select('*')
@@ -75,7 +75,7 @@ export default function VerifyRegistration() {
   );
 
   const event = data.events;
-  const isAttended = data.is_attended; // Uses the boolean field from your table
+  const isAttended = data.is_attended; // Matches the schema and AdminScanner update
 
   return (
     <div className="verify-registration-container">
@@ -125,8 +125,9 @@ export default function VerifyRegistration() {
         .id-text span { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: var(--silver-muted); }
 
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        .info-item label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: var(--silver-muted); margin-bottom: 5px; }
-        .info-item p { font-size: 13px; font-weight: 300; color: #ccc; }
+        .info-item label { display: flex; align-items: center; gap: 6px; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: var(--silver-muted); margin-bottom: 5px; }
+        .info-item p { font-size: 13px; font-weight: 300; color: #ccc; line-height: 1.4; }
+        .info-item p span { display: block; }
 
         .sponsor-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
         .sponsor-section label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 15px; text-align: center; }
@@ -153,8 +154,9 @@ export default function VerifyRegistration() {
 
         @media print {
           .actions { display: none !important; }
-          .stamp-attended { display: none !important; } /* Hide watermark for physical pass */
+          .stamp-attended { display: none !important; }
           .qr-dimmed { filter: none !important; opacity: 1 !important; }
+          .mini-logo { filter: none !important; opacity: 1 !important; } /* Sponsors in color */
           body { background: var(--bg) !important; -webkit-print-color-adjust: exact; }
           .verify-registration-container { background: var(--bg) !important; padding: 0 !important; }
           .pass-card { box-shadow: none !important; }
@@ -172,7 +174,6 @@ export default function VerifyRegistration() {
 
             <div className="identity-block">
               <div className="avatar-frame">
-                {/* Dynamically loads account image */}
                 <img src={userProfile?.avatar_url || "/placeholder.svg"} alt="Identity" />
               </div>
               <div className="id-text">
@@ -183,24 +184,29 @@ export default function VerifyRegistration() {
 
             <div className="info-grid">
               <div className="info-item">
-                <label>Venue</label>
-                <p>{event.venue || 'Virtual Premises'}</p>
+                <label><Calendar className="w-3 h-3" /> Date & Time</label>
+                <p>
+                  {event.start_date ? format(parseISO(event.start_date), 'MMM dd, yyyy') : 'TBA'}
+                  <span className="text-[#00ff88] mt-0.5">
+                    {event.start_date ? format(parseISO(event.start_date), 'hh:mm a') : ''}
+                  </span>
+                </p>
               </div>
+
               <div className="info-item">
-                <label>Location</label>
-                <p>{event.location || 'Online'}</p>
+                <label><Clock className="w-3 h-3" /> Mode</label>
+                <p className="uppercase">{event.mode || 'In-Person'}</p>
               </div>
-              <div className="info-item">
-                <label>Start Date</label>
-                <p>{event.start_date ? format(parseISO(event.start_date), 'dd . MM . yy') : '--'}</p>
-              </div>
-              <div className="info-item">
-                <label>Access Tier</label>
-                <p>{data.experience_level || 'General'}</p>
+
+              <div className="info-item" style={{ gridColumn: 'span 2' }}>
+                <label><MapPin className="w-3 h-3" /> Venue & Location</label>
+                <p>
+                  <span className="font-semibold block text-white mb-0.5">{event.venue || 'Main Venue'}</span>
+                  {event.location || 'Online'}
+                </p>
               </div>
             </div>
 
-            {/* Event Sponsors Section */}
             {sponsors.length > 0 && (
               <div className="sponsor-section">
                 <label>Event Patrons & Partners</label>
