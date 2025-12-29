@@ -414,7 +414,7 @@ const Compiler = () => {
         
         {/* BRANDING: Uses font-neuropol */}
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <span className="font-neuropol text-2xl tracking-[0.2em] uppercase text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">Codevo</span>
+          <span className="font-neuropol text-2xl tracking-[0.2em] uppercase text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">Codévo</span>
         </div>
 
         <div className="w-5" />
