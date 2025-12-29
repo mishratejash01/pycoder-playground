@@ -256,7 +256,7 @@ const Compiler = () => {
   const [lockedLanguages, setLockedLanguages] = useState<Record<string, boolean>>({});
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   
-  // New State for Design (Font Zoom)
+  // Design State (NEW)
   const [fontSizeLeft, setFontSizeLeft] = useState(14);
   const [fontSizeRight, setFontSizeRight] = useState(12);
   const [isReady, setIsReady] = useState(false);
@@ -296,7 +296,7 @@ const Compiler = () => {
 
   // --- EFFECTS ---
   
-  // Design Ready Effect
+  // Design Ready Effect (NEW)
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 800);
     return () => clearTimeout(timer);
@@ -391,42 +391,43 @@ const Compiler = () => {
     }
   };
 
+  // Zoom Handler (NEW)
   const handleZoom = (side: 'left' | 'right', delta: number) => {
     if (side === 'left') {
-      setFontSizeLeft(prev => Math.max(10, Math.min(24, prev + delta)));
+      setFontSizeLeft(prev => Math.max(10, Math.min(32, prev + delta)));
     } else {
-      setFontSizeRight(prev => Math.max(10, Math.min(24, prev + delta)));
+      setFontSizeRight(prev => Math.max(10, Math.min(32, prev + delta)));
     }
   };
 
   const activeLangConfig = LANGUAGES_CONFIG.find(l => l.id === activeLanguage) || LANGUAGES_CONFIG[0];
 
-  // --- RENDER ---
+  // --- RENDER (Nexus Design) ---
   return (
     <div className="h-screen w-full bg-[#050505] text-[#e0e0e0] font-sans flex flex-col overflow-hidden selection:bg-white/20">
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <header className="h-[60px] flex items-center justify-between px-6 border-b border-white/10 bg-[#050505] z-50 relative shrink-0">
         <Link to="/" className="text-[#666666] hover:text-white transition-colors duration-300">
           <Home className="w-5 h-5" strokeWidth={1.5} />
         </Link>
         
-        {/* BRANDING: Codevo */}
+        {/* BRANDING: Uses font-neuropol */}
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <span className="font-serif text-xl tracking-[0.4em] uppercase font-light text-white">Codevo</span>
+          <span className="font-neuropol text-2xl tracking-[0.2em] uppercase text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">Codevo</span>
         </div>
 
-        <div className="w-5" /> {/* Spacer for symmetry */}
+        <div className="w-5" />
       </header>
 
-      {/* --- WORKSPACE --- */}
+      {/* WORKSPACE */}
       <div className="flex-1 flex relative bg-[#0a0a0a] overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="w-full h-full">
           
-          {/* --- LEFT COLUMN (COMPOSITION) --- */}
+          {/* EDITOR COLUMN */}
           <ResizablePanel defaultSize={60} minSize={30} className="bg-[#050505] flex flex-col">
             
-            {/* Panel Toolbar */}
+            {/* Toolbar */}
             <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
               <div className="flex items-center gap-3">
                 <img src={activeLangConfig.logo} alt={activeLangConfig.name} className="w-4 h-4 opacity-80" />
@@ -483,23 +484,22 @@ const Compiler = () => {
             </div>
 
             {/* Editor Area */}
-            <div className="flex-1 overflow-hidden relative" style={{ fontSize: `${fontSizeLeft}px` }}>
+            <div className="flex-1 overflow-hidden relative">
               <CodeEditor 
                 value={code}
                 onChange={setCode}
                 language={activeLanguage}
-                theme="vs-dark"
-                className="h-full w-full bg-[#050505] font-mono"
+                fontSize={fontSizeLeft}
               />
             </div>
           </ResizablePanel>
 
           <ResizableHandle className="w-1 bg-[#050505] border-x border-white/5 hover:bg-white/10 transition-colors" />
 
-          {/* --- RIGHT COLUMN (DISPLAY) --- */}
+          {/* TERMINAL COLUMN */}
           <ResizablePanel defaultSize={40} minSize={20} className="bg-[#050505] flex flex-col">
             
-            {/* Panel Toolbar */}
+            {/* Toolbar */}
             <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
               <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
                 <TerminalIcon className="w-3 h-3" /> Display Console
@@ -545,10 +545,7 @@ const Compiler = () => {
             </div>
 
             {/* Terminal Area */}
-            <div 
-              className="flex-1 bg-[#010409] relative overflow-hidden flex flex-col"
-              style={{ fontSize: `${fontSizeRight}px` }}
-            >
+            <div className="flex-1 bg-[#010409] relative overflow-hidden flex flex-col">
               {isPython && !pythonReady ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4">
                   <Loader2 className="w-6 h-6 animate-spin text-white/20" />
@@ -556,7 +553,7 @@ const Compiler = () => {
                 </div>
               ) : (
                 <>
-                  <div className="p-2 border-b border-white/5">
+                  <div className="p-2 border-b border-white/5 bg-[#010409]">
                     <div className="flex items-center gap-2 text-green-500/80 mb-1 font-mono text-[10px]">
                       <span>[SYSTEM]</span>
                       <span className="text-[#666]">Local Node Ready.</span>
@@ -574,6 +571,7 @@ const Compiler = () => {
                     isWaitingForInput={runnerState.isWaitingForInput}
                     language={activeLanguage}
                     isRunning={runnerState.isRunning}
+                    fontSize={fontSizeRight}
                   />
                 </>
               )}
@@ -583,7 +581,7 @@ const Compiler = () => {
         </ResizablePanelGroup>
       </div>
 
-      {/* --- FOOTER --- */}
+      {/* FOOTER */}
       <footer className="h-[32px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-6 text-[9px] text-[#666] uppercase tracking-widest shrink-0">
         <div className="flex items-center gap-2">
           <div className={cn("w-1 h-1 rounded-full shadow-[0_0_6px]", isReady ? "bg-[#3fb950] shadow-[#3fb950]" : "bg-yellow-500 shadow-yellow-500")} />
