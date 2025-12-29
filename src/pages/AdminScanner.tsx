@@ -62,26 +62,19 @@ export default function AdminScanner() {
 
     setVerifying(true);
     
-    // Support URL scanning by extracting the ID
+    // Clean ID extraction
     const cleanId = decodedText.includes('/verify/') 
       ? decodedText.split('/verify/').pop()?.split('?')[0].trim()
       : decodedText.trim();
 
     try {
-      // 1. Fetch record using ID
+      // 1. Fetch Record
       const { data, error } = await supabase
         .from('event_registrations')
         .select(`
-          id, 
-          full_name, 
-          email, 
-          college_org_name, 
-          current_status, 
-          status,
-          participation_type, 
-          team_name,
-          is_attended,
-          attended_at
+          id, full_name, email, college_org_name, 
+          current_status, status, participation_type, 
+          team_name, is_attended, attended_at
         `)
         .eq('id', cleanId)
         .single();
@@ -90,10 +83,10 @@ export default function AdminScanner() {
 
       setGuestData(data);
       
-      // 2. Check IS_ATTENDED boolean only
+      // 2. Check IS_ATTENDED boolean (The only source of truth)
       if (data.is_attended === true) {
         setAlreadyScanned(true);
-        toast.warning("ALERT: User has already entered!");
+        toast.warning("ALERT: User has already checked in!");
       } else {
         setAlreadyScanned(false);
       }
@@ -122,30 +115,25 @@ export default function AdminScanner() {
 
     setProcessingVerdict(true);
     try {
-      // 3. Update ONLY is_attended and attended_at
-      // We do NOT update 'current_status' or 'status' to avoid constraints
-      const { error } = await supabase
-        .from('event_registrations')
-        .update({ 
-          is_attended: true,
-          attended_at: new Date().toISOString(),
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', guestData.id);
+      // 3. USE RPC FUNCTION (Bypasses RLS and handles constraints safely)
+      const { error } = await supabase.rpc('mark_as_attended', {
+        reg_id: guestData.id
+      });
 
       if (error) throw error;
 
       toast.success(`Access Granted: ${guestData.full_name}`);
       
-      // Auto-refresh scanner
+      // Auto-reset after 1.5s
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
       }, 1500);
 
     } catch (err: any) {
-      console.error(err);
-      toast.error("Database Error: " + err.message);
+      console.error("Verdict Error:", err);
+      toast.error("System Error: " + err.message);
+    } finally {
       setProcessingVerdict(false);
     }
   };
@@ -157,11 +145,6 @@ export default function AdminScanner() {
 
   return (
     <div className="min-h-screen bg-[#09090B] flex flex-col items-center p-6 font-sans text-[#FAFAFA]">
-      <style>{`
-        @keyframes scanline { 0%, 100% { top: 0%; } 50% { top: 100%; } }
-        #reader video { object-fit: cover !important; border-radius: 20px; }
-      `}</style>
-
       <div className="w-full max-w-[420px] flex flex-col gap-6">
         <header className="pl-1">
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
@@ -172,15 +155,6 @@ export default function AdminScanner() {
 
         <div className="relative w-full aspect-square bg-black border border-[#27272A] rounded-[24px] overflow-hidden shadow-2xl">
           <div id="reader" className="w-full h-full"></div>
-
-          {isScanning && !verifying && !guestData && !errorStatus && (
-            <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-              <div className="w-[70%] h-[70%] border-2 border-white/5 rounded-[32px] relative">
-                <div className="absolute w-full h-[2px] bg-[#3B82F6] shadow-[0_0_15px_#3B82F6] top-0 animate-[scanline_2.5s_infinite_ease-in-out]" />
-              </div>
-            </div>
-          )}
-
           {!isScanning && (
             <div className="absolute inset-0 bg-[#09090B] z-10 flex flex-col items-center justify-center text-center p-6">
               <Camera className="w-12 h-12 text-[#27272A] mb-4" />
@@ -217,9 +191,10 @@ export default function AdminScanner() {
               {alreadyScanned && (
                 <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
-                  <p className="text-[10px] text-yellow-200 uppercase leading-tight font-bold">
-                    Warning: This pass was used at {guestData.attended_at ? new Date(guestData.attended_at).toLocaleTimeString() : 'Unknown'}.
-                  </p>
+                  <div className="text-[10px] text-yellow-200 uppercase leading-tight font-bold">
+                    <p>Warning: Pass Already Used</p>
+                    <p className="opacity-70 mt-1">Time: {guestData.attended_at ? new Date(guestData.attended_at).toLocaleTimeString() : 'Unknown'}</p>
+                  </div>
                 </div>
               )}
 
@@ -250,9 +225,9 @@ export default function AdminScanner() {
                 ) : (
                   <button 
                     onClick={handleReset}
-                    className="w-full bg-[#27272A] hover:bg-[#3f3f46] py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"
+                    className="w-full bg-[#27272A] hover:bg-[#3f3f46] py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-[#A1A1AA] hover:text-white"
                   >
-                    <RefreshCw size={18} /> Scan Next
+                    <RefreshCw size={18} /> Reset / Scan Next
                   </button>
                 )}
               </div>
@@ -270,8 +245,6 @@ export default function AdminScanner() {
             </div>
           )}
         </div>
-        
-        <p className="text-center text-[10px] text-[#27272A] uppercase tracking-[4px]">Secure Node: Alpha-04</p>
       </div>
     </div>
   );
