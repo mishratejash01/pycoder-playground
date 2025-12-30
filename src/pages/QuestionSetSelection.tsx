@@ -160,7 +160,6 @@ export default function QuestionSetSelection() {
     navigate(`/${isProctored ? 'exam' : 'practice'}?${params.toString()}`);
   };
 
-  // --- REFINED SIDEBAR STATS ---
   const SidebarStats = () => (
     <div className="flex flex-col h-full p-8 space-y-10">
       <div className="flex items-baseline gap-2 border-b border-[#1a1a1c] pb-8 shrink-0">
@@ -174,13 +173,8 @@ export default function QuestionSetSelection() {
       <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         <div className="flex justify-between items-center sticky top-0 bg-[#070708] py-2 border-b border-[#1a1a1c] mb-4 z-10">
            <h3 className="text-[10px] uppercase tracking-[2px] text-[#666] font-bold italic">Hall of Fame</h3>
-           {/* FIX: Ensure detail view button triggers modal correctly */}
            <button 
-             onClick={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               setIsLeaderboardModalOpen(true);
-             }} 
+             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsLeaderboardModalOpen(true); }} 
              className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors"
            >
              Detail View
@@ -188,10 +182,7 @@ export default function QuestionSetSelection() {
         </div>
         {leaderboardData.slice(0, 10).map((e: any, i: number) => (
           <div key={e.user_id} className="flex justify-between py-2 text-[12px] items-center border-b border-white/[0.02]">
-            <div className="flex gap-4 min-w-0">
-              <span className="font-mono text-[#333] shrink-0">{String(i + 1).padStart(2, '0')}</span>
-              <span className="truncate text-zinc-300 font-medium">{e.full_name}</span>
-            </div>
+            <div className="flex gap-4 min-w-0"><span className="font-mono text-[#333] shrink-0">{String(i + 1).padStart(2, '0')}</span><span className="truncate text-zinc-300 font-medium">{e.full_name}</span></div>
             <span className="font-mono text-[#555] shrink-0">{e.total_score} XP</span>
           </div>
         ))}
@@ -203,13 +194,10 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
       
-      {/* --- HEADER --- */}
       <header className="px-4 py-3 md:px-10 md:py-3 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
         <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto h-10">
           <div className="flex items-center gap-4 flex-1 overflow-hidden">
-            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full transition-colors shrink-0">
-              <ArrowLeft size={18} className="text-[#666] hover:text-white" />
-            </button>
+            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
             <MovingHeaderTitle subject={subjectName || ''} exam={examType || ''} />
           </div>
           <div className="flex items-center gap-2">
@@ -223,7 +211,7 @@ export default function QuestionSetSelection() {
             {isProctored ? (
               <Sheet>
                 <SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden text-[#52525b] hover:text-white"><Trophy size={18} /></Button></SheetTrigger>
-                <SheetContent side="right" className="bg-[#070708] border-[#1a1a1c] text-white w-[320px] p-0"><SidebarStats /></SheetContent>
+                <SheetContent side="right" className="bg-[#070708] border-[#1a1a1c] text-white w-[300px] p-0"><SidebarStats /></SheetContent>
               </Sheet>
             ) : (
               <Sheet>
@@ -247,7 +235,6 @@ export default function QuestionSetSelection() {
         </div>
       </header>
 
-      {/* --- CONTENT --- */}
       <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full relative">
         {!isProctored && (
           <aside className="hidden lg:flex w-[240px] border-r border-[#1a1a1c] bg-[#080808] p-8 flex-col shrink-0 overflow-y-auto">
@@ -268,9 +255,9 @@ export default function QuestionSetSelection() {
         <main className="flex-1 flex flex-col overflow-y-auto scrollbar-hide pt-4 md:pt-6 px-3 md:px-12">
           {isLoading ? (
              <div className="flex items-center justify-center py-40 gap-2.5">
-                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce" />
+                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" />
              </div>
           ) : (
             <div className={cn("pb-12", isProctored ? "space-y-6" : "space-y-4")}>
@@ -283,10 +270,7 @@ export default function QuestionSetSelection() {
                   <div key={id} className="relative group">
                     {isLocked && <PremiumLockOverlay />}
                     <div className={cn("bg-[#0a0a0b] border border-[#1a1a1c] rounded-sm transition-all duration-300", isExpanded && "border-[#333]")}>
-                      <div 
-                        className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4", isLocked && "opacity-40")}
-                        onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}
-                      >
+                      <div className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4", isLocked && "opacity-40")} onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}>
                         <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
                           {isProctored ? <Shield size={16} /> : <Code2 size={16} />}
                         </div>
@@ -315,38 +299,19 @@ export default function QuestionSetSelection() {
                         <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                           <div className="flex-1 w-full space-y-6">
                             <div className="flex flex-wrap gap-2 md:hidden">
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
-                                 {isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}
-                               </div>
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
-                                 {String(item.totalTime || item.expected_time || 20)} MIN
-                               </div>
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">{isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}</div>
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">{String(item.totalTime || item.expected_time || 20)} MIN</div>
                             </div>
-
                             {!isProctored && !noTimeLimit && (
                                <div className="space-y-6 animate-in fade-in duration-500">
-                                  <div className="flex items-center justify-between">
-                                     <span className="text-[10px] text-white uppercase font-black tracking-[2px] italic">Set Duration</span>
-                                     <div className="flex items-center gap-2">
-                                        <input type="text" className="bg-black border border-[#1a1a1c] text-white w-14 p-2 text-center font-mono rounded-sm text-sm" value={timeLimit[0]} readOnly />
-                                        <span className="text-[11px] text-white font-bold">MIN</span>
-                                     </div>
-                                  </div>
-                                  <div className="w-full px-2">
-                                     <Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-none [&>.relative>.absolute]:bg-white py-4" />
-                                     <div className="flex justify-between text-[8px] text-white/40 font-mono mt-4 tracking-[2.5px]"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div>
-                                  </div>
+                                  <div className="flex items-center justify-between"><span className="text-[10px] text-white uppercase font-black tracking-[2px] italic">Set Duration</span><div className="flex items-center gap-2"><input type="text" className="bg-black border border-[#1a1a1c] text-white w-14 p-2 text-center font-mono rounded-sm text-sm" value={timeLimit[0]} readOnly /><span className="text-[11px] text-white font-bold">MIN</span></div></div>
+                                  <div className="w-full px-2"><Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-none [&>.relative>.absolute]:bg-white py-4" /><div className="flex justify-between text-[8px] text-white/40 font-mono mt-4 tracking-[2.5px]"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div></div>
                                </div>
                             )}
+                            {isProctored && <div className="text-[10px] text-[#555] font-mono uppercase tracking-[2px]">Security Hash Verified: {profile?.id?.substring(0,8) || '####'}</div>}
                           </div>
-
                           <div className="flex flex-col items-end gap-6 shrink-0 w-full md:w-auto">
-                            {!isProctored && (
-                              <div className="flex flex-col gap-2 items-center">
-                                <span className="text-white text-[10px] uppercase tracking-[2px] font-black">Archive Free Mode</span>
-                                <ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} />
-                              </div>
-                            )}
+                            {!isProctored && <div className="flex flex-col gap-2 items-center"><span className="text-white text-[10px] uppercase tracking-[2px] font-black">Archive Free Mode</span><ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} /></div>}
                             <button onClick={() => handleStart(id, isProctored)} className="w-full md:w-auto bg-white text-black px-12 py-4 text-[10px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center justify-center gap-3">
                                {!isProctored && noTimeLimit ? <InfinityIcon size={14} /> : <Play size={14} fill="currentColor" />} Solve <ChevronRight size={14} />
                             </button>
@@ -364,30 +329,42 @@ export default function QuestionSetSelection() {
         {isProctored && <aside className="hidden lg:flex w-[340px] bg-[#070708] border-l border-[#1a1a1c] flex-col overflow-y-auto scrollbar-hide shrink-0"><SidebarStats /></aside>}
       </div>
 
-      {/* --- LEADERBOARD MODAL --- */}
       {isLeaderboardModalOpen && (
-        <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-12 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-500">
-          <div className="flex justify-between items-end mb-10 pb-8 border-b border-[#111]">
-            <div><p className="uppercase tracking-[6px] text-[#333] text-[10px] mb-3 font-black">Performance Archive Metrics</p><h2 className="font-['Playfair_Display'] text-[32px] md:text-[54px] italic font-bold text-white tracking-tighter uppercase">Hall of Fame</h2></div>
-            <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-8 py-3.5 text-[10px] font-black uppercase transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/30">Close</button>
+        <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-6 md:p-20 overflow-y-auto animate-in fade-in duration-500">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 pb-8 border-b border-[#111] gap-6">
+            <div className="space-y-2">
+              <p className="uppercase tracking-[4px] text-[#333] text-[9px] font-black">Performance Archive Metrics</p>
+              <h2 className="font-['Playfair_Display'] text-[32px] md:text-[54px] italic font-bold text-white tracking-tighter uppercase leading-none">Hall of Fame</h2>
+            </div>
+            <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-8 py-3.5 text-[10px] font-black uppercase transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/30 shrink-0">Return to Archive</button>
           </div>
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr className="border-b border-[#111]"><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Rank</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Agent</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Transmissions</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Streak</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">XP Score</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Status</th></tr>
-            </thead>
-            <tbody className="font-mono text-[13px] divide-y divide-[#111]">
-              {leaderboardData.map((row: any, i: number) => (
-                <tr key={row.user_id} className="hover:bg-white/[0.01] transition-colors group">
-                  <td className="p-5 text-[#333] group-hover:text-[#666]">{String(i + 1).padStart(2, '0')}</td>
-                  <td className="p-5 text-zinc-100 font-sans font-bold">{row.full_name}</td>
-                  <td className="p-5 text-zinc-500">{row.problems_solved}</td>
-                  <td className="p-5 text-zinc-500">{row.current_streak}D</td>
-                  <td className="p-5 text-zinc-400 font-black">{row.total_score}</td>
-                  <td className="p-5"><span className={cn("px-3 py-1 rounded-[1px] text-[9px] font-black uppercase", i < 3 ? "bg-[#10b9811a] text-[#10b981]" : "bg-[#111] text-[#333]")}>{i < 3 ? 'Elite' : 'Operative'}</span></td>
+          
+          <div className="overflow-x-auto scrollbar-hide">
+            <table className="w-full text-left border-collapse min-w-[320px] md:min-w-[700px]">
+              <thead>
+                <tr className="border-b border-[#111]">
+                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black">Rank</th>
+                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black">Agent</th>
+                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black hidden sm:table-cell">Transmissions</th>
+                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black hidden lg:table-cell">Streak</th>
+                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black">XP Score</th>
+                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black hidden sm:table-cell">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="font-mono text-[13px] divide-y divide-[#111]">
+                {leaderboardData.map((row: any, i: number) => (
+                  <tr key={row.user_id} className="hover:bg-white/[0.01] transition-colors group">
+                    <td className="p-5 text-[#333] group-hover:text-[#666]">{String(i + 1).padStart(2, '0')}</td>
+                    <td className="p-5 text-zinc-100 font-sans font-bold">{row.full_name}</td>
+                    <td className="p-5 text-zinc-500 hidden sm:table-cell">{row.problems_solved}</td>
+                    <td className="p-5 text-zinc-500 hidden lg:table-cell">{row.current_streak}D</td>
+                    <td className="p-5 text-zinc-400 font-black">{row.total_score}</td>
+                    <td className="p-5 hidden sm:table-cell"><span className={cn("px-3 py-1 rounded-[1px] text-[9px] font-black uppercase", i < 3 ? "bg-[#10b9811a] text-[#10b981]" : "bg-[#111] text-[#333]")}>{i < 3 ? 'Elite' : 'Operative'}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
