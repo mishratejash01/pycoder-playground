@@ -49,18 +49,17 @@ interface Registration {
 interface AlreadyRegisteredCardProps {
   eventId: string;
   eventTitle: string;
-  formType: string; // Added for dynamic routing
+  formType: string;
   maxTeamSize?: number;
   isPaid?: boolean;
-  registrationFee?: number;
-  currency?: string;
 }
 
 export function AlreadyRegisteredCard({ 
   eventId, 
   eventTitle, 
-  formType, //
+  formType,
   maxTeamSize = 4,
+  isPaid = false,
 }: AlreadyRegisteredCardProps) {
   const navigate = useNavigate();
   const [currentUserReg, setCurrentUserReg] = useState<Registration | null>(null);
@@ -429,12 +428,25 @@ export function AlreadyRegisteredCard({
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm w-[90vw] rounded-lg">
           <DialogHeader className="items-center"><DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle></DialogHeader>
-          <div className="bg-white p-4 mx-auto my-6 rounded-lg">
-            {/* Updated QR format: "formType:id" */}
-            <QRCodeSVG value={`${formType}:${currentUserReg.id}`} size={200} level="H" />
-          </div>
-          <p className="text-center text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
-          <p className="text-center text-[10px] text-[#777777] mt-2 tracking-widest uppercase">Scan to get your Event Pass</p>
+          {/* Payment Guard: Hide QR if paid event and payment not completed */}
+          {isPaid && !['paid', 'completed', 'exempt'].includes(currentUserReg.payment_status || '') ? (
+            <div className="py-10 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 border-2 border-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-yellow-500 text-2xl">₹</span>
+              </div>
+              <p className="text-yellow-500 font-medium uppercase tracking-widest text-sm">Payment Required</p>
+              <p className="text-[#777777] text-xs mt-2">Complete payment to access your pass</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white p-4 mx-auto my-6 rounded-lg">
+                {/* Dashboard QR: Full URL for public redirect */}
+                <QRCodeSVG value={`${window.location.origin}/verify/${formType}/${currentUserReg.id}`} size={200} level="H" />
+              </div>
+              <p className="text-center text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
+              <p className="text-center text-[10px] text-[#777777] mt-2 tracking-widest uppercase">Scan to view your Event Pass</p>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
