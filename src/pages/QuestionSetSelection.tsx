@@ -220,7 +220,7 @@ export default function QuestionSetSelection() {
            <h3 className="text-[10px] uppercase tracking-[2px] text-[#666] font-bold italic">Hall of Fame</h3>
            <button 
              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsLeaderboardModalOpen(true); }} 
-             className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors"
+             className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter"
            >
              Detail View
            </button>
@@ -239,11 +239,10 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
       
-      {/* --- HEADER --- */}
       <header className="px-4 py-3 md:px-10 md:py-3 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
         <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto h-10">
           <div className="flex items-center gap-4 flex-1 overflow-hidden">
-            <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
+            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
             <MovingHeaderTitle subject={subjectName || ''} exam={examType || ''} />
           </div>
           <div className="flex items-center gap-2">
@@ -281,7 +280,6 @@ export default function QuestionSetSelection() {
         </div>
       </header>
 
-      {/* --- MAIN SPLIT VIEW --- */}
       <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full relative">
         {!isProctored && (
           <aside className="hidden lg:flex w-[240px] border-r border-[#1a1a1c] bg-[#080808] p-8 flex-col shrink-0 overflow-y-auto">
@@ -318,11 +316,12 @@ export default function QuestionSetSelection() {
                     {isLocked && <PremiumLockOverlay />}
                     <div className={cn("bg-[#0a0a0b] border border-[#1a1a1c] rounded-sm transition-all duration-300", isExpanded && "border-[#333]")}>
                       
+                      {/* CARD HEADER */}
                       <div 
                         className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4 transition-colors", isLocked && "opacity-40")}
                         onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}
                       >
-                        <div className="w-10 h-10 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
+                        <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
                           {isProctored ? <ProctorIcon /> : <PracticeIcon />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -333,7 +332,7 @@ export default function QuestionSetSelection() {
                                  <span className="w-1 h-1 bg-red-500 rounded-full shadow-[0_0_8px_red]" /> Secure Test
                                </div>
                             ) : (
-                               <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Module'}</Badge>
+                               <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Standard'}</Badge>
                             )}
                           </div>
                         </div>
@@ -347,18 +346,21 @@ export default function QuestionSetSelection() {
                         <div className="md:hidden"><ChevronDown size={14} className={cn("text-[#333] transition-transform duration-300", isExpanded && "rotate-180")} /></div>
                       </div>
 
+                      {/* EXPANDED AREA */}
                       <div className={cn("bg-[#080809] transition-all duration-500 ease-in-out px-4 md:px-6 overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1a1a1c] py-6 md:py-8 opacity-100" : "max-h-0 py-0 opacity-0")}>
                         <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                           <div className="flex-1 w-full space-y-6">
+                            {/* MOBILE TAGS */}
                             <div className="flex flex-wrap gap-2 md:hidden">
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-black">
                                  {isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}
                                </div>
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-black">
                                  {String(item.totalTime || item.expected_time || 20)} MIN
                                </div>
                             </div>
 
+                            {/* SLIDER (PRACTICE ONLY) */}
                             {!isProctored && !noTimeLimit && (
                                <div className="space-y-6 animate-in fade-in duration-500">
                                   <div className="flex items-center justify-between">
@@ -376,8 +378,15 @@ export default function QuestionSetSelection() {
                             )}
 
                             {isProctored && (
-                               <div className="text-[10px] text-[#555] font-mono uppercase tracking-[2px]">
-                                  Candidate: {profile?.full_name?.substring(0,10) || 'Verified'} | Security Hash: {profile?.id?.substring(0,8) || '####'}
+                               <div className="space-y-3">
+                                  <div className="flex flex-wrap gap-2">
+                                     <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-black">
+                                       Total Time: {item.totalTime} MIN
+                                     </div>
+                                  </div>
+                                  <div className="text-[10px] text-[#555] font-mono uppercase tracking-[2px]">
+                                     Candidate: {profile?.full_name?.substring(0,10) || 'Verified'} | Security Hash: {profile?.id?.substring(0,8) || '####'}
+                                  </div>
                                </div>
                             )}
                           </div>
@@ -412,7 +421,7 @@ export default function QuestionSetSelection() {
 
       {/* --- LEADERBOARD MODAL --- */}
       {isLeaderboardModalOpen && (
-        <div className="fixed inset-0 bg-black z-[1100] flex flex-col p-6 md:p-20 overflow-y-auto animate-in fade-in duration-500">
+        <div className="fixed inset-0 bg-black z-[2000] flex flex-col p-6 md:p-20 overflow-y-auto animate-in fade-in duration-500">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 pb-8 border-b border-[#111] gap-6">
             <div className="space-y-2">
               <p className="uppercase tracking-[4px] text-[#333] text-[9px] font-black">Performance Archive Metrics</p>
