@@ -7,8 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   ArrowLeft, Search, Layers, Filter, Clock, Play, 
   Infinity as InfinityIcon, ChevronRight, FileCode2, Lock, Menu, X, Code2 
@@ -18,7 +16,7 @@ import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-// --- REDESIGN COMPONENT: PREMIUM FOLDER STICKER ---
+// --- DESIGN COMPONENT: PREMIUM FOLDER STICKER ---
 const FolderSticker = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative transition-all duration-300 shrink-0", 
@@ -45,7 +43,7 @@ const FolderSticker = ({ active }: { active: boolean }) => (
   </div>
 );
 
-// --- REDESIGN COMPONENT: TOPIC HASHTAG ICON ---
+// --- DESIGN COMPONENT: TOPIC HASHTAG ICON ---
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
     <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
@@ -55,7 +53,36 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
-// --- REDESIGN COMPONENT: SCROLLING PLACEHOLDER WITH CLIPPING ---
+// --- DESIGN COMPONENT: DARK THEME OUTLINE TOGGLE ---
+const ArchiveToggle = ({ checked, onChange }: { checked: boolean, onChange: (val: boolean) => void }) => (
+  <label className="relative inline-block w-[94px] h-[42px] cursor-pointer group">
+    <input 
+      type="checkbox" 
+      className="opacity-0 w-0 h-0" 
+      checked={checked} 
+      onChange={(e) => onChange(e.target.checked)} 
+    />
+    <span className={cn(
+      "absolute inset-0 border-2 rounded-[40px] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+      checked ? "border-[#5ec952]" : "border-[#ef4444]"
+    )}>
+      {/* Knob (Solid Color Dot) */}
+      <span className={cn(
+        "absolute bottom-[4px] left-[4px] h-[30px] w-[30px] rounded-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+        checked ? "translate-x-[52px] bg-[#5ec952]" : "translate-x-0 bg-[#ef4444]"
+      )} />
+      {/* Text (Pure White) */}
+      <span className={cn(
+        "absolute top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-white tracking-[0.5px] uppercase transition-all duration-300",
+        checked ? "left-[14px]" : "right-[14px]"
+      )}>
+        {checked ? "ON" : "OFF"}
+      </span>
+    </span>
+  </label>
+);
+
+// --- DESIGN COMPONENT: SCROLLING PLACEHOLDER WITH CLIPPING ---
 const ScrollingPlaceholder = ({ statements, visible }: { statements: string[], visible: boolean }) => {
   const [index, setIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,10 +139,10 @@ export default function QuestionSetSelection() {
   const navigate = useNavigate();
   const isProctored = mode === 'proctored';
 
+  // --- STATE MANAGEMENT ---
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
-  
   const [timeLimit, setTimeLimit] = useState([20]); 
   const [noTimeLimit, setNoTimeLimit] = useState(false);
   const [showProfileSheet, setShowProfileSheet] = useState(false);
@@ -127,7 +154,7 @@ export default function QuestionSetSelection() {
     'Search for a specific category within the current module list...'
   ];
 
-  // --- DATA FETCHING (Preserving Full Logic) ---
+  // --- DATA FETCHING (ORIGINAL LOGIC) ---
   const { data: fetchedData = [], isLoading } = useQuery({
     queryKey: ['selection_data', subjectId, examType, mode],
     queryFn: async () => {
@@ -140,7 +167,10 @@ export default function QuestionSetSelection() {
           .eq('subject_id', subjectId) 
           .ilike('exam_type', currentExamType); 
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching proctored sets:", error);
+          throw error;
+        }
         
         const setMap: Record<string, { totalTime: number; title: string; sequence_number: number; description: string }> = {};
         
@@ -158,13 +188,15 @@ export default function QuestionSetSelection() {
            }
         });
 
-        return Object.entries(setMap).map(([name, val]) => ({ 
+        const sets = Object.entries(setMap).map(([name, val]) => ({ 
           name, 
           totalTime: val.totalTime,
           title: val.title,
           description: val.description,
           sequence_number: val.sequence_number
-        })).sort((a, b) => a.sequence_number - b.sequence_number);
+        }));
+        
+        return sets.sort((a, b) => a.sequence_number - b.sequence_number);
       } else {
         const { data, error } = await supabase
           .from('iitm_assignments')
@@ -179,7 +211,7 @@ export default function QuestionSetSelection() {
     }
   });
 
-  // --- DERIVED DATA (Preserving Full Logic) ---
+  // --- DERIVED DATA (ORIGINAL LOGIC) ---
   const topics = useMemo(() => {
     if (isProctored) return [];
     // @ts-ignore
@@ -201,7 +233,7 @@ export default function QuestionSetSelection() {
     }
   }, [fetchedData, searchTerm, selectedTopic, isProctored]);
 
-  // --- HANDLERS (Preserving Full Logic) ---
+  // --- HANDLERS ---
   const handleStart = async (targetId: string, isSetSelection = false) => {
     const isProfileComplete = await checkUserProfile();
     if (!isProfileComplete) {
@@ -284,7 +316,7 @@ export default function QuestionSetSelection() {
       )}
 
       {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 overflow-y-auto flex flex-col bg-[#050505]">
+      <main className="flex-1 overflow-y-auto flex flex-col bg-[#050505] relative">
         <header className="px-6 py-8 md:p-[40px_60px] border-b border-[#1f1f23] sticky top-0 bg-[#050505]/95 backdrop-blur-md z-20">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -340,7 +372,7 @@ export default function QuestionSetSelection() {
 
         <div className="px-6 py-8 md:p-[40px_60px] max-w-[1200px] w-full mx-auto">
           {isLoading ? (
-            /* Redesign: branding load state */
+            /* BRANDING LOAD STATE */
             <div className="flex flex-col items-center justify-center py-32 gap-6">
                <div className="font-extrabold text-4xl md:text-[42px] tracking-[12px] text-white animate-pulse uppercase select-none drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                   CODÉVO
@@ -356,7 +388,7 @@ export default function QuestionSetSelection() {
               Zero results found in this directory
             </div>
           ) : isProctored ? (
-            /* --- PROCTORED VIEW (SETS) --- */
+            /* --- PROCTORED VIEW (SETS) - REDESIGNED CARDS --- */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(filteredData as { name: string, title: string, totalTime: number, sequence_number: number, description: string }[]).map((set) => (
                 <div 
@@ -426,7 +458,6 @@ export default function QuestionSetSelection() {
                     "bg-[#0d0d0d] border border-[#1f1f23] rounded-sm transition-all duration-300",
                     isExpanded && "border-[#444] shadow-[0_0_30px_rgba(255,255,255,0.02)]"
                   )}>
-                    {/* Header Part */}
                     <div 
                       className={cn(
                         "flex flex-wrap md:flex-nowrap items-center p-5 md:p-[24px_30px] cursor-pointer gap-6", 
@@ -464,7 +495,6 @@ export default function QuestionSetSelection() {
                       </div>
                     </div>
 
-                    {/* Expanded Controls Part */}
                     <div className={cn(
                       "bg-[#090909] transition-all duration-400 ease-in-out px-5 md:px-[30px] overflow-hidden",
                       isExpanded ? "max-h-[600px] border-t border-[#1f1f23] py-8 md:py-10 opacity-100" : "max-h-0 py-0 opacity-0"
@@ -504,13 +534,7 @@ export default function QuestionSetSelection() {
                         <div className="flex flex-col items-end gap-[20px] shrink-0 w-full lg:w-auto mt-4 lg:mt-0">
                           <div className="flex items-center gap-[12px] text-[11px] text-[#666666] font-bold uppercase tracking-widest">
                             <span>Free Mode</span>
-                            <div className="scale-90">
-                              <Switch 
-                                checked={noTimeLimit} 
-                                onCheckedChange={setNoTimeLimit} 
-                                className="data-[state=checked]:bg-white"
-                              />
-                            </div>
+                            <ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} />
                           </div>
                           <button 
                             onClick={() => handleStart(assignment.id, false)}
@@ -528,7 +552,7 @@ export default function QuestionSetSelection() {
             })
           )}
         </div>
-      </main>
+      </ScrollArea>
     </div>
   );
 }
