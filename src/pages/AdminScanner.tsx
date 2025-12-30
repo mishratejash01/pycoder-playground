@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Html5Qrcode, Html5QrcodeScanType } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getRegistrationTable, getAttendanceRPC } from '@/utils/eventHelpers';
 
 export default function AdminScanner() {
   const [isScanning, setIsScanning] = useState(false);
@@ -59,9 +60,7 @@ export default function AdminScanner() {
 
     setVerifying(true);
     
-    // ---------------------------------------------------------
     // SECURITY: Reject Public/Dashboard URLs
-    // ---------------------------------------------------------
     if (decodedText.includes('http') || decodedText.includes('/verify/')) {
         toast.error("INVALID QR: Public Dashboard Link");
         setTimeout(() => {
@@ -71,12 +70,16 @@ export default function AdminScanner() {
         return;
     }
 
-    const cleanId = decodedText.trim();
+    // Parse Refactored Format: "formType:registrationId"
+    const parts = decodedText.trim().split(':');
+    const formType = parts.length > 1 ? parts[0] : 'normal';
+    const cleanId = parts.length > 1 ? parts[1] : parts[0];
 
     try {
-      // 1. Fetch Record with EVENT DETAILS
+      // 1. Fetch Record from the dynamic table
+      const tableName = getRegistrationTable(formType);
       const { data, error } = await supabase
-        .from('event_registrations')
+        .from(tableName as any)
         .select(`
           id, full_name, email, college_org_name, 
           current_status, status, participation_type, 
@@ -88,9 +91,10 @@ export default function AdminScanner() {
 
       if (error || !data) throw new Error("Invalid Pass ID");
 
-      setGuestData(data);
+      // Inject formType into guestData for RPC handling
+      setGuestData({ ...data, formType });
       
-      // 2. Check IS_ATTENDED boolean
+      // 2. Check IS_ATTENDED status
       if (data.is_attended === true) {
         setAlreadyScanned(true);
         toast.warning("ALERT: Already Entered!");
@@ -121,8 +125,9 @@ export default function AdminScanner() {
 
     setProcessingVerdict(true);
     try {
-      // 3. USE RPC FUNCTION (Safe DB Update)
-      const { error } = await supabase.rpc('mark_as_attended', {
+      // 3. USE DYNAMIC RPC FUNCTION
+      const rpcName = getAttendanceRPC(guestData.formType);
+      const { error } = await supabase.rpc(rpcName, {
         reg_id: guestData.id
       });
 
@@ -348,7 +353,6 @@ export default function AdminScanner() {
       `}</style>
 
       <div className="gate-container">
-        {/* Dynamic Header: Shows Venue Name if available, otherwise generic */}
         <header className="gate-header">
           <h1>{guestData ? (guestData.events?.title || 'Event Entry') : 'Entry Gate'}</h1>
           <p>{guestData ? (guestData.events?.venue || 'Venue Not Set') : 'Secure Terminal'} • Check-in Point</p>
@@ -381,7 +385,6 @@ export default function AdminScanner() {
 
         {guestData ? (
           <div className="pass-info-card">
-            {/* DUPLICATE WARNING */}
             {alreadyScanned && (
               <div className="already-entered">
                 This pass has already entered
@@ -410,7 +413,6 @@ export default function AdminScanner() {
                </div>
             )}
 
-            {/* ACTION AREA */}
             {!alreadyScanned ? (
                 <div className="gate-actions">
                   <button 
@@ -440,7 +442,6 @@ export default function AdminScanner() {
            </div>
         )}
 
-        {/* Manual Reset Option (if needed for non-duplicate scans) */}
         {guestData && !alreadyScanned && (
             <div style={{textAlign: 'center', marginTop: '20px'}}>
                 <button 
