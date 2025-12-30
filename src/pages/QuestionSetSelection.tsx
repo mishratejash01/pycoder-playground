@@ -79,7 +79,7 @@ const ScrollingPlaceholder = ({ statements, visible }: { statements: string[], v
       <span 
         ref={textRef}
         className={cn(
-          "text-xs text-[#3f3f46] font-mono",
+          "text-[10px] uppercase font-bold tracking-widest text-[#3f3f46] font-sans",
           shouldScroll ? "animate-placeholder-scroll" : ""
         )}
       >
@@ -93,7 +93,7 @@ const ScrollingPlaceholder = ({ statements, visible }: { statements: string[], v
           100% { transform: translateX(calc(-100% + 180px)); }
         }
         .animate-placeholder-scroll {
-          animation: placeholder-scroll 4s ease-in-out infinite alternate;
+          animation: placeholder-scroll 6s ease-in-out infinite alternate;
         }
       `}</style>
     </div>
@@ -114,10 +114,10 @@ export default function QuestionSetSelection() {
   const [showProfileSheet, setShowProfileSheet] = useState(false);
 
   const searchPlaceholders = [
-    'Search for questions related to specific levels like "Easy" or "Hard"...',
-    'Enter a topic name to filter modules in this subject archive...',
-    'Type the name of a specific question to find it instantly...',
-    'Filter results by searching for a specific module category...'
+    'Filter results by searching for a specific level like "Easy", "Medium", or "Hard"...',
+    'Enter a topic name to narrow down modules within this specific subject archive...',
+    'Quickly find a specific question by typing its name directly into the search bar...',
+    'Organize your view by searching for a specific category within the current module...'
   ];
 
   // --- DATA FETCHING ---
@@ -171,7 +171,7 @@ export default function QuestionSetSelection() {
     }
   });
 
-  // --- FILTERING LOGIC ---
+  // --- DERIVED DATA ---
   const topics = useMemo(() => {
     if (isProctored) return [];
     const uniqueTopics = new Set(fetchedData.map((a: any) => a.category || 'General'));
@@ -271,10 +271,10 @@ export default function QuestionSetSelection() {
             </div>
             <div className="relative w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3f3f46] z-10" />
-              <div className="relative flex items-center h-11 bg-[#0d0d0d] border border-[#1f1f23] rounded-md">
+              <div className="relative flex items-center h-11 bg-[#0d0d0d] border border-[#1f1f23] rounded-md overflow-hidden">
                 <ScrollingPlaceholder statements={searchPlaceholders} visible={searchTerm === ''} />
                 <Input 
-                  className="bg-transparent border-none text-white h-full w-full pl-10 pr-4 text-xs font-mono focus-visible:ring-0 focus-visible:ring-offset-0 transition-all"
+                  className="bg-transparent border-none text-white h-full w-full pl-10 pr-4 text-xs font-mono focus-visible:ring-0 focus-visible:ring-offset-0 transition-all z-20"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -292,7 +292,14 @@ export default function QuestionSetSelection() {
 
         <div className="p-[40px_60px] max-w-[1200px] w-full mx-auto">
           {isLoading ? (
-            <div className="text-center py-20 text-[#666666] font-mono text-xs uppercase tracking-[3px] animate-pulse">Initializing archive...</div>
+            <div className="flex flex-col items-center justify-center py-32 gap-4">
+               <div className="font-extrabold text-[24px] tracking-[4px] text-white animate-pulse uppercase">
+                  CODÉVO
+               </div>
+               <div className="text-[10px] font-bold text-[#3f3f46] uppercase tracking-[3px]">
+                  Initializing subject archive...
+               </div>
+            </div>
           ) : filteredData.length === 0 ? (
             <div className="text-center py-20 text-[#3f3f46] border border-dashed border-[#1f1f23] rounded-sm font-mono text-xs uppercase tracking-widest">
               Zero results found in this directory
@@ -307,7 +314,7 @@ export default function QuestionSetSelection() {
                 {isLocked && <PremiumLockOverlay />}
                 <div className={cn(
                   "bg-[#0d0d0d] border border-[#1f1f23] rounded-sm transition-all duration-300",
-                  isExpanded && "border-[#444] shadow-[0_0_30px_rgba(255,255,255,0.02)]"
+                  isExpanded && "border-[#444]"
                 )}>
                   <div 
                     className={cn("flex items-center p-[24px_30px] cursor-pointer", isLocked && "opacity-50 cursor-not-allowed")}
@@ -318,7 +325,7 @@ export default function QuestionSetSelection() {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-[22px] font-bold text-white mb-[10px] leading-tight truncate pr-4 tracking-tight">
+                      <h3 className="text-[22px] font-bold text-white mb-[10px] leading-tight pr-4 tracking-tight">
                         {item.title || item.name}
                       </h3>
                       <div className="inline-flex bg-white/[0.03] border border-[#1f1f23] p-[5px_12px] rounded-[6px] text-[10px] text-[#666666] uppercase font-bold tracking-[0.5px]">
