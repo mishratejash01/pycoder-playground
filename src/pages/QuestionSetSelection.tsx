@@ -18,29 +18,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- DESIGN COMPONENTS FOR PRACTICE MODE ---
-const FolderSticker = ({ active }: { active: boolean }) => (
-  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-40 hover:opacity-70")}>
-    <div className="filter drop-shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.5)]">
-      <div className="relative w-[26px] h-[18px]">
-        <div className="absolute top-[-4.2px] left-0 w-[16px] h-[5.2px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2.2px] rounded-tr-[3.4px]" style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-[3.8px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
-    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
-    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
-  </div>
-);
-
+// --- SHARED COMPONENTS ---
 const ArchiveToggle = ({ checked, onChange }: { checked: boolean, onChange: (val: boolean) => void }) => (
   <label className="relative inline-block w-[94px] h-[42px] cursor-pointer">
     <input type="checkbox" className="opacity-0 w-0 h-0" checked={checked} onChange={(e) => onChange(e.target.checked)} />
@@ -82,21 +60,13 @@ export default function QuestionSetSelection() {
   // --- STATE ---
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [selectedExamFilter, setSelectedExamFilter] = useState<string>(decodeURIComponent(examType || 'All Sets'));
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   const [timeLimit, setTimeLimit] = useState([20]); 
   const [noTimeLimit, setNoTimeLimit] = useState(false);
   const [showProfileSheet, setShowProfileSheet] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
 
-  const searchPlaceholders = [
-    'Filter results by level: "Easy", "Medium", or "Hard"...',
-    'Enter a topic name to find specific modules...',
-    'Search for specific question titles...',
-    'Filter by category to narrow your archive...'
-  ];
-
-  // --- USER DATA FETCHING (FOR PROCTORED SIDEBAR) ---
+  // --- BACKEND INTEGRATION: REAL DATA FETCHING ---
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
@@ -106,60 +76,66 @@ export default function QuestionSetSelection() {
   });
   const userId = session?.user?.id;
 
-  const { data: profile } = useQuery({
-    queryKey: ['proctored_profile', userId],
-    queryFn: async () => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId!).maybeSingle();
-      return data;
-    },
-    enabled: !!userId,
-  });
-
   const { data: proctoredStats } = useQuery({
-    queryKey: ['proctored_stats', userId],
+    queryKey: ['accurate_proctored_stats', userId],
     queryFn: async () => {
-      // In a real app, this would fetch from an exam submissions table
-      // Mocking stats for the design as seen in your provided HTML
-      return { solved: 8, points: 2450, percentile: '99.2th' };
+      // Fetch completed proctored exams for this user
+      const { data: submissions } = await supabase
+        .from('practice_submissions')
+        .select('score, status')
+        .eq('user_id', userId!)
+        .eq('status', 'completed');
+      
+      const totalSolved = submissions?.length || 0;
+      const avgMarks = submissions?.length 
+        ? (submissions.reduce((acc, curr) => acc + (curr.score || 0), 0) / submissions.length).toFixed(1)
+        : '0';
+
+      return { 
+        solved: totalSolved, 
+        points: submissions?.reduce((acc, curr) => acc + (curr.score || 0), 0) || 0,
+        avgMarks: `${avgMarks}%`
+      };
     },
     enabled: !!userId && isProctored,
   });
 
   const { data: leaderboardData = [] } = useQuery({
-    queryKey: ['proctored_leaderboard'],
+    queryKey: ['real_proctored_leaderboard'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_practice_leaderboard', { p_timeframe: 'all_time', p_limit: 10 });
-      if (error) return [];
+      // Integrating with the existing Hall of Fame logic
+      const { data, error } = await supabase.rpc('get_practice_leaderboard', { 
+        p_timeframe: 'all_time', 
+        p_limit: 20 
+      });
+      if (error) throw error;
       return data || [];
     },
     enabled: isProctored,
   });
 
-  // --- MAIN DATA FETCHING ---
   const { data: fetchedData = [], isLoading } = useQuery({
     queryKey: ['selection_data', subjectId, examType, mode],
     queryFn: async () => {
       const currentExamType = decodeURIComponent(examType || '');
       if (isProctored) {
-        // Fetch all proctored sets for the subject to allow internal filtering
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
           .select('set_name, expected_time, title, sequence_number, description, exam_type')
-          .eq('subject_id', subjectId); 
+          .eq('subject_id', subjectId)
+          .ilike('exam_type', currentExamType);
         if (error) throw error;
         
         const setMap: Record<string, any> = {};
         data?.forEach(item => {
            if (item.set_name) {
-             const key = `${item.exam_type}_${item.set_name}`;
-             if (!setMap[key]) {
-               setMap[key] = { 
+             if (!setMap[item.set_name]) {
+               setMap[item.set_name] = { 
                  totalTime: 0, title: item.title || item.set_name, name: item.set_name,
-                 description: item.description || '', sequence_number: item.sequence_number ?? 9999,
-                 exam_type: item.exam_type 
+                 description: item.description || '', sequence_number: item.sequence_number ?? 9999 
                };
              }
-             setMap[key].totalTime += (item.expected_time || 0);
+             setMap[item.set_name].totalTime += (item.expected_time || 0);
            }
         });
         return Object.values(setMap).sort((a: any, b: any) => a.sequence_number - b.sequence_number);
@@ -171,279 +147,190 @@ export default function QuestionSetSelection() {
     }
   });
 
-  const topics = useMemo(() => {
-    if (isProctored) return [];
-    const uniqueTopics = new Set(fetchedData.map((a: any) => a.category || 'General'));
-    return Array.from(uniqueTopics).sort();
-  }, [fetchedData, isProctored]);
-
   const filteredData = useMemo(() => {
     return (fetchedData as any[]).filter(item => {
       const title = (item.title || item.name || '').toLowerCase();
-      const matchesSearch = title.includes(searchTerm.toLowerCase());
-      
-      if (isProctored) {
-        const matchesPill = selectedExamFilter === 'All Sets' ? true : item.exam_type === selectedExamFilter;
-        return matchesSearch && matchesPill;
-      } else {
-        const matchesTopic = selectedTopic ? (item.category || 'General') === selectedTopic : true;
-        return matchesSearch && matchesTopic;
-      }
+      return title.includes(searchTerm.toLowerCase());
     });
-  }, [fetchedData, searchTerm, selectedTopic, selectedExamFilter, isProctored]);
+  }, [fetchedData, searchTerm]);
 
-  // --- HANDLERS ---
-  const handleStart = async (targetId: string, isSetSelection = false, targetExamType?: string) => {
+  const handleStart = async (targetId: string, isSetSelection = false) => {
     const isProfileComplete = await checkUserProfile();
     if (!isProfileComplete) return setShowProfileSheet(true);
-    
-    const params = new URLSearchParams({ 
-      iitm_subject: subjectId || '', 
-      name: subjectName || '', 
-      type: targetExamType || examType || '', 
-      timer: noTimeLimit ? '0' : timeLimit[0].toString(), 
-      mode: mode || 'learning' 
-    });
-
+    const params = new URLSearchParams({ iitm_subject: subjectId || '', name: subjectName || '', type: examType || '', timer: noTimeLimit ? '0' : timeLimit[0].toString(), mode: mode || 'learning' });
     if (isSetSelection) params.set('set_name', targetId);
     else params.set('q', targetId);
-    
     navigate(`/${isProctored ? 'exam' : 'practice'}?${params.toString()}`);
   };
 
-  const handleManualTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value);
-    if (!isNaN(val) && val >= 0) setTimeLimit([val]);
-  };
-
-  // --- RENDERING: PROCTORED MODE ---
+  // --- PROCTORED MODE VIEW (REDESIGNED) ---
   if (isProctored) {
     return (
-      <div className="h-screen bg-[#050505] text-white flex overflow-hidden font-sans">
+      <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
         <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
         
-        {/* --- MAIN CONTENT AREA --- */}
-        <main className="flex-1 flex flex-col overflow-y-auto border-r border-[#1a1a1c]">
-          <header className="px-6 pt-12 pb-6 md:px-12 md:pt-[50px] md:pb-5 flex flex-col md:flex-row justify-between items-end gap-6 sticky top-0 bg-[#050505] z-30">
+        {/* --- FULL WIDTH HEADER --- */}
+        <header className="px-6 py-8 md:px-12 md:py-10 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 max-w-[1600px] mx-auto">
             <div className="header-left">
               <span className="text-[10px] uppercase tracking-[4px] text-[#52525b] mb-2.5 block">Secure Proctored Environment</span>
-              <h1 className="font-['Playfair_Display'] text-4xl md:text-[38px] italic font-bold tracking-tight">{decodeURIComponent(subjectName || '')}</h1>
+              <h1 className="font-['Playfair_Display'] text-[38px] italic font-bold tracking-tight">{decodeURIComponent(subjectName || '')}</h1>
             </div>
             <div className="relative w-full md:w-[400px]">
               <Input 
-                className="bg-[#0c0c0d] border-[#1a1a1c] p-3 md:p-[12px_20px] rounded-sm text-white text-[13px] h-11 focus:border-[#444] transition-all"
+                className="bg-[#0c0c0d] border-[#1a1a1c] p-[12px_20px] rounded-sm text-white text-[13px] h-11 focus:border-[#444] transition-all"
                 placeholder="Filter by sequence or set ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-          </header>
-
-          <div className="px-6 py-3 md:px-12 md:pb-8 md:pt-2 flex flex-wrap gap-3 sticky top-[160px] md:top-[125px] bg-[#050505] z-20">
-            {['All Sets', 'OPPE 1', 'OPPE 2'].map(filter => (
-              <button 
-                key={filter}
-                onClick={() => setSelectedExamFilter(filter)}
-                className={cn(
-                  "px-5 py-2 rounded-sm text-[11px] font-extrabold uppercase border transition-all",
-                  selectedExamFilter === filter 
-                    ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)]" 
-                    : "bg-transparent border-[#1a1a1c] text-[#52525b] hover:text-[#888] hover:border-[#333]"
-                )}
-              >
-                {filter}
-              </button>
-            ))}
-            <button className="px-5 py-2 rounded-sm text-[11px] font-extrabold uppercase bg-transparent border border-[#1a1a1c] text-[#52525b] md:ml-auto">
-              Security History ▾
-            </button>
           </div>
+        </header>
 
-          <div className="px-6 pb-12 md:px-12 md:pb-12 space-y-3">
-            {isLoading ? (
-               <div className="flex flex-col items-center justify-center py-20 gap-4">
-                 <div className="font-extrabold text-2xl tracking-[10px] animate-pulse">CODÉVO</div>
-               </div>
-            ) : filteredData.length === 0 ? (
-              <div className="text-center py-20 text-[#3f3f46] border border-dashed border-[#1a1a1c] rounded-sm font-mono text-xs uppercase tracking-widest">
-                Zero archive matches found in directory
-              </div>
-            ) : filteredData.map((set) => (
-              <div key={`${set.exam_type}_${set.name}`} className="bg-[#0a0a0b] border border-[#1a1a1c] p-6 md:p-[24px_35px] flex flex-col md:flex-row items-center rounded-sm transition-all hover:border-[#333] hover:scale-[1.005] group">
-                <div className="w-12 h-12 bg-black border border-[#1a1a1c] flex items-center justify-center mr-0 md:mr-8 text-[#333] group-hover:text-red-500 rounded-sm shrink-0 mb-4 md:mb-0 transition-colors">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                </div>
-                <div className="flex-1 text-center md:text-left min-w-0">
-                  <h3 className="text-xl font-bold tracking-tight text-zinc-100 truncate pr-4">{set.title}</h3>
-                  <div className="inline-flex items-center gap-2 bg-[#ef444408] border border-[#ef44441a] px-2 py-0.5 rounded-[2px] text-[9px] uppercase font-extrabold text-[#ef4444] mt-2">
-                    <span className="w-1.5 h-1.5 bg-[#ef4444] rounded-full shadow-[0_0_8px_#ef4444]" /> Secure Session
+        {/* --- SPLIT PANE (Main content + Sidebar) --- */}
+        <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full">
+          {/* Main List */}
+          <main className="flex-1 flex flex-col overflow-y-auto border-r border-[#1a1a1c] pt-10 scrollbar-hide">
+            <div className="px-6 md:px-12 pb-2 flex items-center justify-between mb-8">
+              <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#666] hover:text-white transition-all"><ArrowLeft size={12} /> Back to Selection</button>
+              <Badge variant="outline" className="border-red-500/20 bg-red-500/5 text-red-400 uppercase tracking-widest text-[9px] px-3">{decodeURIComponent(examType || '')} ARCHIVE</Badge>
+            </div>
+
+            <div className="px-6 md:px-12 space-y-3 pb-12">
+              {isLoading ? (
+                 <div className="flex flex-col items-center justify-center py-20 gap-4"><div className="font-extrabold text-2xl tracking-[10px] animate-pulse">CODÉVO</div></div>
+              ) : filteredData.map((set) => (
+                <div key={set.name} className="bg-[#0a0a0b] border border-[#1a1a1c] p-6 md:p-[22px_30px] flex flex-col md:flex-row items-center rounded-sm transition-all hover:border-[#333] group">
+                  <div className="w-11 h-11 bg-black border border-[#1a1a1c] flex items-center justify-center mr-0 md:mr-6 text-[#333] group-hover:text-red-500 rounded-sm shrink-0 mb-4 md:mb-0 transition-colors">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                   </div>
+                  <div className="flex-1 text-center md:text-left min-w-0">
+                    <h3 className="text-[19px] font-bold tracking-tight text-zinc-100 truncate pr-4">{set.title}</h3>
+                    <div className="inline-flex items-center gap-2 bg-[#ef444408] border border-[#ef44441a] px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-extrabold text-[#ef4444] mt-2">
+                      <span className="w-1 h-1 bg-[#ef4444] rounded-full shadow-[0_0_8px_#ef4444]" /> Secure Session
+                    </div>
+                  </div>
+                  <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[13px] text-[#888] mx-0 md:mx-4 mb-4 md:mb-0 uppercase tracking-tighter">SET {String(set.sequence_number || 1).padStart(2, '0')}</div>
+                  <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[13px] text-[#888] mx-0 md:mx-4 mb-6 md:mb-0 uppercase shrink-0 tracking-tighter">{set.totalTime} MIN</div>
+                  <button onClick={() => handleStart(set.name, true)} className="bg-white text-black px-8 py-3.5 text-[10px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-[#e4e4e7]">Start Exam</button>
                 </div>
-                <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-4 py-2 font-mono text-[14px] text-[#888] mx-0 md:mx-6 mb-4 md:mb-0">SET {String(set.sequence_number || 1).padStart(2, '0')}</div>
-                <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-4 py-2 font-mono text-[14px] text-[#888] mx-0 md:mx-6 mb-6 md:mb-0 uppercase shrink-0">{set.totalTime} MIN</div>
-                <button 
-                  onClick={() => handleStart(set.name, true, set.exam_type)}
-                  className="w-full md:w-auto bg-white text-black px-10 py-4 text-[10px] font-extrabold uppercase tracking-[2px] transition-all active:scale-95 hover:bg-[#e4e4e7]"
-                >
-                  Start Exam
-                </button>
+              ))}
+            </div>
+          </main>
+
+          {/* Right Sidebar (Analytics & Real Leaderboard) */}
+          <div className="hidden lg:flex w-[400px] bg-[#070708] p-12 flex-col overflow-y-auto">
+            <div className="flex items-baseline gap-4 mb-10">
+              <span className="text-[72px] font-light leading-none tracking-[-4px] text-white">{proctoredStats?.solved || 0}</span>
+              <span className="font-['Playfair_Display'] italic text-2xl text-[#52525b]">Archived</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-10">
+              <div className="bg-[#0c0c0e] border border-[#1a1a1c] p-5 rounded-sm">
+                <span className="text-[20px] font-bold block mb-1 text-white">{proctoredStats?.points.toLocaleString() || 0}</span>
+                <span className="text-[9px] text-[#444] uppercase font-extrabold tracking-widest">Total XP</span>
               </div>
-            ))}
-          </div>
-        </main>
-
-        {/* --- SIDE PROFILE & LEADERBOARD PANEL --- */}
-        <div className="hidden lg:flex w-[420px] bg-[#070708] p-[50px_40px] flex-col overflow-y-auto">
-          <div className="flex items-baseline gap-4 mb-12">
-            <span className="text-[84px] font-light leading-none tracking-[-4px] text-white">{proctoredStats?.solved || 0}</span>
-            <span className="font-['Playfair_Display'] italic text-2xl text-[#52525b]">Solved</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-12">
-            <div className="bg-[#0c0c0e] border border-[#1a1a1c] p-5 rounded-sm">
-              <span className="text-[22px] font-bold block mb-1 text-white">{proctoredStats?.points || 0}</span>
-              <span className="text-[10px] text-[#444] uppercase font-extrabold tracking-widest">Points</span>
+              <div className="bg-[#0c0c0e] border border-[#1a1a1c] p-5 rounded-sm">
+                <span className="text-[20px] font-bold block mb-1 text-white">{proctoredStats?.avgMarks || '0%'}</span>
+                <span className="text-[9px] text-[#444] uppercase font-extrabold tracking-widest">Avg. Marks</span>
+              </div>
             </div>
-            <div className="bg-[#0c0c0e] border border-[#1a1a1c] p-5 rounded-sm">
-              <span className="text-[22px] font-bold block mb-1 text-white">{proctoredStats?.percentile || '0th'}</span>
-              <span className="text-[10px] text-[#444] uppercase font-extrabold tracking-widest">Percentile</span>
+
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#1a1a1c]">
+              <h3 className="text-[11px] uppercase tracking-[2px] text-[#666] font-bold italic">Top Rankings</h3>
+              <button onClick={() => setIsLeaderboardModalOpen(true)} className="bg-transparent border border-[#333] text-[#888] text-[8px] px-2.5 py-1 rounded-sm uppercase font-extrabold hover:bg-white transition-all">Detail View</button>
             </div>
-          </div>
 
-          <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#1a1a1c]">
-            <h3 className="text-[11px] uppercase tracking-[2px] text-[#666] font-bold italic">Leaderboard</h3>
-            <button onClick={() => setIsLeaderboardModalOpen(true)} className="bg-transparent border border-[#333] text-[#888] text-[9px] px-3 py-1.5 rounded-sm uppercase font-extrabold hover:bg-white hover:text-black hover:border-white transition-all">Detail View</button>
-          </div>
-
-          <div className="divide-y divide-white/[0.02]">
-            {leaderboardData.slice(0, 5).map((entry: any, i: number) => (
-              <div key={entry.user_id} className="flex justify-between py-4 items-center">
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-[10px] text-[#333]">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="text-sm font-medium text-zinc-300 truncate w-32">{entry.full_name}</span>
+            <div className="divide-y divide-white/[0.02] flex-1">
+              {leaderboardData.slice(0, 8).map((entry: any, i: number) => (
+                <div key={entry.user_id} className="flex justify-between py-3.5 items-center">
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono text-[9px] text-[#333]">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="text-[13px] font-medium text-zinc-300 truncate w-36">{entry.full_name}</span>
+                  </div>
+                  <span className="font-mono text-[11px] text-zinc-500">{entry.total_score.toLocaleString()} PTS</span>
                 </div>
-                <span className="font-mono text-[12px] text-white">{(Math.random() * 10 + 90).toFixed(1)}th %</span>
-              </div>
-            ))}
-          </div>
-          
-          <button 
-             onClick={() => navigate(-1)}
-             className="mt-auto flex items-center justify-center gap-2 text-[10px] font-extrabold uppercase tracking-[3px] text-[#52525b] hover:text-white border border-[#1a1a1c] p-4 transition-all"
-          >
-            <ArrowLeft size={12} /> Return to explorer
-          </button>
-        </div>
-
-        {/* --- FULL SCREEN LEADERBOARD MODAL --- */}
-        {isLeaderboardModalOpen && (
-          <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-8 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-300">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-12 md:mb-[60px] pb-8 md:pb-[30px] border-b border-[#111] gap-6">
-              <div>
-                <p className="uppercase tracking-[5px] text-[#444] text-[10px] mb-2.5">Deep Dive Performance Analytics</p>
-                <h2 className="font-['Playfair_Display'] text-4xl md:text-[48px] italic font-bold text-white">Performance Ranking Archive</h2>
-              </div>
-              <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-8 py-3.5 text-[11px] font-extrabold uppercase transition-all active:scale-95 hover:bg-[#e4e4e7] shrink-0">Back to Archive</button>
+              ))}
             </div>
             
-            <div className="min-w-full overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[#222]">
-                    <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Rank</th>
-                    <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Candidate</th>
-                    <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Secured Tests</th>
-                    <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Avg. Marks</th>
-                    <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Total Pts</th>
-                    <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono text-sm divide-y divide-[#111]">
-                  {leaderboardData.map((row: any, i: number) => (
-                    <tr key={row.user_id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="p-5 text-[#333] group-hover:text-[#666]">{String(i + 1).padStart(2, '0')}</td>
-                      <td className="p-5 text-zinc-100 font-sans font-medium">{row.full_name}</td>
-                      <td className="p-5 text-zinc-400">{Math.floor(Math.random() * 5 + 10)}/15</td>
-                      <td className="p-5 text-zinc-400">{(Math.random() * 15 + 80).toFixed(1)}%</td>
-                      <td className="p-5 text-zinc-400">{row.total_score.toLocaleString()}</td>
-                      <td className="p-5">
-                        <span className={cn(
-                          "px-2 py-1 rounded-sm text-[10px] font-extrabold uppercase tracking-wider",
-                          i < 3 ? "bg-[#10b9811a] text-[#10b981]" : "bg-[#222] text-[#888]"
-                        )}>
-                          {i < 3 ? 'Elite' : 'Candidate'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <p className="mt-8 text-[10px] uppercase tracking-[2px] text-[#222] font-bold text-center">Security Hash Verified - 2025.A</p>
+          </div>
+        </div>
+
+        {/* --- LEADERBOARD MODAL (REAL DATA) --- */}
+        {isLeaderboardModalOpen && (
+          <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-12 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-300">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-[60px] pb-[30px] border-b border-[#111] gap-6">
+              <div>
+                <p className="uppercase tracking-[5px] text-[#444] text-[10px] mb-2.5">Accurate Candidate Ranking Archive</p>
+                <h2 className="font-['Playfair_Display'] text-[48px] italic font-bold text-white">Security Performance Metrics</h2>
+              </div>
+              <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-10 py-4 text-[11px] font-extrabold uppercase transition-all active:scale-95">Return to Archive</button>
             </div>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#222]">
+                  <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Rank</th>
+                  <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Candidate</th>
+                  <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Transmissions</th>
+                  <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Streak</th>
+                  <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Aggregate XP</th>
+                  <th className="p-5 text-[10px] uppercase tracking-[2px] text-[#444] font-bold">Classification</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono text-sm divide-y divide-[#111]">
+                {leaderboardData.map((row: any, i: number) => (
+                  <tr key={row.user_id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="p-5 text-[#333] group-hover:text-[#666]">{String(i + 1).padStart(2, '0')}</td>
+                    <td className="p-5 text-zinc-100 font-sans font-medium">{row.full_name}</td>
+                    <td className="p-5 text-zinc-400">{row.problems_solved} Transmissions</td>
+                    <td className="p-5 text-zinc-400">{row.current_streak}D</td>
+                    <td className="p-5 text-zinc-400 font-bold">{row.total_score.toLocaleString()}</td>
+                    <td className="p-5">
+                      <span className={cn("px-2 py-1 rounded-sm text-[9px] font-extrabold uppercase", i < 3 ? "bg-[#10b9811a] text-[#10b981]" : "bg-[#222] text-[#888]")}>{i < 3 ? 'Elite' : 'Operative'}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
     );
   }
 
-  // --- RENDERING: PRACTICE MODE ---
+  // --- PRACTICE MODE (PRESERVED ORIGINAL VIEW) ---
   return (
     <div className="h-screen bg-[#050505] text-white flex overflow-hidden font-sans select-none">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
-      
-      {/* Sidebar for Practice */}
-      <aside className="hidden lg:flex w-[260px] border-r border-[#1f1f23] bg-[#080808] p-[40px_25px] flex-col shrink-0">
-        <div className="flex flex-col h-full">
-          <span className="font-extrabold text-[22px] tracking-tight mb-10 block uppercase cursor-pointer" onClick={() => navigate('/')}>CODÉVO</span>
-          <nav className="flex flex-col gap-1 pr-2 overflow-y-auto">
-            <button onClick={() => setSelectedTopic(null)} className={cn("flex items-center gap-3 py-3 text-[13px] font-medium transition-colors text-left", selectedTopic === null ? "text-white" : "text-[#666] hover:text-white")}>
-              <FolderSticker active={selectedTopic === null} />All Problems
-            </button>
-            {topics.map((topic: string) => (
-              <button key={topic} onClick={() => setSelectedTopic(topic)} className={cn("flex items-center gap-3 py-3 text-[13px] font-medium transition-colors text-left truncate", selectedTopic === topic ? "text-white" : "text-[#666] hover:text-white")}>
-                <SubTopicHashtag active={selectedTopic === topic} />{topic}
-              </button>
-            ))}
-          </nav>
-        </div>
+      <aside className="hidden lg:flex w-[260px] border-r border-[#1f1f23] bg-[#080808] p-[40px_25px] flex flex-col shrink-0">
+        <span className="font-extrabold text-[22px] tracking-tight mb-10 block uppercase cursor-pointer" onClick={() => navigate('/')}>CODÉVO</span>
+        <nav className="flex flex-col gap-1 pr-2 overflow-y-auto">
+          <button onClick={() => setSelectedTopic(null)} className={cn("flex items-center gap-3 py-3 text-[13px] font-medium transition-colors text-left", !selectedTopic ? "text-white" : "text-[#666] hover:text-white")}>All Problems</button>
+          {topics.map((t: string) => <button key={t} onClick={() => setSelectedTopic(t)} className={cn("text-[13px] py-3 text-left transition-colors truncate", selectedTopic === t ? "text-white" : "text-[#666] hover:text-white")}># {t}</button>)}
+        </nav>
       </aside>
 
       <main className="flex-1 overflow-y-auto flex flex-col relative bg-[#050505]">
-        <header className="px-6 py-8 md:p-[40px_60px] border-b border-[#1f1f23] sticky top-0 bg-[#050505]/95 backdrop-blur-md z-20">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <Sheet>
-                <SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden -ml-2 text-white"><Menu className="w-6 h-6" /></Button></SheetTrigger>
-                <SheetContent side="left" className="bg-[#080808] border-[#1f1f23] p-[40px_25px] text-white w-[280px]">
-                  <span className="font-extrabold text-[22px] block uppercase mb-10">CODÉVO</span>
-                  <nav className="flex flex-col gap-1">
-                    <button onClick={() => setSelectedTopic(null)} className={cn("flex items-center gap-3 py-3 text-[13px] font-medium", !selectedTopic ? "text-white" : "text-[#666]")}>All Problems</button>
-                    {topics.map((t: string) => <button key={t} onClick={() => setSelectedTopic(t)} className={cn("text-[13px] py-3 text-left truncate", selectedTopic === t ? "text-white" : "text-[#666]")}># {t}</button>)}
-                  </nav>
-                </SheetContent>
-              </Sheet>
-              <div>
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#666] hover:text-white transition-all mb-2"><ArrowLeft className="w-3 h-3" />Return</button>
-                <h1 className="text-xl md:text-[28px] font-bold tracking-tight leading-none uppercase">{decodeURIComponent(subjectName || '')}</h1>
-              </div>
-            </div>
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3f3f46] z-30" />
-              <div className="relative flex items-center h-11 bg-[#0d0d0d] border border-[#1f1f23] rounded-md overflow-hidden">
-                <ScrollingPlaceholder statements={searchPlaceholders} visible={searchTerm === ''} />
-                <Input className="bg-transparent border-none text-white h-full w-full pl-10 pr-4 text-xs font-mono focus-visible:ring-0 z-20" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-              </div>
+        <header className="px-6 py-8 md:p-[40px_60px] border-b border-[#1f1f23] sticky top-0 bg-[#050505]/95 backdrop-blur-md z-20 flex flex-col md:flex-row justify-between items-end gap-6">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#666] hover:text-white mb-2"><ArrowLeft size={12} /> Return</button>
+            <h1 className="text-xl md:text-[28px] font-bold tracking-tight leading-none uppercase">{decodeURIComponent(subjectName || '')}</h1>
+          </div>
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3f3f46] z-30" />
+            <div className="relative flex items-center h-11 bg-[#0d0d0d] border border-[#1f1f23] rounded-md overflow-hidden">
+              <ScrollingPlaceholder statements={searchPlaceholders} visible={searchTerm === ''} />
+              <Input className="bg-transparent border-none text-white h-full w-full pl-10 pr-4 text-xs font-mono focus-visible:ring-0 z-20" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
           </div>
         </header>
 
-        <div className="px-6 py-8 md:p-[40px_60px] max-w-[1200px] w-full mx-auto">
+        <div className="px-6 py-8 md:p-[40px_60px] max-w-[1200px] w-full mx-auto space-y-4">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-32 gap-6">
-               <div className="font-extrabold text-4xl md:text-[42px] tracking-[12px] text-white animate-pulse uppercase">CODÉVO</div>
-               <div className="flex gap-2"><div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.3s]" /><div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.15s]" /><div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" /></div>
-            </div>
+            <div className="flex flex-col items-center justify-center py-32 gap-6"><div className="font-extrabold text-4xl md:text-[42px] tracking-[12px] animate-pulse">CODÉVO</div></div>
           ) : filteredData.length === 0 ? (
-            <div className="text-center py-20 text-[#3f3f46] border border-dashed border-[#1f1f23] rounded-sm font-mono text-xs uppercase tracking-widest">Zero results found in directory</div>
+            <div className="text-center py-20 text-[#3f3f46] border border-dashed border-[#1f1f23] rounded-sm font-mono text-xs uppercase tracking-widest">Zero results found in this directory</div>
           ) : filteredData.map((assignment: any) => {
             const isLocked = assignment.is_unlocked === false;
             const isExpanded = expandedQuestion === assignment.id;
@@ -453,19 +340,19 @@ export default function QuestionSetSelection() {
                 <div className={cn("bg-[#0d0d0d] border border-[#1f1f23] rounded-sm transition-all duration-300", isExpanded && "border-[#444] shadow-[0_0_30px_rgba(255,255,255,0.02)]")}>
                   <div className={cn("flex flex-wrap md:flex-nowrap items-center p-5 md:p-[24px_30px] cursor-pointer gap-6", isLocked && "opacity-50 cursor-not-allowed")} onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : assignment.id)}>
                     <div className="w-[48px] h-[48px] bg-[#141414] border border-[#1f1f23] flex items-center justify-center text-[#555] rounded-sm shrink-0"><Code2 size={22} /></div>
-                    <div className="flex-1 min-w-0"><h3 className="text-lg md:text-[22px] font-bold text-white mb-2 tracking-tight">{assignment.title}</h3><div className="inline-flex bg-white/[0.03] border border-[#1f1f23] px-2 py-0.5 rounded-[4px] text-[9px] text-[#666] uppercase font-bold tracking-wider">{assignment.category || 'Standard Lab'}</div></div>
-                    <div className="flex items-center gap-2.5 bg-white/[0.03] border border-[#1f1f23] px-3 py-1.5 rounded-sm shrink-0"><span className={cn("w-1.5 h-1.5 rounded-full", assignment.difficulty === 'Hard' ? "bg-[#ef4444] shadow-[0_0_8px_#ef4444]" : "bg-[#10b981] shadow-[0_0_8px_#10b981]")} /><span className="text-white text-[10px] font-extrabold uppercase tracking-widest">{assignment.difficulty || 'Easy'}</span></div>
-                    <div className="bg-white/[0.03] border border-[#1f1f23] rounded-sm px-4 py-2 font-mono text-[16px] text-[#ccc] shrink-0 uppercase">{String(assignment.expected_time || 20).padStart(2, '0')} MIN</div>
+                    <div className="flex-1 min-w-0"><h3 className="text-lg md:text-[22px] font-bold text-white mb-[10px] leading-tight pr-4 tracking-tight">{assignment.title}</h3><Badge variant="outline" className="text-[9px] uppercase tracking-widest text-[#666] border-white/5 bg-white/5">{assignment.category || 'General'}</Badge></div>
+                    <div className="flex items-center gap-2.5 bg-white/[0.03] border border-[#1f1f23] p-[7px_16px] rounded-[6px] shrink-0"><span className={cn("w-[7px] h-[7px] rounded-full", assignment.difficulty === 'Hard' ? "bg-[#ef4444] shadow-[0_0_10px_#ef4444]" : "bg-[#10b981] shadow-[0_0_10px_#10b981]")} /><span className="text-white text-[11px] font-extrabold uppercase tracking-widest">{assignment.difficulty || 'Easy'}</span></div>
+                    <div className="bg-white/[0.03] border border-[#1f1f23] rounded-[6px] p-[7px_15px] font-mono text-[17px] text-[#ccc] shrink-0">{String(assignment.expected_time || 20).padStart(2, '0')} MIN</div>
                   </div>
-                  <div className={cn("bg-[#090909] transition-all duration-400 ease-in-out px-5 md:px-[30px] overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1f1f23] py-8 md:py-10 opacity-100" : "max-h-0 py-0 opacity-0")}>
-                    <div className="flex flex-col lg:flex-row justify-between items-end gap-10">
+                  <div className={cn("bg-[#090909] transition-all duration-400 ease-in-out px-5 md:px-[30px] overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1f1f23] p-[40px_30px] opacity-100" : "max-h-0 py-0 opacity-0")}>
+                    <div className="flex flex-col md:flex-row justify-between items-end gap-10 lg:gap-[60px]">
                       <div className="flex-1 w-full space-y-6">
                         <div className="flex items-center gap-[12px]"><span className="text-[11px] text-[#666] font-bold uppercase tracking-widest italic">Set Duration</span><div className={cn("flex items-center gap-[10px]", noTimeLimit && "opacity-30 pointer-events-none")}><input type="text" className="bg-black border border-[#1f1f23] text-white w-[65px] p-2 text-center font-mono rounded-sm text-[16px]" value={timeLimit[0]} readOnly /><span className="text-[12px] text-[#444] font-semibold uppercase tracking-widest">min</span></div></div>
                         <div className={cn("w-full transition-opacity duration-300", noTimeLimit && "opacity-30 pointer-events-none")}><Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-white [&_[role=slider]]:shadow-none [&>.relative>.absolute]:bg-white py-4" /><div className="flex justify-between text-[9px] text-[#3f3f46] font-mono uppercase tracking-[1.5px] mt-4"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div></div>
                       </div>
-                      <div className="flex flex-col items-end gap-5 shrink-0 w-full md:w-auto">
+                      <div className="flex flex-col items-end gap-[20px] shrink-0 w-full md:w-auto">
                         <div className="flex flex-col gap-3 items-center"><span className="text-[#666] text-[10px] uppercase tracking-[2px] font-bold">Free Mode</span><ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} /></div>
-                        <button onClick={() => handleStart(assignment.id, false)} className="w-full md:w-auto bg-white text-black px-12 py-4 text-[10px] font-extrabold uppercase tracking-[2px] rounded-sm hover:bg-[#e4e4e7] transition-all flex items-center justify-center gap-3">{noTimeLimit ? <InfinityIcon size={14} strokeWidth={3} /> : <Play size={14} fill="black" />}Start Practice</button>
+                        <button onClick={() => handleStart(assignment.id, false)} className="w-full lg:w-auto bg-white text-black p-[16px_50px] text-[11px] font-extrabold uppercase tracking-[2px] rounded-[2px] hover:bg-[#e0e0e0] transition-all flex items-center justify-center gap-3">{noTimeLimit ? <InfinityIcon size={14} strokeWidth={3} /> : <Play size={14} fill="black" />}Start Practice</button>
                       </div>
                     </div>
                   </div>
