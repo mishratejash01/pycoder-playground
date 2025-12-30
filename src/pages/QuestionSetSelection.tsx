@@ -167,16 +167,13 @@ export default function QuestionSetSelection() {
       <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
         <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
         
-        {/* --- OPTIMIZED HEADER --- */}
-        <header className="px-6 py-4 md:px-12 md:py-6 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
+        {/* --- REFINED HEADER --- */}
+        <header className="px-6 py-4 md:px-12 md:py-8 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-[1600px] mx-auto">
-            <div className="flex items-center gap-6">
-              <h1 className="font-['Playfair_Display'] text-3xl italic font-bold tracking-tight">
-                {decodeURIComponent(subjectName || '')}
+            <div className="header-left">
+              <h1 className="font-['Playfair_Display'] text-3xl italic font-bold tracking-tight uppercase">
+                {decodeURIComponent(subjectName || '')} - {decodeURIComponent(examType || '')}
               </h1>
-              <Badge variant="outline" className="border-red-500/20 bg-red-500/5 text-red-400 uppercase tracking-widest text-[10px] px-3 h-6">
-                {decodeURIComponent(examType || '')}
-              </Badge>
             </div>
             <div className="relative w-full md:w-[400px]">
               <Input 
@@ -191,7 +188,7 @@ export default function QuestionSetSelection() {
 
         {/* --- SPLIT PANE --- */}
         <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full">
-          <main className="flex-1 flex flex-col overflow-y-auto border-r border-[#1a1a1c] pt-8">
+          <main className="flex-1 flex flex-col overflow-y-auto border-r border-[#1a1a1c] pt-8 scrollbar-hide">
             <div className="px-6 md:px-12 flex items-center justify-between mb-8">
               <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[2px] text-[#666] hover:text-white transition-all">
                 <ArrowLeft size={12} /> Return
@@ -201,6 +198,10 @@ export default function QuestionSetSelection() {
             <div className="px-6 md:px-12 space-y-3 pb-12">
               {isLoading ? (
                  <div className="flex flex-col items-center justify-center py-20 gap-4"><div className="font-extrabold text-2xl tracking-[10px] animate-pulse">CODÉVO</div></div>
+              ) : filteredData.length === 0 ? (
+                <div className="text-center py-20 text-[#3f3f46] border border-dashed border-[#1a1a1c] rounded-sm font-mono text-xs uppercase tracking-widest">
+                  Zero archive matches found in directory
+                </div>
               ) : filteredData.map((set) => (
                 <div key={set.name} className="bg-[#0a0a0b] border border-[#1a1a1c] p-5 md:p-[20px_25px] flex flex-col md:flex-row items-center rounded-sm transition-all hover:border-[#333] group">
                   <div className="w-10 h-10 bg-black border border-[#1a1a1c] flex items-center justify-center mr-0 md:mr-6 text-[#333] group-hover:text-red-500 rounded-sm shrink-0 mb-4 md:mb-0 transition-colors">
@@ -208,7 +209,7 @@ export default function QuestionSetSelection() {
                   </div>
                   <div className="flex-1 text-center md:text-left min-w-0">
                     <h3 className="text-[18px] font-bold tracking-tight text-zinc-100 truncate pr-4">{set.title}</h3>
-                    <div className="inline-flex items-center gap-2 text-[8px] uppercase font-extrabold text-[#ef4444] mt-1.5 tracking-widest opacity-80">
+                    <div className="inline-flex items-center gap-2 bg-white/5 border-t border-red-500 shadow-[0_-2px_6px_rgba(239,68,68,0.3)] px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-extrabold text-white mt-2 tracking-widest">
                       <span className="w-1 h-1 bg-[#ef4444] rounded-full shadow-[0_0_8px_#ef4444]" /> Secure Test
                     </div>
                   </div>
@@ -305,7 +306,7 @@ export default function QuestionSetSelection() {
   return (
     <div className="h-screen bg-[#050505] text-white flex overflow-hidden font-sans select-none">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
-      <aside className="hidden lg:flex w-[260px] border-r border-[#1f1f23] bg-[#080808] p-[40px_25px] flex flex-col shrink-0">
+      <aside className="hidden lg:flex w-[260px] border-r border-[#1f1f23] bg-[#080808] p-[40px_25px] flex-col shrink-0">
         <span className="font-extrabold text-[22px] tracking-tight mb-10 block uppercase cursor-pointer" onClick={() => navigate('/')}>CODÉVO</span>
         <nav className="flex flex-col gap-1 pr-2 overflow-y-auto">
           <button onClick={() => setSelectedTopic(null)} className={cn("flex items-center gap-3 py-3 text-[13px] font-medium transition-colors text-left", !selectedTopic ? "text-white" : "text-[#666] hover:text-white")}>
@@ -344,19 +345,19 @@ export default function QuestionSetSelection() {
                 <div className={cn("bg-[#0d0d0d] border border-[#1f1f23] rounded-sm transition-all duration-300", isExpanded && "border-[#444] shadow-[0_0_30px_rgba(255,255,255,0.02)]")}>
                   <div className={cn("flex flex-wrap md:flex-nowrap items-center p-5 md:p-[24px_30px] cursor-pointer gap-6", isLocked && "opacity-50 cursor-not-allowed")} onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : assignment.id)}>
                     <div className="w-[48px] h-[48px] bg-[#141414] border border-[#1f1f23] flex items-center justify-center text-[#555] rounded-sm shrink-0"><Code2 size={22} /></div>
-                    <div className="flex-1 min-w-0"><h3 className="text-lg md:text-[22px] font-bold text-white mb-[10px] leading-tight pr-4 tracking-tight">{assignment.title}</h3><Badge variant="outline" className="text-[9px] uppercase tracking-widest text-[#666] border-white/5 bg-white/5">{assignment.category || 'General'}</Badge></div>
-                    <div className="flex items-center gap-2.5 bg-white/[0.03] border border-[#1f1f23] p-[7px_16px] rounded-[6px] shrink-0"><span className={cn("w-[7px] h-[7px] rounded-full", assignment.difficulty === 'Hard' ? "bg-[#ef4444] shadow-[0_0_10px_#ef4444]" : "bg-[#10b981] shadow-[0_0_10px_#10b981]")} /><span className="text-white text-[11px] font-extrabold uppercase tracking-widest">{assignment.difficulty || 'Easy'}</span></div>
-                    <div className="bg-white/[0.03] border border-[#1f1f23] rounded-[6px] p-[7px_15px] font-mono text-[17px] text-[#ccc] shrink-0">{String(assignment.expected_time || 20).padStart(2, '0')} MIN</div>
+                    <div className="flex-1 min-w-0"><h3 className="text-lg md:text-[22px] font-bold text-white mb-2 tracking-tight">{assignment.title}</h3><Badge variant="outline" className="text-[9px] uppercase tracking-widest text-[#666] border-white/5 bg-white/5">{assignment.category || 'General'}</Badge></div>
+                    <div className="flex items-center gap-2.5 bg-white/[0.03] border border-[#1f1f23] px-3 py-1.5 rounded-sm shrink-0"><span className={cn("w-1.5 h-1.5 rounded-full", assignment.difficulty === 'Hard' ? "bg-[#ef4444] shadow-[0_0_8px_#ef4444]" : "bg-[#10b981] shadow-[0_0_8px_#10b981]")} /><span className="text-white text-[10px] font-extrabold uppercase tracking-widest">{assignment.difficulty || 'Easy'}</span></div>
+                    <div className="bg-white/[0.03] border border-[#1f1f23] rounded-sm px-4 py-2 font-mono text-[16px] text-[#ccc] shrink-0 uppercase">{String(assignment.expected_time || 20).padStart(2, '0')} MIN</div>
                   </div>
                   <div className={cn("bg-[#090909] transition-all duration-400 ease-in-out px-5 md:px-[30px] overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1f1f23] p-[40px_30px] opacity-100" : "max-h-0 py-0 opacity-0")}>
                     <div className="flex flex-col md:flex-row justify-between items-end gap-10 lg:gap-[60px]">
                       <div className="flex-1 w-full space-y-6">
-                        <div className="flex items-center gap-[12px] mb-[25px]"><span className="text-[11px] text-[#666] font-bold uppercase tracking-widest italic">Set Duration</span><div className={cn("flex items-center gap-[10px]", noTimeLimit && "opacity-30 pointer-events-none")}><input type="text" className="bg-black border border-[#1f1f23] text-white w-[65px] p-2 text-center font-mono rounded-sm text-[16px]" value={timeLimit[0]} readOnly /><span className="text-[12px] text-[#444] font-semibold uppercase tracking-widest">min</span></div></div>
+                        <div className="flex items-center gap-[12px]"><span className="text-[11px] text-[#666] font-bold uppercase tracking-widest italic">Set Duration</span><div className={cn("flex items-center gap-[10px]", noTimeLimit && "opacity-30 pointer-events-none")}><input type="text" className="bg-black border border-[#1f1f23] text-white w-[65px] p-2 text-center font-mono rounded-sm text-[16px]" value={timeLimit[0]} readOnly /><span className="text-[12px] text-[#444] font-semibold uppercase tracking-widest">min</span></div></div>
                         <div className={cn("w-full transition-opacity duration-300", noTimeLimit && "opacity-30 pointer-events-none")}><Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-white [&_[role=slider]]:shadow-none [&>.relative>.absolute]:bg-white py-4" /><div className="flex justify-between text-[9px] text-[#3f3f46] font-mono uppercase tracking-[1.5px] mt-4"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div></div>
                       </div>
                       <div className="flex flex-col items-end gap-[20px] shrink-0 w-full md:w-auto">
                         <div className="flex flex-col gap-3 items-center"><span className="text-[#666] text-[10px] uppercase tracking-[2px] font-bold">Free Mode</span><ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} /></div>
-                        <button onClick={() => handleStart(assignment.id, false)} className="w-full lg:w-auto bg-white text-black p-[16px_50px] text-[11px] font-extrabold uppercase tracking-[2px] rounded-[2px] hover:bg-[#e0e0e0] transition-all flex items-center justify-center gap-3">{noTimeLimit ? <InfinityIcon size={14} strokeWidth={3} /> : <Play size={14} fill="black" />}Start Practice</button>
+                        <button onClick={() => handleStart(assignment.id, false)} className="w-full md:w-auto bg-white text-black px-12 py-4 text-[10px] font-extrabold uppercase tracking-[2px] rounded-[2px] hover:bg-[#e4e4e7] transition-all flex items-center justify-center gap-3">{noTimeLimit ? <InfinityIcon size={14} strokeWidth={3} /> : <Play size={14} fill="black" />}Start Practice</button>
                       </div>
                     </div>
                   </div>
