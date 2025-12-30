@@ -3,7 +3,7 @@ import { toast } from "sonner";
 interface PaymentOptions {
   amount: number;
   currency: string;
-  orderId?: string; // Optional: If you generate orders on backend
+  orderId?: string;
   name: string;
   description: string;
   prefill: {
@@ -17,28 +17,44 @@ interface PaymentOptions {
   };
 }
 
-export const initializeRazorpayPayment = (
+// Helper to dynamically load the Razorpay script if it's missing or blocked
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
+export const initializeRazorpayPayment = async (
   options: PaymentOptions,
   onSuccess: (response: any) => void,
   onFailure: (error: any) => void
 ) => {
-  const Razorpay = window.Razorpay;
+  // Ensure script is loaded
+  const isLoaded = await loadRazorpayScript();
 
-  if (!Razorpay) {
-    toast.error("Razorpay SDK not loaded. Please check your internet connection.");
+  if (!isLoaded || !window.Razorpay) {
+    toast.error("Razorpay SDK could not be loaded. Please disable your ad-blocker and try again.");
     return;
   }
 
-  // Live Key ID
-  const RAZORPAY_KEY_ID = "rzp_live_Rxvn7fqMFo62r3";
+  const Razorpay = window.Razorpay;
+  const RAZORPAY_KEY_ID = "rzp_live_Rxvn7fqMFo62r3"; //
 
   const paymentOptions = {
     key: RAZORPAY_KEY_ID,
-    amount: options.amount * 100, // Amount in paise (e.g., 500.00 -> 50000)
+    amount: options.amount * 100,
     currency: options.currency,
     name: options.name,
     description: options.description,
-    image: "/image.png", // Using your public image
+    image: "/image.png",
     order_id: options.orderId,
     handler: function (response: any) {
       onSuccess(response);
@@ -46,7 +62,7 @@ export const initializeRazorpayPayment = (
     prefill: options.prefill,
     notes: options.notes,
     theme: options.theme || {
-      color: "#ff8c00", // Codevo Orange
+      color: "#ff8c00",
     },
     modal: {
       ondismiss: function () {
