@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getRegistrationTable } from '@/utils/eventHelpers'; //
 
 interface TeamInvitation {
   id: string;
@@ -48,6 +49,7 @@ interface Registration {
 interface AlreadyRegisteredCardProps {
   eventId: string;
   eventTitle: string;
+  formType: string; // Added for dynamic routing
   maxTeamSize?: number;
   isPaid?: boolean;
   registrationFee?: number;
@@ -56,8 +58,8 @@ interface AlreadyRegisteredCardProps {
 
 export function AlreadyRegisteredCard({ 
   eventId, 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   eventTitle, 
+  formType, //
   maxTeamSize = 4,
 }: AlreadyRegisteredCardProps) {
   const navigate = useNavigate();
@@ -78,16 +80,18 @@ export function AlreadyRegisteredCard({
 
   useEffect(() => {
     fetchTeamData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId]);
+  }, [eventId, formType]);
 
   async function fetchTeamData() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
 
+      // Dynamically determine table based on formType
+      const tableName = getRegistrationTable(formType);
+      
       const { data: myReg, error: myRegError } = await supabase
-        .from('event_registrations')
+        .from(tableName as any)
         .select('*')
         .eq('event_id', eventId)
         .eq('user_id', session.user.id)
@@ -102,6 +106,7 @@ export function AlreadyRegisteredCard({
       setCurrentUserReg(myReg as any);
 
       if (myReg.participation_type === 'Team' && myReg.team_name) {
+        // Fetch team members using RPC
         const { data: allMembers, error: rpcError } = await supabase.rpc('get_event_team_members', {
           p_event_id: eventId,
           p_team_name: myReg.team_name
@@ -124,6 +129,7 @@ export function AlreadyRegisteredCard({
           const amILeader = leader.user_id === session.user.id;
           setIsLeader(amILeader);
 
+          // Invitations are always in team_invitations table
           const { data: invites } = await supabase
             .from('team_invitations')
             .select('*')
@@ -162,7 +168,8 @@ export function AlreadyRegisteredCard({
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    const { error } = await supabase.from('event_registrations').delete().eq('id', memberId);
+    const tableName = getRegistrationTable(formType);
+    const { error } = await supabase.from(tableName as any).delete().eq('id', memberId);
     if (error) {
       toast.error("Remove failed: " + error.message);
     } else {
@@ -178,12 +185,12 @@ export function AlreadyRegisteredCard({
 
   const saveMemberChanges = async () => {
     if (!editingMember) return;
-    const table = editingMember.type === 'reg' ? 'event_registrations' : 'team_invitations';
+    const table = editingMember.type === 'reg' ? getRegistrationTable(formType) : 'team_invitations';
     const payload = editingMember.type === 'reg' 
       ? { full_name: editingMember.name, team_role: editingMember.role }
       : { invitee_name: editingMember.name, role: editingMember.role };
 
-    const { error } = await supabase.from(table).update(payload).eq('id', editingMember.id);
+    const { error } = await supabase.from(table as any).update(payload).eq('id', editingMember.id);
     
     if (error) {
       toast.error("Update failed: " + error.message);
@@ -257,7 +264,6 @@ export function AlreadyRegisteredCard({
 
   return (
     <div className="w-full max-w-[700px] bg-[#0a0a0a] border border-[#1a1a1a] mx-auto font-sans overflow-hidden">
-      {/* Responsive Header */}
       <header className="p-6 md:p-10 border-b border-[#1a1a1a] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4 md:gap-5">
           <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] border border-[#00ff88] rounded-full flex items-center justify-center text-[#00ff88] shrink-0">
@@ -271,10 +277,9 @@ export function AlreadyRegisteredCard({
           </div>
         </div>
         
-        {/* Actions Container */}
         <div className="flex items-center gap-3 self-start md:self-auto w-full md:w-auto">
           <Button 
-            onClick={() => navigate(`/verify/${currentUserReg.id}`)}
+            onClick={() => navigate(`/verify/${formType}/${currentUserReg.id}`)} // Updated dynamic route
             className="flex-1 md:flex-none h-[45px] bg-[#1a1a1a] border border-[#1a1a1a] hover:bg-[#00ff88] hover:text-black hover:border-[#00ff88] text-[#777777] transition-all uppercase tracking-widest text-[10px] font-medium px-4 md:px-6 rounded-none flex items-center justify-center gap-2"
           >
             <Ticket className="w-4 h-4" />
@@ -290,7 +295,6 @@ export function AlreadyRegisteredCard({
         </div>
       </header>
 
-      {/* Manifest Section */}
       <div className="mx-4 md:mx-10 my-6 md:my-10 border border-[#1a1a1a]">
         <button onClick={() => setShowTeamDetails(!showTeamDetails)} className="w-full p-4 md:p-5 bg-[#0d0d0d] flex justify-between items-center cursor-pointer hover:bg-[#111]">
           <div className="text-[10px] md:text-[11px] tracking-[2px] uppercase flex items-center gap-3 text-white">
@@ -309,7 +313,6 @@ export function AlreadyRegisteredCard({
 
         {showTeamDetails && (
           <div className="bg-[#050505] border-t border-[#1a1a1a] divide-y divide-[#1a1a1a]">
-            {/* Leader Row */}
             <div className="p-4 md:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-5 text-white">
               <div className="flex gap-4 items-center flex-1">
                 <Avatar className="h-9 w-9 border border-[#1a1a1a]">
@@ -339,7 +342,6 @@ export function AlreadyRegisteredCard({
               </div>
             </div>
 
-            {/* Team Members */}
             {teamMembers.map((member) => (
               <div key={member.id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-5 text-white">
                 <div className="flex gap-4 items-center flex-1">
@@ -371,7 +373,6 @@ export function AlreadyRegisteredCard({
               </div>
             ))}
 
-            {/* Invitations */}
             {isLeader && invitations.filter(inv => inv.status !== 'completed').map((invite) => (
               <div key={invite.id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-5 text-white bg-white/[0.02]">
                 <div className="flex gap-4 items-center flex-1 opacity-60">
@@ -394,7 +395,6 @@ export function AlreadyRegisteredCard({
         )}
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white w-[95vw] max-w-md rounded-none">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Modify Registry</DialogTitle></DialogHeader>
@@ -412,7 +412,6 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
-      {/* Invite Dialog */}
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white w-[95vw] max-w-md rounded-none">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Squad Expansion</DialogTitle></DialogHeader>
@@ -425,12 +424,12 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
-      {/* QR Dialog */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm w-[90vw] rounded-lg">
           <DialogHeader className="items-center"><DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle></DialogHeader>
           <div className="bg-white p-4 mx-auto my-6 rounded-lg">
-            <QRCodeSVG value={`${window.location.origin}/verify/${currentUserReg.id}`} size={200} level="H" />
+            {/* Updated QR format: "formType:id" */}
+            <QRCodeSVG value={`${formType}:${currentUserReg.id}`} size={200} level="H" />
           </div>
           <p className="text-center text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
           <p className="text-center text-[10px] text-[#777777] mt-2 tracking-widest uppercase">Scan to get your Event Pass</p>
