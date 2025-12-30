@@ -53,7 +53,7 @@ export const initializeRazorpayPayment = async (
   }
 
   // The 'lumberjack' console error can be ignored; it is just telemetry.
-  const RAZORPAY_KEY_ID = "rzp_live_Rxvn7fqMFo62r3";
+  const RAZORPAY_KEY_ID = "rzp_test_RxwjSllgmQ72cg";
 
   const paymentOptions = {
     key: RAZORPAY_KEY_ID,
