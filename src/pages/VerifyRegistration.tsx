@@ -17,12 +17,14 @@ interface RegistrationData {
   participation_type?: string | null;
   team_name?: string | null;
   is_attended?: boolean | null;
+  payment_status?: string | null;
   events?: {
     title: string;
     venue: string | null;
     location: string | null;
     mode: string;
     start_date: string;
+    is_paid: boolean | null;
   } | null;
 }
 
@@ -45,7 +47,7 @@ export default function VerifyRegistration() {
       
       const { data: reg, error: regError } = await supabase
         .from(tableName as any)
-        .select(`*, events (*)`)
+        .select(`*, events (title, venue, location, mode, start_date, is_paid)`)
         .eq('id', registrationId)
         .single();
 
@@ -95,7 +97,12 @@ export default function VerifyRegistration() {
   const event = data.events;
   const isAttended = data.is_attended;
   
-  // QR code value now includes formType for AdminScanner
+  // Payment Guard Check
+  const isPaidEvent = event?.is_paid === true;
+  const isPaymentComplete = ['paid', 'completed', 'exempt'].includes(data.payment_status || '');
+  const showPaymentRequired = isPaidEvent && !isPaymentComplete;
+  
+  // Entry QR code value: formType:registrationId (for AdminScanner)
   const qrValue = `${formType}:${data.id}`;
 
   return (
@@ -194,13 +201,27 @@ export default function VerifyRegistration() {
             )}
 
             <div className="verification-zone">
-              <div className={cn("qr-wrapper", isAttended && "qr-dimmed")}>
-                <QRCodeSVG value={qrValue} size={140} level="H" bgColor="#ffffff" fgColor="#000000" />
-              </div>
-              {isAttended && (
-                <div className="stamp-attended">
-                  <span>Attended</span>
+              {/* Payment Guard: Show payment required message instead of QR */}
+              {showPaymentRequired ? (
+                <div style={{textAlign: 'center', padding: '30px 0'}}>
+                  <div style={{width: '80px', height: '80px', margin: '0 auto 20px', border: '2px solid #d4af37', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <span style={{color: '#d4af37', fontSize: '32px'}}>₹</span>
+                  </div>
+                  <p style={{color: '#d4af37', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '3px', fontSize: '12px'}}>Payment Required</p>
+                  <p style={{color: '#555', fontSize: '11px', marginTop: '8px'}}>Complete payment to access your entry pass</p>
                 </div>
+              ) : (
+                <>
+                  <div className={cn("qr-wrapper", isAttended && "qr-dimmed")}>
+                    {/* Entry QR: formType:registrationId for AdminScanner */}
+                    <QRCodeSVG value={qrValue} size={140} level="H" bgColor="#ffffff" fgColor="#000000" />
+                  </div>
+                  {isAttended && (
+                    <div className="stamp-attended">
+                      <span>Attended</span>
+                    </div>
+                  )}
+                </>
               )}
               <div className="id-hash">UID: {data.id.toUpperCase()}</div>
             </div>

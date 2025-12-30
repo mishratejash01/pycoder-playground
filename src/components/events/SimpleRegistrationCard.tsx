@@ -16,7 +16,8 @@ import { getRegistrationTable } from '@/utils/eventHelpers'; //
 interface SimpleRegistrationCardProps {
   eventId: string;
   eventTitle: string;
-  formType: string; // Passed from the parent component
+  formType: string;
+  isPaid?: boolean;
 }
 
 interface RegistrationData {
@@ -35,7 +36,8 @@ interface RegistrationData {
 export function SimpleRegistrationCard({ 
   eventId, 
   eventTitle, 
-  formType 
+  formType,
+  isPaid = false 
 }: SimpleRegistrationCardProps) {
   const navigate = useNavigate();
   const [registration, setRegistration] = useState<RegistrationData | null>(null);
@@ -190,18 +192,29 @@ export function SimpleRegistrationCard({
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-center">Entry QR Code</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center gap-6 py-6">
-            <div className="bg-white p-4">
-              {/* Updated QR format: "formType:registrationId" for the AdminScanner */}
-              <QRCodeSVG 
-                value={`${formType}:${registration.id}`} 
-                size={180} 
-              />
+          {/* Payment Guard: Hide QR if paid event and payment not completed */}
+          {isPaid && !['paid', 'completed', 'exempt'].includes(registration.payment_status || '') ? (
+            <div className="py-10 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 border-2 border-yellow-500 rounded-full flex items-center justify-center">
+                <span className="text-yellow-500 text-2xl">₹</span>
+              </div>
+              <p className="text-yellow-500 font-medium uppercase tracking-widest text-sm">Payment Required</p>
+              <p className="text-[#777777] text-xs mt-2">Complete payment to access your pass</p>
             </div>
-            <p className="text-[10px] text-[#777777] uppercase tracking-[2px] text-center">
-              Present this at the venue for verification
-            </p>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center gap-6 py-6">
+              <div className="bg-white p-4">
+                {/* Dashboard QR: Full URL for public redirect */}
+                <QRCodeSVG 
+                  value={`${window.location.origin}/verify/${formType}/${registration.id}`} 
+                  size={180} 
+                />
+              </div>
+              <p className="text-[10px] text-[#777777] uppercase tracking-[2px] text-center">
+                Scan to view your Event Pass
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

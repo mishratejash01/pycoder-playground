@@ -393,15 +393,14 @@ export default function EventDetailsPage() {
                       eventTitle={event.title}
                       formType={event.form_type || 'normal'}
                       maxTeamSize={event.max_team_size || 4}
-                      isPaid={event.is_paid} 
-                      registrationFee={event.registration_fee} 
-                      currency={event.currency} 
+                      isPaid={event.is_paid || false}
                     />
                   ) : (
                     <SimpleRegistrationCard 
                       eventId={event.id} 
                       eventTitle={event.title}
                       formType={event.form_type || 'normal'}
+                      isPaid={event.is_paid || false}
                     />
                   )}
                 </section>
