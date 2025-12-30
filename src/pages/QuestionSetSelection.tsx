@@ -89,10 +89,10 @@ export default function QuestionSetSelection() {
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
 
   const searchPlaceholders = [
-    'Search by name or number...',
-    'Filter results by level...',
-    'Enter a topic name...',
-    'Filter by module category...'
+    'Search by set name or number...',
+    'Filter archive results by level...',
+    'Enter a module topic name...',
+    'Query current subject archive...'
   ];
 
   // --- DATA FETCHING ---
@@ -267,48 +267,57 @@ export default function QuestionSetSelection() {
           ) : filteredData.length === 0 ? (
             <div className="text-center py-20 text-[#3f3f46] border border-dashed border-[#1a1a1c] rounded-sm font-mono text-xs uppercase tracking-widest">No archive matches found</div>
           ) : isProctored ? (
-            filteredData.map((set) => (
-              <div key={set.name} className="bg-[#0a0a0b] border border-[#1a1a1c] p-5 md:p-[15px_25px] flex flex-col md:flex-row items-center rounded-sm transition-all border-white/5 hover:border-[#333]">
-                <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center mr-0 md:mr-6 text-[#333] rounded-sm shrink-0 mb-3 md:mb-0"><Lock width={16} height={16} strokeWidth={2.5}/></div>
-                <div className="flex-1 text-center md:text-left min-w-0">
-                  <h3 className="text-[16px] font-bold tracking-tight text-zinc-100 truncate pr-4">{set.title}</h3>
-                  <div className="inline-flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-extrabold text-white mt-1.5 tracking-widest"><span className="w-1 h-1 bg-red-500 rounded-full shadow-[0_0_8px_#ef4444]" /> Secure Test</div>
-                </div>
-                <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1 font-mono text-[11px] text-[#888] mx-0 md:mx-4 mb-3 md:mb-0 uppercase">Set {String(set.sequence_number || 1).padStart(2, '0')}</div>
-                <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1 font-mono text-[11px] text-[#888] mx-0 md:mx-4 mb-4 md:mb-0 uppercase shrink-0">{set.totalTime} MIN</div>
-                <button onClick={() => handleStart(set.name, true)} className="group bg-white text-black px-6 py-2.5 text-[9px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center gap-2">Start Test <ChevronRight size={10} className="transition-transform group-hover:translate-x-1" /></button>
-              </div>
-            ))
-          ) : (
-            filteredData.map((assignment: any) => {
-              const isLocked = assignment.is_unlocked === false;
-              const isExpanded = expandedQuestion === assignment.id;
-              return (
-                <div key={assignment.id} className="relative mb-[12px]">
-                  {isLocked && <PremiumLockOverlay />}
-                  <div className={cn("bg-[#0d0d0d] border border-[#1f1f23] rounded-sm transition-all duration-300", isExpanded && "border-[#444]")}>
-                    <div className={cn("flex flex-wrap md:flex-nowrap items-center p-4 md:p-[12px_25px] cursor-pointer gap-5", isLocked && "opacity-50 cursor-not-allowed")} onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : assignment.id)}>
-                      <div className="w-9 h-9 bg-[#141414] border border-[#1f1f23] flex items-center justify-center text-[#555] rounded-sm shrink-0"><Code2 size={18} /></div>
-                      <div className="flex-1 min-w-0"><h3 className="text-[15px] font-bold text-white mb-[4px] tracking-tight">{assignment.title}</h3><Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#666] border-white/5 bg-white/5">{assignment.category || 'General'}</Badge></div>
-                      <div className="flex items-center gap-2 bg-white/[0.03] border border-[#1f1f23] px-3 py-1 rounded-sm shrink-0"><span className={cn("w-1.5 h-1.5 rounded-full", assignment.difficulty === 'Hard' ? "bg-[#ef4444] shadow-[0_0_8px_#ef4444]" : "bg-[#10b981] shadow-[0_0_8px_#10b981]")} /><span className="text-white text-[9px] font-extrabold uppercase tracking-widest">{assignment.difficulty || 'Easy'}</span></div>
-                      <div className="bg-white/[0.03] border border-[#1f1f23] rounded-sm px-3 py-1 font-mono text-[12px] text-[#888] shrink-0 uppercase tracking-tighter">{String(assignment.expected_time || 20).padStart(2, '0')} MIN</div>
+            /* --- PROCTORED VIEW (SETS) --- */
+            <div className="space-y-6 pb-12">
+              {filteredData.map((set) => (
+                <div key={set.name} className="bg-[#0a0a0b] border border-[#1a1a1c] p-5 md:p-[15px_25px] flex flex-col md:flex-row items-center rounded-sm transition-all border-white/5 hover:border-[#333]">
+                  <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center mr-0 md:mr-6 text-[#333] rounded-sm shrink-0 mb-3 md:mb-0"><Lock width={16} height={16} strokeWidth={2.5}/></div>
+                  <div className="flex-1 text-center md:text-left min-w-0">
+                    <h3 className="text-[16px] font-bold tracking-tight text-zinc-100 truncate pr-4">{set.title}</h3>
+                    {/* SECURE BADGE: Transparent with white text and glowing dot (full stop) only */}
+                    <div className="inline-flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-extrabold text-white mt-1.5 tracking-widest">
+                      <span className="w-1 h-1 bg-red-500 rounded-full shadow-[0_0_8px_#ef4444]" /> Secure Test
                     </div>
-                    <div className={cn("bg-[#090909] transition-all duration-400 ease-in-out px-5 md:px-[25px] overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1f1f23] p-[25px_25px] opacity-100" : "max-h-0 py-0 opacity-0")}>
-                      <div className="flex flex-col lg:flex-row justify-between items-end gap-10">
-                        <div className="flex-1 w-full space-y-6">
-                          <div className="flex items-center gap-[12px]"><span className="text-[10px] text-[#666] font-bold uppercase tracking-widest italic">Set Duration</span><div className={cn("flex items-center gap-[10px]", noTimeLimit && "opacity-30 pointer-events-none")}><input type="text" className="bg-black border border-[#1f1f23] text-white w-[60px] p-1.5 text-center font-mono rounded-sm text-[14px]" value={timeLimit[0]} readOnly /><span className="text-[11px] text-[#444] font-semibold uppercase tracking-widest">min</span></div></div>
-                          <div className={cn("w-full transition-opacity duration-300", noTimeLimit && "opacity-30 pointer-events-none")}><Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:shadow-none [&>.relative>.absolute]:bg-white py-4" /><div className="flex justify-between text-[8px] text-[#3f3f46] font-mono uppercase tracking-[1.5px] mt-4"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div></div>
-                        </div>
-                        <div className="flex flex-col items-end gap-[15px] shrink-0 w-full md:w-auto">
-                          <div className="flex flex-col gap-2 items-center"><span className="text-[#666] text-[9px] uppercase tracking-[2px] font-bold">Free Mode</span><ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} /></div>
-                          <button onClick={() => handleStart(assignment.id, false)} className="group bg-white text-black px-8 py-3 text-[9px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center gap-2">{noTimeLimit ? <InfinityIcon size={14} /> : <Play size={14} fill="currentColor" />} Start Practice <ChevronRight size={10} className="transition-transform group-hover:translate-x-1" /></button>
+                  </div>
+                  <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1 font-mono text-[11px] text-[#888] mx-0 md:mx-4 mb-3 md:mb-0 uppercase">Set {String(set.sequence_number || 1).padStart(2, '0')}</div>
+                  <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1 font-mono text-[11px] text-[#888] mx-0 md:mx-4 mb-4 md:mb-0 uppercase shrink-0">{set.totalTime} MIN</div>
+                  <button onClick={() => handleStart(set.name, true)} className="group bg-white text-black px-6 py-2.5 text-[9px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center gap-2">Start Test <ChevronRight size={10} className="transition-transform group-hover:translate-x-1" /></button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* --- PRACTICE VIEW --- */
+            <div className="space-y-3 pb-12">
+              {filteredData.map((assignment: any) => {
+                const isLocked = assignment.is_unlocked === false;
+                const isExpanded = expandedQuestion === assignment.id;
+                return (
+                  <div key={assignment.id} className="relative mb-[12px]">
+                    {isLocked && <PremiumLockOverlay />}
+                    <div className={cn("bg-[#0d0d0d] border border-[#1f1f23] rounded-sm transition-all duration-300", isExpanded && "border-[#444]")}>
+                      <div className={cn("flex flex-wrap md:flex-nowrap items-center p-4 md:p-[12px_25px] cursor-pointer gap-5", isLocked && "opacity-50 cursor-not-allowed")} onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : assignment.id)}>
+                        <div className="w-9 h-9 bg-[#141414] border border-[#1f1f23] flex items-center justify-center text-[#555] rounded-sm shrink-0"><Code2 size={18} /></div>
+                        <div className="flex-1 min-w-0"><h3 className="text-[15px] font-bold text-white mb-[4px] tracking-tight">{assignment.title}</h3><Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#666] border-white/5 bg-white/5">{assignment.category || 'General'}</Badge></div>
+                        <div className="flex items-center gap-2 bg-white/[0.03] border border-[#1f1f23] px-3 py-1 rounded-sm shrink-0"><span className={cn("w-1.5 h-1.5 rounded-full", assignment.difficulty === 'Hard' ? "bg-[#ef4444] shadow-[0_0_10px_#ef4444]" : "bg-[#10b981] shadow-[0_0_10px_#10b981]")} /><span className="text-white text-[9px] font-extrabold uppercase tracking-widest">{assignment.difficulty || 'Easy'}</span></div>
+                        <div className="bg-white/[0.03] border border-[#1f1f23] rounded-sm px-3 py-1 font-mono text-[12px] text-[#888] shrink-0 uppercase tracking-tighter">{String(assignment.expected_time || 20).padStart(2, '0')} MIN</div>
+                      </div>
+                      <div className={cn("bg-[#090909] transition-all duration-400 ease-in-out px-5 md:px-[25px] overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1f1f23] p-[25px_25px] opacity-100" : "max-h-0 py-0 opacity-0")}>
+                        <div className="flex flex-col lg:flex-row justify-between items-end gap-10">
+                          <div className="flex-1 w-full space-y-6">
+                            <div className="flex items-center gap-[12px]"><span className="text-[10px] text-[#666] font-bold uppercase tracking-widest italic">Set Duration</span><div className={cn("flex items-center gap-[10px]", noTimeLimit && "opacity-30 pointer-events-none")}><input type="text" className="bg-black border border-[#1f1f23] text-white w-[60px] p-1.5 text-center font-mono rounded-sm text-[14px]" value={timeLimit[0]} readOnly /><span className="text-[11px] text-[#444] font-semibold uppercase tracking-widest">min</span></div></div>
+                            <div className={cn("w-full transition-opacity duration-300", noTimeLimit && "opacity-30 pointer-events-none")}><Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:shadow-none [&>.relative>.absolute]:bg-white py-4" /><div className="flex justify-between text-[8px] text-[#3f3f46] font-mono uppercase tracking-[1.5px] mt-4"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div></div>
+                          </div>
+                          <div className="flex flex-col items-end gap-[15px] shrink-0 w-full md:w-auto">
+                            <div className="flex flex-col gap-2 items-center"><span className="text-[#666] text-[9px] uppercase tracking-[2px] font-bold">Free Mode</span><ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} /></div>
+                            <button onClick={() => handleStart(assignment.id, false)} className="group bg-white text-black px-8 py-3 text-[9px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center justify-center gap-3">{noTimeLimit ? <InfinityIcon size={14} /> : <Play size={14} fill="currentColor" />} Start Practice <ChevronRight size={10} className="transition-transform group-hover:translate-x-1" /></button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </main>
 
@@ -319,8 +328,8 @@ export default function QuestionSetSelection() {
       {isLeaderboardModalOpen && (
         <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-12 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-300">
           <div className="flex flex-col md:flex-row justify-between items-end mb-[60px] pb-[30px] border-b border-[#111] gap-6">
-            <div><p className="uppercase tracking-[5px] text-[#444] text-[10px] mb-2.5 font-bold">Performance Archive Metrics</p><h2 className="font-['Playfair_Display'] text-[48px] italic font-bold text-white">Ranking Archive</h2></div>
-            <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-10 py-4 text-[11px] font-extrabold uppercase transition-all active:scale-95">Return to archive</button>
+            <div><p className="uppercase tracking-[5px] text-[#444] text-[10px] mb-2.5 font-bold">Official Ranking Archive</p><h2 className="font-['Playfair_Display'] text-[48px] italic font-bold text-white">Ranking Archive</h2></div>
+            <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-10 py-4 text-[11px] font-extrabold uppercase transition-all active:scale-95">Back to Archive</button>
           </div>
           <table className="w-full text-left border-collapse">
             <thead>
