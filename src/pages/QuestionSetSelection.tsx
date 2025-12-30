@@ -225,9 +225,11 @@ export default function QuestionSetSelection() {
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-             <Badge variant="outline" className={cn("border-white/10 bg-white/5 uppercase tracking-widest text-[10px]", isProctored ? "text-red-400" : "text-blue-400")}>
-               {isProctored ? decodeURIComponent(examType || 'Proctored') : 'Practice'}
-             </Badge>
+             {isProctored && (
+               <Badge variant="outline" className="border-white/10 bg-white/5 uppercase tracking-widest text-[10px] text-red-400">
+                 {decodeURIComponent(examType || 'Proctored')}
+               </Badge>
+             )}
           </div>
         </header>
 
@@ -310,7 +312,7 @@ export default function QuestionSetSelection() {
                             min={2} 
                             max={30} 
                             step={2} 
-                            className="[&>.relative>.absolute]:bg-white py-4"
+                            className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-white [&_[role=slider]]:shadow-none [&>.relative>.absolute]:bg-white py-4"
                           />
                           <div className="flex justify-between text-[9px] text-[#3f3f46] font-mono uppercase tracking-[1.5px] mt-4">
                             <span>02 MIN</span>
