@@ -20,10 +20,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const FolderSticker = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-40 hover:opacity-70")}>
     <div className="filter drop-shadow-[1px_1px_0px_rgba(0,0,0,0.5)]">
-      <div className="relative w-[22px] h-[15px]">
-        <div className="absolute top-[-3.5px] left-0 w-[13px] h-[4px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2px] rounded-tr-[3px]" style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[2px] rounded-br-[2px] rounded-bl-[2px] overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
+      <div className="relative w-[20px] h-[14px]">
+        <div className="absolute top-[-3px] left-0 w-[12px] h-[3.5px] bg-[#f39233] border-[0.5px] border-[#2d1d1a] border-b-0 rounded-tl-[1px] rounded-tr-[2px]" style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[0.5px] border-[#2d1d1a] rounded-tr-[1px] rounded-br-[1px] rounded-bl-[1px] overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-[2.5px] bg-[#f39233] border-b-[0.5px] border-[#2d1d1a]" />
         </div>
       </div>
     </div>
@@ -31,20 +31,20 @@ const FolderSticker = ({ active }: { active: boolean }) => (
 );
 
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-3.5 h-3.5 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
-    <div className="absolute left-[30%] top-0 w-[1.5px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute top-[30%] left-0 w-full h-[1.5px] bg-[#ffce8c] rounded-full" />
-    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+  <div className={cn("relative w-3 h-3 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
+    <div className="absolute left-[30%] top-0 w-[1px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[1px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute top-[30%] left-0 w-full h-[1px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[1px] bg-[#ffce8c] rounded-full" />
   </div>
 );
 
 const ArchiveToggle = ({ checked, onChange }: { checked: boolean, onChange: (val: boolean) => void }) => (
-  <label className="relative inline-block w-[80px] h-[36px] cursor-pointer">
+  <label className="relative inline-block w-[76px] h-[34px] cursor-pointer">
     <input type="checkbox" className="opacity-0 w-0 h-0" checked={checked} onChange={(e) => onChange(e.target.checked)} />
     <span className={cn("absolute inset-0 border-2 rounded-[30px] transition-all duration-300", checked ? "border-[#5ec952]" : "border-[#ef4444]")}>
-      <span className={cn("absolute bottom-[3px] left-[3px] h-[26px] w-[26px] rounded-full transition-all duration-300", checked ? "translate-x-[44px] bg-[#5ec952]" : "translate-x-0 bg-[#ef4444]")} />
-      <span className={cn("absolute top-1/2 -translate-y-1/2 text-[10px] font-black text-white uppercase transition-all duration-300", checked ? "left-[12px]" : "right-[12px]")}>{checked ? "ON" : "OFF"}</span>
+      <span className={cn("absolute bottom-[3px] left-[3px] h-[24px] w-[24px] rounded-full transition-all duration-300", checked ? "translate-x-[40px] bg-[#5ec952]" : "translate-x-0 bg-[#ef4444]")} />
+      <span className={cn("absolute top-1/2 -translate-y-1/2 text-[9px] font-black text-white uppercase transition-all duration-300", checked ? "left-[11px]" : "right-[11px]")}>{checked ? "ON" : "OFF"}</span>
     </span>
   </label>
 );
@@ -61,12 +61,12 @@ const MovingHeaderTitle = ({ subject, exam }: { subject: string, exam: string })
   }, [subject, exam]);
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-hidden relative mr-4">
-      <h1 ref={textRef} className={cn("font-['Playfair_Display'] text-[18px] md:text-[24px] italic font-bold tracking-tight uppercase whitespace-nowrap inline-block", shouldMarquee && "animate-header-marquee")}>
-        {decodeURIComponent(subject)} <span className="text-[#52525b] font-sans not-italic text-[12px] md:text-[16px] ml-2 opacity-60">- {decodeURIComponent(exam)}</span>
+    <div ref={containerRef} className="flex-1 overflow-hidden relative">
+      <h1 ref={textRef} className={cn("font-['Playfair_Display'] text-[16px] md:text-[20px] italic font-bold tracking-tight uppercase whitespace-nowrap inline-block", shouldMarquee && "animate-header-marquee")}>
+        {decodeURIComponent(subject)} <span className="text-[#52525b] font-sans not-italic text-[11px] md:text-[14px] ml-2 opacity-60">- {decodeURIComponent(exam)}</span>
       </h1>
       <style>{`
-        @keyframes header-marquee { 0%, 10% { transform: translateX(0); } 90%, 100% { transform: translateX(calc(-100% + 250px)); } }
+        @keyframes header-marquee { 0%, 10% { transform: translateX(0); } 90%, 100% { transform: translateX(calc(-100% + 200px)); } }
         .animate-header-marquee { animation: header-marquee 10s ease-in-out infinite alternate; }
       `}</style>
     </div>
@@ -83,7 +83,7 @@ const ScrollingPlaceholder = ({ statements, visible }: { statements: string[], v
   return (
     <div className="absolute inset-y-0 left-10 right-4 pointer-events-none flex items-center overflow-hidden">
       <span className="text-[10px] uppercase font-bold tracking-widest text-[#3f3f46] font-sans whitespace-nowrap animate-marquee-text">{statements[index]}</span>
-      <style>{`@keyframes marquee-text { 0%, 25% { transform: translateX(0); } 75%, 100% { transform: translateX(-20%); } } .animate-marquee-text { animation: marquee-text 6s ease-in-out infinite alternate; }`}</style>
+      <style>{`@keyframes marquee-text { 0%, 25% { transform: translateX(0); } 75%, 100% { transform: translateX(-20%); } } .animate-marquee-text { animation: marquee-text 5s ease-in-out infinite alternate; }`}</style>
     </div>
   );
 };
@@ -165,7 +165,7 @@ export default function QuestionSetSelection() {
       </div>
       <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         <h3 className="text-[10px] uppercase tracking-[2px] text-[#666] font-bold italic sticky top-0 bg-[#070708] py-2 border-b border-[#1a1a1c]">Top Transmissions</h3>
-        {leaderboardData.slice(0, 10).map((e: any, i: number) => (
+        {leaderboardData.slice(0, 12).map((e: any, i: number) => (
           <div key={e.user_id} className="flex justify-between py-2 text-[12px] items-center border-b border-white/[0.02]">
             <div className="flex gap-4 min-w-0"><span className="font-mono text-[#333] shrink-0">{String(i + 1).padStart(2, '0')}</span><span className="truncate text-zinc-300 font-medium">{e.full_name}</span></div>
             <span className="font-mono text-[#555] shrink-0">{e.total_score} XP</span>
@@ -179,9 +179,8 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
       
-      {/* --- UNIFIED HEADER --- */}
-      <header className="px-4 py-3 md:px-10 md:py-4 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
-        <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto">
+      <header className="px-4 py-3 md:px-10 md:py-3 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
+        <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto h-10">
           <div className="flex items-center gap-4 flex-1 overflow-hidden">
             <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
             <MovingHeaderTitle subject={subjectName || ''} exam={examType || ''} />
@@ -195,22 +194,19 @@ export default function QuestionSetSelection() {
                 <Input className="bg-transparent border-none text-white h-full w-full pl-9 pr-4 text-[11px] font-mono focus-visible:ring-0" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
             </div>
-
-            {/* Mobile Navigations */}
-            {isProctored && (
+            {isProctored ? (
               <Sheet>
                 <SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden text-[#52525b] hover:text-white"><Trophy size={18} /></Button></SheetTrigger>
-                <SheetContent side="right" className="bg-[#070708] border-[#1a1a1c] text-white w-[320px] p-0"><SidebarStats /></SheetContent>
+                <SheetContent side="right" className="bg-[#070708] border-[#1a1a1c] text-white w-[300px] p-0"><SidebarStats /></SheetContent>
               </Sheet>
-            )}
-            {!isProctored && (
+            ) : (
               <Sheet>
                 <SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden text-[#52525b] hover:text-white"><Menu size={18} /></Button></SheetTrigger>
                 <SheetContent side="left" className="bg-[#080808] border-[#1a1a1c] text-white w-[280px] p-6">
-                  <h3 className="text-[10px] uppercase font-black text-[#444] mb-6 tracking-[2px]">Archive Directory</h3>
+                  <h3 className="text-[10px] uppercase font-black text-[#444] mb-6 tracking-[2px]">Directory</h3>
                   <div className="flex flex-col gap-1">
-                    <button onClick={() => setSelectedTopic(null)} className={cn("text-left py-3 px-4 rounded-sm text-xs font-bold transition-all", !selectedTopic ? "bg-white/10 text-white" : "text-[#666]")}>All Archive</button>
-                    {topics.map((t: any) => <button key={t} onClick={() => setSelectedTopic(t)} className={cn("text-left py-3 px-4 rounded-sm text-xs font-bold truncate transition-all", selectedTopic === t ? "bg-white/10 text-white" : "text-[#666]")}># {t}</button>)}
+                    <button onClick={() => setSelectedTopic(null)} className={cn("text-left py-3 px-4 rounded-sm text-xs font-bold", !selectedTopic ? "bg-white/10 text-white" : "text-[#666]")}>All Archive</button>
+                    {topics.map((t: any) => <button key={t} onClick={() => setSelectedTopic(t)} className={cn("text-left py-3 px-4 rounded-sm text-xs font-bold truncate", selectedTopic === t ? "bg-white/10 text-white" : "text-[#666]")}># {t}</button>)}
                   </div>
                 </SheetContent>
               </Sheet>
@@ -221,8 +217,8 @@ export default function QuestionSetSelection() {
 
       <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full relative">
         {!isProctored && (
-          <aside className="hidden lg:flex w-[250px] border-r border-[#1a1a1c] bg-[#080808] p-8 flex-col shrink-0 overflow-y-auto">
-            <span className="font-extrabold text-[18px] tracking-tight mb-8 block uppercase text-[#333]">Directory</span>
+          <aside className="hidden lg:flex w-[240px] border-r border-[#1a1a1c] bg-[#080808] p-8 flex-col shrink-0 overflow-y-auto">
+            <span className="font-extrabold text-[18px] tracking-tight mb-8 block uppercase text-[#333]">Archive</span>
             <nav className="flex flex-col gap-1 pr-2">
               <button onClick={() => setSelectedTopic(null)} className={cn("flex items-center gap-3 py-3 px-3 rounded-sm text-[12px] font-bold transition-colors text-left", selectedTopic === null ? "text-white bg-white/5 border border-white/5" : "text-[#666] hover:text-white")}>
                 <FolderSticker active={selectedTopic === null} />All Records
@@ -236,15 +232,15 @@ export default function QuestionSetSelection() {
           </aside>
         )}
 
-        <main className="flex-1 flex flex-col overflow-y-auto scrollbar-hide pt-6 px-4 md:px-12">
+        <main className="flex-1 flex flex-col overflow-y-auto scrollbar-hide pt-4 md:pt-6 px-3 md:px-12">
           {isLoading ? (
-             <div className="flex items-center justify-center py-40 gap-3">
+             <div className="flex items-center justify-center py-40 gap-2.5">
                 <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.3s]" />
                 <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.15s]" />
                 <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce" />
              </div>
           ) : (
-            <div className={cn("pb-12", isProctored ? "space-y-6" : "space-y-3")}>
+            <div className={cn("pb-12", isProctored ? "space-y-4 md:space-y-6" : "space-y-3")}>
               {filteredData.map((item: any) => {
                 const id = isProctored ? item.name : item.id;
                 const isExpanded = expandedQuestion === id;
@@ -254,44 +250,72 @@ export default function QuestionSetSelection() {
                   <div key={id} className="relative group">
                     {isLocked && <PremiumLockOverlay />}
                     <div className={cn("bg-[#0a0a0b] border border-[#1a1a1c] rounded-sm transition-all duration-300", isExpanded && "border-[#333]")}>
+                      
+                      {/* CARD CONTENT */}
                       <div 
                         className={cn(
-                          "flex flex-nowrap items-center p-4 md:p-6 cursor-pointer gap-4 md:gap-6 overflow-x-auto scrollbar-hide select-none",
+                          "p-4 md:p-6 cursor-pointer select-none",
                           isLocked && "opacity-40"
                         )}
                         onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}
                       >
-                        <div className="w-10 h-10 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] group-hover:text-red-500 rounded-sm shrink-0 transition-colors">
-                          {isProctored ? <Shield size={16} /> : <Code2 size={16} />}
-                        </div>
-                        <div className="min-w-[160px] flex-1 truncate">
-                          <h3 className="text-[15px] md:text-[18px] font-bold text-zinc-100 truncate tracking-tight">{item.title || item.name}</h3>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            {isProctored ? (
-                               <div className="inline-flex items-center gap-1.5 bg-transparent border border-white/10 px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-black text-white tracking-widest">
-                                 <span className="w-1 h-1 bg-red-500 rounded-full shadow-[0_0_8px_red]" /> Secured Test
-                               </div>
-                            ) : (
-                               <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Module'}</Badge>
-                            )}
+                        {/* ROW 1: Icon + Title */}
+                        <div className="flex items-center gap-4 mb-3 md:mb-0">
+                          <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] group-hover:text-red-500 rounded-sm shrink-0 transition-colors">
+                            {isProctored ? <Shield size={16} /> : <Code2 size={16} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-[14px] md:text-[17px] font-bold text-zinc-100 truncate tracking-tight">{item.title || item.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              {isProctored ? (
+                                 <div className="inline-flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-[1px] text-[8px] uppercase font-black text-white tracking-widest">
+                                   <span className="w-1 h-1 bg-red-500 rounded-full shadow-[0_0_8px_red]" /> Secure Test
+                                 </div>
+                              ) : (
+                                 <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Standard'}</Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Desktop Only Inline Details */}
+                          <div className="hidden md:flex items-center gap-4">
+                            <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[11px] text-[#666] shrink-0 uppercase tracking-tighter">
+                              {isProctored ? `SET-${String(item.sequence_number || 1).padStart(2, '0')}` : (item.difficulty || 'Normal')}
+                            </div>
+                            <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[11px] text-[#666] shrink-0 uppercase">
+                              {String(item.totalTime || item.expected_time || 20).padStart(2, '0')} MIN
+                            </div>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleStart(id, isProctored); }} 
+                              className="bg-white text-black px-6 py-2.5 text-[9px] font-black uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center gap-2"
+                            >
+                              Solve <ChevronRight size={12} className="transition-transform group-hover:translate-x-1" />
+                            </button>
                           </div>
                         </div>
-                        <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[11px] text-[#666] shrink-0 uppercase tracking-tighter">
-                          {isProctored ? `REC-${String(item.sequence_number || 1).padStart(2, '0')}` : (item.difficulty || 'Normal')}
+
+                        {/* ROW 2: Mobile Specific Inline Details */}
+                        <div className="flex md:hidden items-center justify-between mt-4 pt-4 border-t border-white/[0.03]">
+                          <div className="flex gap-2">
+                             <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-2.5 py-1 font-mono text-[9px] text-[#555] uppercase">
+                               {isProctored ? `SET-${String(item.sequence_number || 1).padStart(2, '0')}` : (item.difficulty || 'Normal')}
+                             </div>
+                             <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-2.5 py-1 font-mono text-[9px] text-[#555] uppercase">
+                               {String(item.totalTime || item.expected_time || 20).padStart(2, '0')} MIN
+                             </div>
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleStart(id, isProctored); }} 
+                            className="bg-white text-black px-5 py-2 text-[9px] font-black uppercase tracking-[1px] flex items-center gap-1.5"
+                          >
+                            Solve <ChevronRight size={10} />
+                          </button>
                         </div>
-                        <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[11px] text-[#666] shrink-0 uppercase">
-                          {String(item.totalTime || item.expected_time || 20).padStart(2, '0')} MIN
-                        </div>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleStart(id, isProctored); }} 
-                          className="bg-white text-black px-6 py-3 text-[9px] font-black uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center gap-2 shrink-0"
-                        >
-                          Launch <ChevronRight size={12} className="transition-transform group-hover:translate-x-1" />
-                        </button>
                       </div>
 
+                      {/* Expanded Section (Practice Mode duration - Desktop Only) */}
                       {!isProctored && (
-                        <div className={cn("bg-[#080809] transition-all duration-500 ease-in-out px-6 overflow-hidden", isExpanded ? "max-h-[500px] border-t border-[#1a1a1c] py-8 opacity-100" : "max-h-0 py-0 opacity-0")}>
+                        <div className={cn("hidden md:block bg-[#080809] transition-all duration-500 ease-in-out px-6 overflow-hidden", isExpanded ? "max-h-[500px] border-t border-[#1a1a1c] py-8 opacity-100" : "max-h-0 py-0 opacity-0")}>
                           <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                             <div className="flex-1 w-full space-y-6">
                               <div className="flex items-center gap-4"><span className="text-[10px] text-[#444] uppercase font-black tracking-[2px] italic">Set Duration</span><div className={cn("flex items-center gap-2", noTimeLimit && "opacity-20")}><input type="text" className="bg-black border border-[#1a1a1c] text-white w-14 p-2 text-center font-mono rounded-sm text-sm" value={timeLimit[0]} readOnly /><span className="text-[11px] text-[#333] font-bold">MIN</span></div></div>
@@ -311,13 +335,13 @@ export default function QuestionSetSelection() {
           )}
         </main>
 
-        {isProctored && <aside className="hidden lg:flex w-[350px] bg-[#070708] border-l border-[#1a1a1c] flex-col overflow-y-auto scrollbar-hide"><SidebarStats /></aside>}
+        {isProctored && <aside className="hidden lg:flex w-[340px] bg-[#070708] border-l border-[#1a1a1c] flex-col overflow-y-auto scrollbar-hide"><SidebarStats /></aside>}
       </div>
 
       {isLeaderboardModalOpen && (
         <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-6 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-500">
-          <div className="flex justify-between items-end mb-12 pb-8 border-b border-[#111]">
-            <div><p className="uppercase tracking-[6px] text-[#333] text-[10px] mb-3 font-black">Ranking Metrics</p><h2 className="font-['Playfair_Display'] text-[32px] md:text-[54px] italic font-bold text-white tracking-tighter">Transmission hall of fame</h2></div>
+          <div className="flex justify-between items-end mb-10 pb-8 border-b border-[#111]">
+            <div><p className="uppercase tracking-[6px] text-[#333] text-[10px] mb-3 font-black">Performance Archive Metrics</p><h2 className="font-['Playfair_Display'] text-[32px] md:text-[54px] italic font-bold text-white tracking-tighter">Transmission hall of fame</h2></div>
             <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-8 py-3.5 text-[10px] font-black uppercase transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/30">Close</button>
           </div>
           <table className="w-full text-left border-collapse min-w-[700px]">
