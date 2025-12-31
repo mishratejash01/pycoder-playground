@@ -108,16 +108,8 @@ export default function VerifyRegistration() {
         .pass-card { background: var(--card-bg) !important; border: 1px solid var(--border); position: relative; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
         .card-top-accent { height: 2px; width: 100%; background: var(--platinum-grad) !important; opacity: 0.8; }
         .card-content { padding: 40px 35px; }
-        
-        /* Updated Header for Branding */
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
-        .header-main h2 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--accent); line-height: 1.1; margin-bottom: 0; }
-        .header-main p { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 8px; }
-        
-        .branding { text-align: right; }
-        .branding-title { font-size: 14px; font-weight: 800; letter-spacing: 5px; color: #fff; line-height: 1; }
-        .branding-tag { font-size: 6px; letter-spacing: 2px; text-transform: uppercase; color: var(--silver-muted); margin-top: 4px; display: block; }
-
+        header h2 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--accent); line-height: 1.1; margin-bottom: 8px; }
+        header p { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 40px; }
         .identity-block { display: flex; align-items: center; gap: 20px; padding: 25px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 30px; }
         .avatar-frame { width: 65px; height: 65px; border: 1px solid var(--silver-muted); padding: 3px; overflow: hidden; }
         .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
@@ -134,9 +126,15 @@ export default function VerifyRegistration() {
         .verification-zone { display: flex; flex-direction: column; align-items: center; position: relative; margin-top: 30px; }
         .qr-wrapper { background: #fff; padding: 12px; position: relative; }
         .qr-dimmed { filter: grayscale(1) contrast(0.5) blur(1px); opacity: 0.15; }
-        .stamp-attended { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50) rotate(-12deg); border: 2px solid #555; padding: 8px 16px; background: rgba(17, 17, 17, 0.9); backdrop-filter: blur(2px); z-index: 5; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); pointer-events: none; }
+        .stamp-attended { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg); border: 2px solid #555; padding: 8px 16px; background: rgba(17, 17, 17, 0.9); backdrop-filter: blur(2px); z-index: 5; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); pointer-events: none; }
         .stamp-attended span { display: block; font-size: 18px; font-weight: 700; letter-spacing: 4px; color: #888; text-transform: uppercase; }
         .id-hash { margin-top: 20px; font-family: 'Space Mono', monospace; font-size: 8px; color: var(--silver-muted); letter-spacing: 2px; }
+        
+        /* Footer Branding Styles */
+        .card-footer-branding { margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px; text-align: center; }
+        .branding-text { font-size: 12px; font-weight: 800; letter-spacing: 6px; color: #fff; text-transform: uppercase; opacity: 0.9; }
+        .branding-subtext { font-size: 6px; letter-spacing: 2px; text-transform: uppercase; color: var(--silver-muted); display: block; margin-top: 4px; }
+
         .actions { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
         .btn-primary { background: var(--platinum-grad); border: none; padding: 16px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px; color: #000; cursor: pointer; }
         
@@ -156,15 +154,8 @@ export default function VerifyRegistration() {
           <div className="card-top-accent"></div>
           <div className="card-content">
             <header>
-              <div className="header-main">
-                <p>Official Event Entry</p>
-                <h2>{event?.title || 'Event'}</h2>
-              </div>
-              {/* Added Codevo Branding */}
-              <div className="branding">
-                <span className="branding-title">CODEVO</span>
-                <span className="branding-tag">Authorized Digital Pass</span>
-              </div>
+              <p>Official Event Entry</p>
+              <h2>{event?.title || 'Event'}</h2>
             </header>
 
             <div className="identity-block">
@@ -212,7 +203,7 @@ export default function VerifyRegistration() {
             <div className="verification-zone">
               {showPaymentRequired ? (
                 <div style={{textAlign: 'center', padding: '30px 0'}}>
-                  <div style={{width: '80px', height: '80px', margin: '0 auto 20px', border: '2px solid #d4af37', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                  <div style={{width: '80px', height: '80px', margin: '0 auto 20px', border: '2px solid #d4af37', borderRadius: '50%', display: 'flex', alignItems: 'center', justify-content: 'center'}}>
                     <span style={{color: '#d4af37', fontSize: '32px'}}>₹</span>
                   </div>
                   <p style={{color: '#d4af37', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '3px', fontSize: '12px'}}>Payment Required</p>
@@ -232,12 +223,18 @@ export default function VerifyRegistration() {
               )}
               <div className="id-hash">UID: {data.id.toUpperCase()}</div>
             </div>
+
+            {/* Added Codevo Branding at the bottom of the card */}
+            <div className="card-footer-branding">
+              <span className="branding-text">CODEVO</span>
+              <span className="branding-subtext">Authorized Digital Entry Pass</span>
+            </div>
           </div>
         </div>
 
         <div className="actions">
           <button className="btn-primary" onClick={() => window.print()}>Download Digital Pass</button>
-          {/* Removed "Return to Dashboard" button */}
+          {/* Dashboard button removed per request */}
         </div>
       </div>
     </div>
