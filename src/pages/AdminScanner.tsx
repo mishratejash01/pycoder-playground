@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getRegistrationTable, getAttendanceRPC } from '@/utils/eventHelpers';
+// Updated import to include supportsTeams
+import { getRegistrationTable, getAttendanceRPC, supportsTeams } from '@/utils/eventHelpers';
 import { playSuccessBeep, playRejectBeep, playErrorBeep, playWarningBeep } from '@/utils/beepSounds';
 
 // Type for the fetched guest data
@@ -104,27 +105,37 @@ export default function AdminScanner() {
     const cleanId = parts.length > 1 ? parts[1] : parts[0];
 
     try {
-      // 1. Fetch Record from the dynamic table
+      // 1. Determine the dynamic table
       const tableName = getRegistrationTable(formType);
+      
+      // 2. Build a dynamic column selection string to avoid "column does not exist" errors
+      const baseColumns = `
+        id, full_name, email, college_org_name, 
+        current_status, status, is_attended, attended_at,
+        events ( title, venue )
+      `;
+
+      // Only request team columns if the registration type supports them
+      const teamColumns = supportsTeams(formType) ? ', participation_type, team_name' : '';
       
       const { data, error } = await supabase
         .from(tableName as any)
-        .select(`
-          id, full_name, email, college_org_name, 
-          current_status, status, participation_type, 
-          team_name, is_attended, attended_at,
-          events ( title, venue )
-        `)
+        .select(baseColumns + teamColumns)
         .eq('id', cleanId)
         .single();
 
       if (error || !data) throw new Error("Invalid Pass ID");
 
-      // Cast and inject formType into guestData for RPC handling
-      const guestRecord = data as unknown as Omit<GuestData, 'formType'>;
+      // 3. Cast and inject formType while providing safe defaults for team fields
+      const guestRecord = {
+        participation_type: null,
+        team_name: null,
+        ...data
+      } as unknown as Omit<GuestData, 'formType'>;
+      
       setGuestData({ ...guestRecord, formType });
       
-      // 2. Check IS_ATTENDED status
+      // 4. Check IS_ATTENDED status
       if (guestRecord.is_attended === true) {
         setAlreadyScanned(true);
         playWarningBeep();
@@ -134,6 +145,7 @@ export default function AdminScanner() {
       }
 
     } catch (err: any) {
+      console.error("Scanner Fetch Error:", err);
       playErrorBeep();
       toast.error(err.message);
       setTimeout(() => {
@@ -158,7 +170,7 @@ export default function AdminScanner() {
 
     setProcessingVerdict(true);
     try {
-      // 3. USE DYNAMIC RPC FUNCTION - Cast to valid RPC name
+      // USE DYNAMIC RPC FUNCTION
       const rpcName = getAttendanceRPC(guestData.formType) as AttendanceRPCName;
       const { error } = await supabase.rpc(rpcName, {
         reg_id: guestData.id
@@ -169,7 +181,6 @@ export default function AdminScanner() {
       playSuccessBeep();
       toast.success(`Welcome, ${guestData.full_name}`);
       
-      // Auto-reset after delay
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
