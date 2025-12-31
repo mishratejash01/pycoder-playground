@@ -232,7 +232,7 @@ export default function EventDetailsPage() {
   const renderRegistrationModal = () => {
     if (!event) return null;
     const type = (event.form_type || event.event_type || 'normal').toLowerCase();
-    const commonProps = { event, isOpen: isRegisterOpen, onOpenChange: setIsRegisterOpen };
+    const commonProps = { event, isOpen: isRegisterOpen, onOpenChange: setIsRegisterOpen, onRegistrationComplete: refetchRegistration };
 
     switch (type) {
       case 'hackathon': return <HackathonRegistrationModal {...commonProps} />;

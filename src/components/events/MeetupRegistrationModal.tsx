@@ -10,9 +10,10 @@ interface MeetupRegistrationModalProps {
   event: any;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onRegistrationComplete?: () => void;
 }
 
-export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupRegistrationModalProps) {
+export function MeetupRegistrationModal({ event, isOpen, onOpenChange, onRegistrationComplete }: MeetupRegistrationModalProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(true);
@@ -126,12 +127,15 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
 
         if (paymentSuccess) {
           setIsSuccess(true);
+          onRegistrationComplete?.();
         } else {
           toast.info("Registration saved. Complete payment to confirm your spot.");
           setIsSuccess(true);
+          onRegistrationComplete?.();
         }
       } else {
         setIsSuccess(true);
+        onRegistrationComplete?.();
         toast.success("Registration successful!");
       }
     } catch (err: any) {

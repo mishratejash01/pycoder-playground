@@ -30,6 +30,7 @@ interface HackathonRegistrationModalProps {
   event: HackathonEvent;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onRegistrationComplete?: () => void;
 }
 
 // --- UPDATED VALIDATION SCHEMA ---
@@ -73,7 +74,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 const STEP_TITLES = ["Personal", "Skills", "Team", "Details", "Confirm"];
 
-export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: HackathonRegistrationModalProps) {
+export function HackathonRegistrationModal({ event, isOpen, onOpenChange, onRegistrationComplete }: HackathonRegistrationModalProps) {
   const [step, setStep] = useState(1);
   const totalSteps = 5;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,13 +196,16 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
         if (paymentSuccess) {
           setIsSuccess(true);
+          onRegistrationComplete?.();
         } else {
           // Payment failed/cancelled - registration is still pending
           toast.info("Registration saved. Complete payment to confirm your spot.");
           setIsSuccess(true);
+          onRegistrationComplete?.();
         }
       } else {
         setIsSuccess(true);
+        onRegistrationComplete?.();
         toast.success("Registration successful!");
       }
     } catch (err: any) {

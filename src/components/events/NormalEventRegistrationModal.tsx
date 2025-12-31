@@ -10,9 +10,10 @@ interface NormalEventRegistrationModalProps {
   event: any;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onRegistrationComplete?: () => void;
 }
 
-export function NormalEventRegistrationModal({ event, isOpen, onOpenChange }: NormalEventRegistrationModalProps) {
+export function NormalEventRegistrationModal({ event, isOpen, onOpenChange, onRegistrationComplete }: NormalEventRegistrationModalProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(true);
@@ -126,12 +127,15 @@ export function NormalEventRegistrationModal({ event, isOpen, onOpenChange }: No
 
         if (paymentSuccess) {
           setIsSuccess(true);
+          onRegistrationComplete?.();
         } else {
           toast.info("Registration saved. Complete payment to confirm your spot.");
           setIsSuccess(true);
+          onRegistrationComplete?.();
         }
       } else {
         setIsSuccess(true);
+        onRegistrationComplete?.();
         toast.success("Registration successful!");
       }
     } catch (err: any) {

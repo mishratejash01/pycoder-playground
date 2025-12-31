@@ -29,6 +29,7 @@ interface ContestRegistrationModalProps {
   event: ContestEvent;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onRegistrationComplete?: () => void;
 }
 
 const formSchema = z.object({
@@ -55,7 +56,7 @@ type FormValues = z.infer<typeof formSchema>;
 const STEP_ICONS = [User, Swords, Shield];
 const STEP_TITLES = ["Personal Info", "Competition Details", "Confirm"];
 
-export function ContestRegistrationModal({ event, isOpen, onOpenChange }: ContestRegistrationModalProps) {
+export function ContestRegistrationModal({ event, isOpen, onOpenChange, onRegistrationComplete }: ContestRegistrationModalProps) {
   const [step, setStep] = useState(1);
   const totalSteps = 3;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,12 +169,15 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange }: Contes
 
       if (paymentSuccess) {
         setIsSuccess(true);
+        onRegistrationComplete?.();
       } else {
         toast.info("Registration saved. Complete payment to confirm your spot.");
         setIsSuccess(true);
+        onRegistrationComplete?.();
       }
     } else {
       setIsSuccess(true);
+      onRegistrationComplete?.();
       toast.success("Contest registration successful!");
     }
     

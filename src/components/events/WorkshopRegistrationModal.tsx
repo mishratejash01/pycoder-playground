@@ -10,9 +10,10 @@ interface WorkshopRegistrationModalProps {
   event: any;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  onRegistrationComplete?: () => void;
 }
 
-export function WorkshopRegistrationModal({ event, isOpen, onOpenChange }: WorkshopRegistrationModalProps) {
+export function WorkshopRegistrationModal({ event, isOpen, onOpenChange, onRegistrationComplete }: WorkshopRegistrationModalProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(true);
@@ -129,12 +130,15 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange }: Works
 
         if (paymentSuccess) {
           setIsSuccess(true);
+          onRegistrationComplete?.();
         } else {
           toast.info("Registration saved. Complete payment to confirm your spot.");
           setIsSuccess(true);
+          onRegistrationComplete?.();
         }
       } else {
         setIsSuccess(true);
+        onRegistrationComplete?.();
         toast.success("Registration successful!");
       }
     } catch (err: any) {
