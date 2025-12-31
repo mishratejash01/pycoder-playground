@@ -234,7 +234,7 @@ export default function VerifyRegistration() {
 
             {/* Codevo Branding at the bottom of the card content */}
             <div className="card-footer-branding">
-              <span className="branding-text">CODEVO</span>
+              <span className="branding-text">CODéVO</span>
               <span className="branding-sub">Authorized Digital Entry Pass</span>
             </div>
           </div>
