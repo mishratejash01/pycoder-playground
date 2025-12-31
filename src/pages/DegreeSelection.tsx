@@ -7,11 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
 import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
 
 const getSubjectIcon = (name: string) => {
   const n = name.toLowerCase();
@@ -34,65 +32,43 @@ const DegreeSelection = () => {
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [selectedExamData, setSelectedExamData] = useState<{id: string, name: string, type: string} | null>(null);
 
-  // 1. Fetch Degrees
   const { data: degrees = [] } = useQuery({
     queryKey: ['iitm_degrees'],
     queryFn: async () => {
-      // @ts-ignore
       const { data, error } = await supabase.from('iitm_degrees').select('*').order('name');
-      if (error) {
-        console.error('Error fetching degrees:', error);
-        return [];
-      }
+      if (error) return [];
       return data;
     }
   });
 
-  // Set default degree on load
   useEffect(() => {
     if (degrees.length > 0 && !selectedDegree) {
       setSelectedDegree(degrees[0].id);
     }
   }, [degrees, selectedDegree]);
 
-  // 2. Fetch Levels
   const { data: levels = [] } = useQuery({
     queryKey: ['iitm_levels', selectedDegree],
     queryFn: async () => {
       if (!selectedDegree) return [];
-      
-      const { data, error } = await supabase
-        .from('iitm_levels')
-        .select('*')
-        .eq('degree_id', selectedDegree)
-        .order('sequence');
-      
+      const { data, error } = await supabase.from('iitm_levels').select('*').eq('degree_id', selectedDegree).order('sequence');
       if (error) throw error;
       return data;
     },
     enabled: !!selectedDegree
   });
 
-  // 3. Fetch Subjects
   const { data: subjects = [] } = useQuery({
     queryKey: ['iitm_subjects', selectedDegree],
     queryFn: async () => {
       if (!selectedDegree) return [];
-
-      const { data, error } = await supabase
-        .from('iitm_subjects')
-        .select('*, iitm_levels!inner(degree_id)')
-        // @ts-ignore
-        .eq('iitm_levels.degree_id', selectedDegree)
-        .order('name');
-
+      const { data, error } = await supabase.from('iitm_subjects').select('*, iitm_levels!inner(degree_id)').eq('iitm_levels.degree_id', selectedDegree).order('name');
       if (error) throw error;
       return data;
     },
     enabled: !!selectedDegree
   });
 
-  // Fetch Assignment Types Map
   const { data: subjectExamMap = {} } = useQuery({
     queryKey: ['iitm_assignment_types'],
     queryFn: async () => {
@@ -123,20 +99,14 @@ const DegreeSelection = () => {
 
   const handleModeSelect = (mode: 'learning' | 'proctored') => {
     if (!selectedExamData) return;
-
-    if (mode === 'proctored') {
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (window.innerWidth < 1024 || isMobileDevice) {
-        toast({
-          title: "Access Denied 🚫",
-          description: "Proctored exams require a Laptop or Desktop PC. Please switch devices.",
-          variant: "destructive",
-          duration: 5000,
-        });
-        return;
-      }
+    if (mode === 'proctored' && window.innerWidth < 1024) {
+      toast({
+        title: "Access Denied 🚫",
+        description: "Proctored exams require a Laptop or Desktop PC.",
+        variant: "destructive",
+      });
+      return;
     }
-
     setIsModeOpen(false);
     navigate(`/degree/sets/${selectedExamData.id}/${encodeURIComponent(selectedExamData.name)}/${encodeURIComponent(selectedExamData.type)}/${mode}`);
   };
@@ -147,28 +117,24 @@ const DegreeSelection = () => {
   };
 
   return (
-    // --- GLOBAL BACKGROUND (Applied to full page) ---
-    <div className="min-h-screen bg-[#09090b] font-sans selection:bg-orange-500/30 relative overflow-x-hidden">
+    // Changed bg-[#09090b] to bg-black for full black background
+    <div className="min-h-screen bg-black font-sans selection:bg-orange-500/30 relative overflow-x-hidden">
       
-      {/* 1. BACKGROUND GRID PATTERN (Fixed to entire screen) */}
       <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
       />
       
-      {/* 2. LARGE WATERMARK TYPOGRAPHY (Fixed to entire screen) */}
       <div className="fixed right-0 top-0 h-screen w-1/3 overflow-hidden opacity-[0.02] pointer-events-none z-0">
           <span className="font-serif text-[20vw] leading-none text-white absolute -right-20 -top-20 rotate-12 select-none">IITM</span>
       </div>
 
-      {/* --- CONTENT WRAPPER --- */}
-      <div className="relative z-10 w-full max-w-[1920px] mx-auto flex flex-col min-h-screen">
+      <div className="relative z-10 w-full flex flex-col min-h-screen">
         
-        {/* --- HEADER SECTION (Full Width, No Box) --- */}
-        <div className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-xl">
-            <div className="max-w-[1600px] mx-auto px-4 md:px-8">
+        {/* Changed bg-[#09090b]/80 to bg-black/80 and removed max-w/mx-auto to stay full width */}
+        <div className="border-b border-white/10 bg-black/80 backdrop-blur-xl w-full">
+            <div className="w-full px-4 md:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[200px]">
                     
-                    {/* LEFT COLUMN (Title & Back) */}
                     <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-between">
                         <button 
                             onClick={() => navigate(-1)}
@@ -187,7 +153,6 @@ const DegreeSelection = () => {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN (Degree Tabs) */}
                     <div className="lg:col-span-7 flex flex-col">
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
                             {degrees.map((degree: any, index: number) => {
@@ -235,7 +200,6 @@ const DegreeSelection = () => {
                     </div>
                 </div>
 
-                {/* SEARCH BAR (Full Width Strip) */}
                 <div className="border-t border-white/10 flex flex-col md:flex-row">
                     <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
                         <Search className="w-4 h-4 text-white/40" />
@@ -258,7 +222,7 @@ const DegreeSelection = () => {
                                 <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/[0.02] w-full md:w-[220px] justify-between">
                                     <SelectValue placeholder="FILTER: ALL" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-[#09090b] border-white/10 text-white rounded-none min-w-[200px]">
+                                <SelectContent className="bg-black border-white/10 text-white rounded-none min-w-[200px]">
                                     <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">Filter: All Levels</SelectItem>
                                     {levels.map((level: any) => (
                                         <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">
@@ -273,91 +237,56 @@ const DegreeSelection = () => {
             </div>
         </div>
 
-        {/* --- MAIN GRID CONTENT --- */}
-        <div className="flex-1 p-4 md:p-12 pb-32 max-w-[1600px] mx-auto w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Removed max-w-[1600px] and mx-auto to allow expansion on zoom out */}
+        <div className="flex-1 p-4 md:p-12 pb-32 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {filteredSubjects.length === 0 ? (
                 <div className="col-span-full py-24 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
-                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
-                    <Search className="w-6 h-6 text-muted-foreground" />
-                  </div>
+                  <Search className="w-6 h-6 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground font-mono text-sm uppercase tracking-widest">No matching modules found</p>
-                  <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedLevel('all'); }} className="text-primary mt-2">
-                    Reset Query
-                  </Button>
                 </div>
               ) : (
                 filteredSubjects.map((subject: any) => {
                   const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
                   const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
-                  
                   const isLocked = subject.is_unlocked === false; 
 
                   return (
                     <div key={subject.id} className="relative group">
-                      {/* Glow effect backing */}
                       <div className={cn(
-                        "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur transition duration-1000 group-hover:duration-200",
-                        isLocked 
-                          ? "from-zinc-800 to-zinc-900 opacity-10 group-hover:opacity-20" 
-                          : "from-zinc-700 to-zinc-800 opacity-20 group-hover:opacity-40"
+                        "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur opacity-20 group-hover:opacity-40 transition",
+                        isLocked ? "from-zinc-800 to-zinc-900" : "from-zinc-700 to-zinc-800"
                       )} />
                       
-                      {/* Card Container (Original Style Preserved) */}
-                      <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
-                        
-                        {/* Top Right Status Badge */}
+                      <div className="relative w-full bg-black rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-all hover:-translate-y-1">
                         <div className="absolute top-7 right-7">
-                          <div className="w-6 h-6 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
-                            <div className={cn(
-                              "w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
-                              isLocked 
-                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
-                                : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
-                            )} />
-                          </div>
+                          <div className={cn("w-2 h-2 rounded-full shadow-[0_0_8px]", isLocked ? "bg-red-500 shadow-red-500/80" : "bg-emerald-500 shadow-emerald-500/80")} />
                         </div>
 
-                        {/* Header Section */}
                         <div className={cn("flex flex-row items-start gap-5", isLocked && "opacity-50")}>
-                          <div className="shrink-0 w-14 h-14 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover:border-[#3f3f46]/50 transition-colors">
+                          <div className="shrink-0 w-14 h-14 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center">
                              {getSubjectIcon(subject.name)}
                           </div>
-
                           <div className="flex flex-col gap-1 w-full pt-1">
                             <h3 className="text-lg font-bold text-[#f4f4f5] leading-tight line-clamp-1">{subject.name}</h3>
-                            <p className="text-xs text-[#71717a] font-medium line-clamp-2 leading-relaxed">
-                              Comprehensive resource center for {subject.name}. Access practice labs and evaluations.
-                            </p>
+                            <p className="text-xs text-[#71717a] line-clamp-2 leading-relaxed">Resources for {subject.name}.</p>
                           </div>
                         </div>
 
-                        {/* Tags Section */}
                         <div className={cn("flex flex-wrap gap-2", isLocked && "opacity-40 grayscale")}>
-                          <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#a1a1aa] font-normal hover:bg-[#18181b]">
-                            {levelName}
-                          </Badge>
-                          <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#71717a] font-normal hover:bg-[#18181b]">
-                            4 Credits
-                          </Badge>
+                          <Badge variant="outline" className="rounded-md border-[#27272a] bg-[#18181b]/50 text-[#a1a1aa] font-normal">{levelName}</Badge>
                         </div>
 
-                        {/* Main Content Area */}
                         <div className="flex flex-col gap-3 pt-1">
                           <div className="flex justify-between items-center pb-1">
-                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#52525b]">Select Module</span>
+                             <span className="text-[10px] font-bold uppercase tracking-wider text-[#52525b]">Modules</span>
                              <div className="h-px w-1/2 bg-[#18181b]" />
                           </div>
 
-                          {/* --- LOCKED STATE UI --- */}
                           {isLocked ? (
                             <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center gap-3">
-                               <div className="w-6 h-6 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
                                  <Lock className="w-3 h-3 text-[#52525b]" />
-                               </div>
-                               <div className="flex flex-col justify-center">
-                                 <span className="text-xs font-medium text-[#71717a]">Subject Locked</span>
-                               </div>
+                                 <span className="text-xs font-medium text-[#71717a]">Locked</span>
                             </div>
                           ) : availableExams.length > 0 ? (
                             <div className="flex flex-col gap-2">
@@ -365,45 +294,26 @@ const DegreeSelection = () => {
                                 <button
                                   key={examType}
                                   onClick={() => handleExamClick(subject.id, subject.name, examType)}
-                                  className="relative w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 hover:border-[#3f3f46] transition-all group/btn"
+                                  className="w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 transition-all group/btn"
                                 >
-                                  <div className="flex flex-col items-start gap-0.5">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-                                      <span className="text-sm font-medium text-[#d4d4d8] group-hover/btn:text-white transition-colors">{examType}</span>
-                                    </div>
-                                    <span className="text-[10px] text-[#52525b] ml-3.5">Standard Assessment</span>
-                                  </div>
-                                  <div className="w-8 h-8 rounded-full bg-[#27272a]/50 flex items-center justify-center group-hover/btn:bg-[#27272a] transition-colors">
-                                    <ChevronRight className="w-4 h-4 text-[#71717a] group-hover/btn:text-[#d4d4d8]" />
-                                  </div>
+                                  <span className="text-sm font-medium text-[#d4d4d8] group-hover/btn:text-white">{examType}</span>
+                                  <ChevronRight className="w-4 h-4 text-[#71717a]" />
                                 </button>
                               ))}
                             </div>
                           ) : (
-                             <div className="w-full h-14 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center text-xs text-[#52525b]">
-                               No active exams
-                             </div>
+                             <div className="w-full h-14 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center text-xs text-[#52525b]">No exams</div>
                           )}
                         </div>
 
-                        {/* Footer/Share Section */}
-                        <div className={cn("flex items-center justify-center gap-3 pt-2", isLocked && "opacity-40")}>
-                          <button 
-                            onClick={() => !isLocked && handleShare(subject.name)}
-                            disabled={isLocked}
-                            className="group/share flex items-center gap-3 hover:opacity-80 transition-opacity w-full justify-center"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover/share:border-[#3f3f46] transition-colors">
-                               <Share2 className="w-4 h-4 text-[#71717a] group-hover/share:text-[#a1a1aa]" />
-                            </div>
-                            <div className="flex flex-col items-start">
-                              <span className="text-xs font-medium text-[#71717a] group-hover/share:text-[#a1a1aa]">Share Resource</span>
-                              <div className="h-0.5 w-0 bg-[#3f3f46] group-hover/share:w-full transition-all duration-300 rounded-full" />
-                            </div>
-                          </button>
-                        </div>
-
+                        <button 
+                          onClick={() => !isLocked && handleShare(subject.name)}
+                          disabled={isLocked}
+                          className="flex items-center gap-3 hover:opacity-80 transition-opacity w-full justify-center pt-2"
+                        >
+                          <Share2 className="w-4 h-4 text-[#71717a]" />
+                          <span className="text-xs font-medium text-[#71717a]">Share</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -413,70 +323,33 @@ const DegreeSelection = () => {
         </div>
       </div>
 
-      {/* --- MODE SELECTION DIALOG (Restored Original) --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
-        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
-          <div className="flex flex-col md:grid md:grid-cols-2 h-[80vh] md:h-[550px] relative">
-            
-            {/* OPTION 1: PRACTICE */}
-            <div 
-              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col"
-              onClick={() => handleModeSelect('learning')}
-            >
-              <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
-                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
-                 <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
-                  alt="Practice Coding" 
-                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden rounded-2xl">
+          <div className="flex flex-col md:grid md:grid-cols-2 h-[80vh] md:h-[550px]">
+            <div className="relative group cursor-pointer border-b md:border-b-0 md:border-r border-white/10 flex flex-col" onClick={() => handleModeSelect('learning')}>
+              <div className="flex-1 flex items-center justify-center p-8 relative">
+                 <img src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" className="w-full h-full object-contain opacity-80 group-hover:scale-105 transition-all" />
               </div>
-              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
+              <div className="p-8 bg-[#0c0c0e] border-t border-white/5">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3>
+                  <Sparkles className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-xl font-bold">Practice Mode</h3>
                 </div>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                  Experiment freely. No pressure, no timers—just you improving your craft.
-                </p>
+                <p className="text-gray-400 text-sm">Experiment freely without timers.</p>
               </div>
             </div>
-
-            {/* OPTION 2: PROCTORED */}
-            <div 
-              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col"
-              onClick={() => handleModeSelect('proctored')}
-            >
-              <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
-                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
-                <img 
-                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
-                  alt="Proctored Exam" 
-                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
+            <div className="relative group cursor-pointer flex flex-col" onClick={() => handleModeSelect('proctored')}>
+              <div className="flex-1 flex items-center justify-center p-8 relative">
+                <img src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" className="w-full h-full object-contain opacity-80 group-hover:scale-105 transition-all" />
               </div>
-              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
+              <div className="p-8 bg-[#0c0c0e] border-t border-white/5">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]">
-                    <ShieldCheck className="w-5 h-5 text-red-400" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3>
+                  <ShieldCheck className="w-5 h-5 text-red-400" />
+                  <h3 className="text-xl font-bold">Proctored Mode</h3>
                 </div>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                  Strict monitoring and time limits to officially validate your skills.
-                </p>
+                <p className="text-gray-400 text-sm">Strict monitoring and time limits.</p>
               </div>
             </div>
-
-          </div>
-
-          <div className="bg-[#050505] p-3 text-center text-xs text-muted-foreground border-t border-white/5 flex justify-between items-center px-6">
-            <span>Selected: <span className="text-white font-medium">{selectedExamData?.name}</span></span>
-            <span className="bg-white/5 px-2 py-1 rounded text-[10px] uppercase tracking-wider">{selectedExamData?.type}</span>
           </div>
         </DialogContent>
       </Dialog>
