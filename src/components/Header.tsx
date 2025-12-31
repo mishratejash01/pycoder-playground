@@ -87,8 +87,7 @@ export function Header({ session, onLogout }: HeaderProps) {
   }
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > window.innerHeight - 100);
-    handleScroll();
+    const handleScroll = () => setIsScrolled(window.scrollY > 100);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -96,8 +95,12 @@ export function Header({ session, onLogout }: HeaderProps) {
   if (isPracticeOrExam) return null;
 
   const hasUsername = !!profile?.username;
-  const isProfileIncomplete = !profile?.bio || !profile?.avatar_url || !profile?.github_handle;
-  const profileUrl = hasUsername ? `codevo.dev/u/${profile.username}` : 'codevo.dev/u/username';
+  // Profile is incomplete if missing key fields
+  const isProfileIncomplete = !profile?.bio || !profile?.avatar_url || !profile?.github_handle || !profile?.username;
+  const isProfileComplete = !isProfileIncomplete;
+  
+  // Dynamic URL display
+  const displayUrl = hasUsername ? `codevo.dev/u/${profile?.username}` : 'codevo.dev/u/username';
 
   const NavItem = ({ to, icon: Icon, label, active, size = "normal" }: { to: string; icon: any; label: string; active?: boolean, size?: "normal" | "large" }) => (
     <Link 
@@ -127,6 +130,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               </span>
             </Link>
 
+            {/* Desktop Navigation Tabs */}
             <div className="hidden md:flex flex-1 justify-center gap-4">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white px-3 py-2 transition-colors">
                 <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
@@ -147,6 +151,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                         {userName.charAt(0).toUpperCase()}
                       </div>
                       <span className="text-xs font-medium text-gray-200">{userName}</span>
+                      {/* Gowing Green Online Indicator */}
                       <div className="relative flex h-2 w-2 ml-1">
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
                       </div>
@@ -157,26 +162,63 @@ export function Header({ session, onLogout }: HeaderProps) {
                   <PopoverContent align="end" sideOffset={12} className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] rounded-none shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none">
                     <div className="text-center">
                       <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8">Public Profile QR</p>
+                      
                       <div className="bg-white p-4 inline-block mb-6 rounded-sm relative">
                         <div className={cn(!hasUsername && "blur-md opacity-30")}>
-                          <QRCodeSVG value={hasUsername ? `https://${profileUrl}` : 'setup'} size={140} />
+                          <QRCodeSVG value={hasUsername ? `https://${displayUrl}` : 'setup'} size={140} />
                         </div>
-                        {!hasUsername && <div className="absolute inset-0 flex items-center justify-center p-4 text-[10px] text-black font-bold uppercase">Set Username</div>}
+                        {!hasUsername && (
+                          <div className="absolute inset-0 flex items-center justify-center p-4 text-[10px] text-black font-bold uppercase tracking-widest">
+                            Set Username
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[#444444] text-[13px] mb-10 tracking-wide">{profileUrl}</p>
+
+                      <p className="text-[#444444] text-[13px] mb-10 tracking-wide">
+                        {displayUrl}
+                      </p>
+
                       <div className="flex flex-col gap-3 text-left">
+                        {/* Username Input if missing */}
                         {!hasUsername && (
                           <div className="flex gap-2 mb-4">
-                            <Input value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} placeholder="username" className="h-9 bg-black border-[#222222] text-xs rounded-none" />
+                            <Input 
+                              value={username} 
+                              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} 
+                              placeholder="username" 
+                              className="h-9 bg-black border-[#222222] text-xs rounded-none" 
+                            />
                             <Button size="sm" onClick={saveUsername} disabled={isSavingUsername || !!usernameError} className="h-9 bg-white text-black hover:bg-zinc-200 rounded-none">
                               {isSavingUsername ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Set'}
                             </Button>
                           </div>
                         )}
-                        <Link to="/profile" onClick={() => setPopoverOpen(false)} className={cn("w-full py-4 text-[13px] font-bold uppercase tracking-widest text-center transition-all border", isProfileIncomplete ? "bg-red-600 border-red-600 text-white hover:bg-transparent hover:text-red-600" : "bg-white border-white text-black hover:bg-transparent hover:text-white")}>
+
+                        {/* Red Action Button if Incomplete */}
+                        <Link 
+                          to="/profile" 
+                          onClick={() => setPopoverOpen(false)} 
+                          className={cn(
+                            "w-full py-4 text-[13px] font-bold uppercase tracking-widest text-center transition-all border", 
+                            isProfileIncomplete 
+                              ? "bg-red-600 border-red-600 text-white hover:bg-transparent hover:text-red-600" 
+                              : "bg-white border-white text-black hover:bg-transparent hover:text-white"
+                          )}
+                        >
                           {isProfileIncomplete ? 'Complete Your Profile' : 'Edit Profile'}
                         </Link>
-                        <Link to={hasUsername ? `/u/${profile?.username}` : '/profile'} onClick={() => setPopoverOpen(false)} className="text-white text-[13px] font-medium py-3 hover:text-[#888888]">View Profile</Link>
+
+                        {/* Show View Profile ONLY if completed */}
+                        {isProfileComplete && (
+                          <Link 
+                            to={`/u/${profile?.username}`} 
+                            onClick={() => setPopoverOpen(false)} 
+                            className="text-white text-[13px] font-medium py-3 hover:text-[#888888] transition-colors"
+                          >
+                            View Profile
+                          </Link>
+                        )}
+
                         <div className="mt-4 pt-4 border-t border-[#222222]">
                           <button onClick={() => { setPopoverOpen(false); onLogout(); }} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity">
                             <LogOut className="mr-3 w-[18px] h-[18px] stroke-[2px]" /> Logout
@@ -196,7 +238,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Bottom Bar */}
+      {/* Mobile Bottom Navigation Bar */}
       <div className={cn("fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform", (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none")}>
         <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl relative">
           <div className="flex justify-between items-end px-2">
