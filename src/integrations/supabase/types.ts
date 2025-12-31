@@ -203,6 +203,52 @@ export type Database = {
           },
         ]
       }
+      event_admins: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_admins_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_admins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_discussions: {
         Row: {
           content: string
@@ -2195,6 +2241,14 @@ export type Database = {
         }[]
       }
       generate_invitation_token: { Args: never; Returns: string }
+      get_admin_events: {
+        Args: { _user_id: string }
+        Returns: {
+          event_id: string
+          event_slug: string
+          event_title: string
+        }[]
+      }
       get_event_team_members: {
         Args: { p_event_id: string; p_team_name: string }
         Returns: {
@@ -2236,6 +2290,10 @@ export type Database = {
       get_unified_event_access_status: {
         Args: { p_event_id: string }
         Returns: Json
+      }
+      is_event_admin: {
+        Args: { _event_id: string; _user_id: string }
+        Returns: boolean
       }
       mark_as_attended: { Args: { reg_id: string }; Returns: undefined }
       mark_contest_attended: { Args: { reg_id: string }; Returns: undefined }

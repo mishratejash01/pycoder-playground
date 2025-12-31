@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldX, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-// Updated import to include supportsTeams
 import { getRegistrationTable, getAttendanceRPC, supportsTeams } from '@/utils/eventHelpers';
 import { playSuccessBeep, playRejectBeep, playErrorBeep, playWarningBeep } from '@/utils/beepSounds';
+
+// Type for authorized events
+interface AuthorizedEvent {
+  event_id: string;
+  event_title: string;
+  event_slug: string;
+}
 
 // Type for the fetched guest data
 interface GuestData {
@@ -20,6 +27,7 @@ interface GuestData {
   is_attended: boolean | null;
   attended_at: string | null;
   formType: string;
+  event_id: string;
   events: {
     title: string;
     venue: string | null;
@@ -35,22 +43,69 @@ type AttendanceRPCName =
   | 'mark_contest_attended';
 
 export default function AdminScanner() {
+  const navigate = useNavigate();
+  
+  // Auth & Authorization states
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authorizedEvents, setAuthorizedEvents] = useState<AuthorizedEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [showEventDropdown, setShowEventDropdown] = useState(false);
+  
+  // Scanner states
   const [isScanning, setIsScanning] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [processingVerdict, setProcessingVerdict] = useState(false);
   const [guestData, setGuestData] = useState<GuestData | null>(null);
   const [alreadyScanned, setAlreadyScanned] = useState(false);
+  const [unauthorizedEvent, setUnauthorizedEvent] = useState(false);
   
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
+  // Check authentication and authorization
   useEffect(() => {
-    html5QrCodeRef.current = new Html5Qrcode("reader");
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/auth', { replace: true });
+        return;
+      }
+
+      // Fetch authorized events using the RPC function
+      const { data: events, error } = await supabase.rpc('get_admin_events', {
+        _user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error fetching admin events:', error);
+        setIsAuthorized(false);
+      } else if (events && events.length > 0) {
+        setAuthorizedEvents(events);
+        setSelectedEventId(events[0].event_id);
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+      }
+      
+      setAuthLoading(false);
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      html5QrCodeRef.current = new Html5Qrcode("reader");
+    }
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
         html5QrCodeRef.current.stop().catch(console.error);
       }
     };
-  }, []);
+  }, [isAuthorized]);
+
+  const selectedEvent = authorizedEvents.find(e => e.event_id === selectedEventId);
 
   const startScanner = async () => {
     if (!html5QrCodeRef.current) return;
@@ -79,6 +134,7 @@ export default function AdminScanner() {
     setVerifying(false);
     setAlreadyScanned(false);
     setProcessingVerdict(false);
+    setUnauthorizedEvent(false);
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -108,10 +164,10 @@ export default function AdminScanner() {
       // 1. Determine the dynamic table
       const tableName = getRegistrationTable(formType);
       
-      // 2. Build a dynamic column selection string to avoid "column does not exist" errors
+      // 2. Build a dynamic column selection string
       const baseColumns = `
         id, full_name, email, college_org_name, 
-        current_status, status, is_attended, attended_at,
+        current_status, status, is_attended, attended_at, event_id,
         events ( title, venue )
       `;
 
@@ -133,9 +189,21 @@ export default function AdminScanner() {
         ...(typeof data === 'object' && data !== null ? data : {})
       } as unknown as Omit<GuestData, 'formType'>;
       
-      setGuestData({ ...guestRecord, formType });
+      const guestWithForm = { ...guestRecord, formType } as GuestData;
       
-      // 4. Check IS_ATTENDED status
+      // 4. AUTHORIZATION CHECK: Verify the pass belongs to the selected event
+      if (guestWithForm.event_id !== selectedEventId) {
+        setUnauthorizedEvent(true);
+        setGuestData(guestWithForm);
+        playRejectBeep();
+        toast.error("UNAUTHORIZED: This pass is for a different event");
+        setVerifying(false);
+        return;
+      }
+      
+      setGuestData(guestWithForm);
+      
+      // 5. Check IS_ATTENDED status
       if (guestRecord.is_attended === true) {
         setAlreadyScanned(true);
         playWarningBeep();
@@ -200,6 +268,38 @@ export default function AdminScanner() {
     if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
   };
 
+  // Loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center">
+        <Loader2 className="animate-spin text-white w-8 h-8" />
+      </div>
+    );
+  }
+
+  // Access Denied state
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <ShieldX className="w-16 h-16 text-red-500/60 mx-auto mb-6" />
+          <h1 className="text-2xl font-light text-white mb-3" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+            Access Denied
+          </h1>
+          <p className="text-[#555] text-sm mb-6">
+            You are not authorized to scan passes for any events. Contact an administrator to get access.
+          </p>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-[#222] text-white text-xs uppercase tracking-widest hover:bg-[#333] transition-colors"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-gate-wrapper">
       <style>{`
@@ -220,7 +320,7 @@ export default function AdminScanner() {
         .gate-header {
             border-left: 1px solid #e2e2e2;
             padding: 5px 20px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .gate-header h1 {
@@ -237,6 +337,72 @@ export default function AdminScanner() {
             text-transform: uppercase;
             letter-spacing: 2px;
             margin-top: 4px;
+        }
+
+        .event-selector {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .event-selector-btn {
+            width: 100%;
+            background: #111;
+            border: 1px solid #333;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .event-selector-btn:hover {
+            border-color: #555;
+        }
+
+        .event-selector-label {
+            font-size: 9px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 2px;
+        }
+
+        .event-selector-value {
+            font-size: 14px;
+            color: #fff;
+        }
+
+        .event-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #111;
+            border: 1px solid #333;
+            border-top: none;
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .event-dropdown-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+            color: #ccc;
+            border-bottom: 1px solid #222;
+        }
+
+        .event-dropdown-item:hover {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .event-dropdown-item.selected {
+            background: #1a1a1a;
+            color: #fff;
         }
 
         .viewfinder {
@@ -302,6 +468,18 @@ export default function AdminScanner() {
             background: #1a1600;
             border: 1px solid #d4af37;
             color: #d4af37;
+            padding: 12px;
+            font-size: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .unauthorized-event {
+            background: #1a0000;
+            border: 1px solid #8a2a2b;
+            color: #ff6b6b;
             padding: 12px;
             font-size: 10px;
             text-align: center;
@@ -404,6 +582,41 @@ export default function AdminScanner() {
           <p>{guestData ? (guestData.events?.venue || 'Venue Not Set') : 'Secure Terminal'} • Check-in Point</p>
         </header>
 
+        {/* Event Selector Dropdown */}
+        <div className="event-selector">
+          <button 
+            className="event-selector-btn"
+            onClick={() => setShowEventDropdown(!showEventDropdown)}
+          >
+            <div>
+              <div className="event-selector-label">Scanning For</div>
+              <div className="event-selector-value">{selectedEvent?.event_title || 'Select Event'}</div>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-[#555] transition-transform ${showEventDropdown ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showEventDropdown && (
+            <div className="event-dropdown">
+              {authorizedEvents.map((event) => (
+                <div 
+                  key={event.event_id}
+                  className={`event-dropdown-item ${event.event_id === selectedEventId ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedEventId(event.event_id);
+                    setShowEventDropdown(false);
+                    resetState();
+                    if (html5QrCodeRef.current?.isScanning) {
+                      html5QrCodeRef.current.resume();
+                    }
+                  }}
+                >
+                  {event.event_title}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="viewfinder">
           <div className="mark tl"></div>
           <div className="mark tr"></div>
@@ -431,7 +644,13 @@ export default function AdminScanner() {
 
         {guestData ? (
           <div className="pass-info-card">
-            {alreadyScanned && (
+            {unauthorizedEvent && (
+              <div className="unauthorized-event">
+                ⚠ Wrong Event — This pass is for: {guestData.events?.title}
+              </div>
+            )}
+            
+            {alreadyScanned && !unauthorizedEvent && (
               <div className="already-entered">
                 This pass has already entered
               </div>
@@ -459,7 +678,7 @@ export default function AdminScanner() {
                </div>
             )}
 
-            {!alreadyScanned ? (
+            {!alreadyScanned && !unauthorizedEvent ? (
                 <div className="gate-actions">
                   <button 
                     className="gate-btn btn-deny" 
@@ -488,7 +707,7 @@ export default function AdminScanner() {
            </div>
         )}
 
-        {guestData && !alreadyScanned && (
+        {guestData && !alreadyScanned && !unauthorizedEvent && (
             <div style={{textAlign: 'center', marginTop: '20px'}}>
                 <button 
                     style={{background:'none', border:'none', color:'#555', fontSize:'9px', textTransform:'uppercase', letterSpacing:'2px', cursor:'pointer'}} 
