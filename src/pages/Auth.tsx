@@ -1,3 +1,4 @@
+// src/pages/Auth.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,13 +16,11 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
     const delayTimer = setTimeout(() => {
       setStarted(true);
     }, startDelay);
-
     return () => clearTimeout(delayTimer);
   }, [startDelay]);
 
   useEffect(() => {
     if (!started) return;
-
     const interval = setInterval(() => {
       setDisplayText((currentText) => {
         if (currentText.length < text.length) {
@@ -31,13 +30,11 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
         return currentText;
       });
     }, speed);
-
     return () => clearInterval(interval);
   }, [started, text, speed]);
 
   return displayText;
 };
-// ---------------------------
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -46,25 +43,43 @@ const Auth = () => {
   
   const typewriterText = useTypewriter("Built and Maintained by Neural AI", 60, 1200);
 
+  // Initialize Google Sign-In on component mount
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) navigate("/");
     };
     checkSession();
+
+    /* global google */
+    if (typeof window !== 'undefined' && (window as any).google) {
+      (window as any).google.accounts.id.initialize({
+        client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com", // REPLACE THIS
+        callback: handleGoogleResponse,
+        context: 'signin',
+        ux_mode: 'popup', // Using popup keeps the user on your domain
+      });
+    }
   }, [navigate]);
 
-  const handleGoogleLogin = async () => {
+  // This function handles the response directly on your domain
+  const handleGoogleResponse = async (response: any) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}`,
-        },
+        token: response.credential,
       });
 
       if (error) throw error;
+      
+      if (data.session) {
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
+        navigate("/");
+      }
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -75,11 +90,22 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    // Triggers the Google One Tap / Sign-in popup directly
+    if ((window as any).google) {
+      (window as any).google.accounts.id.prompt(); 
+    } else {
+      toast({
+        title: "Error",
+        description: "Google Sign-In is still loading. Please try again in a moment.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#09090b] flex overflow-hidden">
-      {/* LEFT SIDE: Form & Branding */}
       <div className="w-full lg:w-1/2 flex flex-col p-8 md:p-12 lg:p-20 relative z-10 bg-[#09090b]">
-        {/* Back Button */}
         <Button 
           variant="ghost" 
           className="self-start text-muted-foreground hover:text-white mb-12 -ml-4 rounded-xl"
@@ -89,7 +115,6 @@ const Auth = () => {
           Back to Home
         </Button>
 
-        {/* Main Content Area */}
         <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-8">
           <div className="space-y-2">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Welcome back</h1>
@@ -113,7 +138,6 @@ const Auth = () => {
               ) : (
                 <>
                   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                    <path d="M12.0003 20.45c4.6667 0 8.45-3.7833 8.45-8.45 0-4.6667-3.7833-8.45-8.45-8.45-4.6667 0-8.45 3.7833-8.45 8.45 8.45Z" fill="#fff" fillOpacity="0" stroke="none"/>
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -125,17 +149,13 @@ const Auth = () => {
             </Button>
           </div>
 
-          {/* Branding Section - Clean & Flat */}
           <div className="pt-8 border-t border-white/10 mt-8">
             <div className="flex flex-col items-center justify-center space-y-3 opacity-90 transition-opacity cursor-default">
-              {/* Logo: Solid white, no shadow */}
               <span className="font-neuropol text-2xl font-bold tracking-wider text-white">
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
-              
-              {/* Subtitle with unveil animation */}
               <span className="text-[10px] uppercase tracking-[0.3em] font-medium animate-light-ray whitespace-nowrap">
                 Where Visionaries Build the Future.
               </span>
@@ -148,7 +168,6 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* RIGHT SIDE: Video Background */}
       <div className="hidden lg:block lg:w-1/2 bg-[#09090b] relative h-screen">
         <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
            <video 
@@ -159,10 +178,7 @@ const Auth = () => {
              playsInline 
              className="w-full h-full object-cover opacity-80"
            />
-           
            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none z-10" />
-
-           {/* Typewriter Text - Clean & Flat */}
            <div className="absolute bottom-12 inset-x-0 flex justify-center z-20 pointer-events-none">
              <div className="bg-black/40 backdrop-blur-sm px-8 py-3 rounded-full border border-white/5 shadow-2xl">
                <p className="text-white/90 text-sm font-mono tracking-wider flex items-center gap-1">
