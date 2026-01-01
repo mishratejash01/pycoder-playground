@@ -157,7 +157,7 @@ const Landing = () => {
         <div className="relative w-full h-[100vh] bg-black"> 
           <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
             <motion.div 
-              className="relative w-full h-full bg-black flex flex-col justify-center items-center shadow-2xl"
+              className="relative w-full h-full bg-black flex flex-col justify-center items-center shadow-2xl pb-32"
               style={{
                 scale: smoothScale, 
                 transformOrigin: 'top center', 
@@ -168,14 +168,14 @@ const Landing = () => {
               <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
                 <div className="max-w-4xl mx-auto space-y-6">
                   
-                  {/* Main Heading: No animation, static colors */}
-                  <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
+                  {/* Main Heading: Neo-Grotesk Font, Static Colors */}
+                  <h1 className="text-4xl md:text-6xl font-grotesk font-bold tracking-tight text-white leading-tight">
                     The coding platform for the <br />
                     <span className="text-zinc-500">global developers</span>
                   </h1>
 
-                  {/* Description: Positioned slightly below */}
-                  <p className="max-w-2xl mx-auto text-base md:text-lg text-zinc-400 leading-relaxed">
+                  {/* Description: Neo-Grotesk Font */}
+                  <p className="max-w-2xl mx-auto text-base md:text-lg text-zinc-400 leading-relaxed font-grotesk">
                     Over 1 million learners trust <span className="text-zinc-200 font-semibold">CODéVO</span> to master what basic tutorials never could — from daily coding practice and logic building to real-world projects and professional careers.
                   </p>
 
