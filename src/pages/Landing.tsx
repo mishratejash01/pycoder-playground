@@ -167,9 +167,9 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description: Geist Sans (unchanged) */}
+              {/* Description: Reduced font, increased tracking, narrowed width */}
               <p 
-                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em] mb-[50px]" 
+                className="text-[14px] md:text-[19px] text-[#a1a1aa] max-w-[700px] mx-auto leading-[1.5] tracking-[0.02em] mb-[50px]" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
