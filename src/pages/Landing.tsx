@@ -44,6 +44,7 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   return displayText;
 };
 
+// Filtered Tech Stack
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
@@ -55,6 +56,7 @@ const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg",
 ];
 
+// --- Animation Scenario ---
 const DEMO_SCENARIO = {
   question: "How do I fast-track my coding career?",
   code: `import codevo
@@ -81,12 +83,17 @@ const Landing = () => {
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const isMobile = useIsMobile();
   
+  // Typewriter states
+  const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
+
+  // --- Showcase Animation States ---
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
   
   const codeScrollRef = useRef<HTMLDivElement>(null);
 
+  // Framer Motion Scroll Logic
   const { scrollY } = useScroll();
   const rawScale = useTransform(scrollY, [0, 500], [1, isMobile ? 1 : 0.90]);
   const smoothScale = useSpring(rawScale, { 
@@ -101,6 +108,7 @@ const Landing = () => {
     mass: 0.1 
   });
 
+  // Animation Loop
   useEffect(() => {
     if (isMobile) {
       setShowcasePhase('terminal');
@@ -224,14 +232,14 @@ const Landing = () => {
         {isNavigating && (
           <motion.div
             initial={{ 
-              position: 'fixed', top: buttonPosition.y, left: buttonPosition.x, width: buttonPosition.width, height: buttonPosition.height, borderRadius: '0.75rem', backgroundColor: '#ffffff', zIndex: 9999,
+              position: 'fixed', top: buttonPosition.y, left: buttonPosition.x, width: buttonPosition.width, height: buttonPosition.height, borderRadius: '0.75rem', backgroundColor: '#7c3aed', zIndex: 9999,
             }}
             animate={{ 
               top: 0, left: 0, width: '100vw', height: '100vh', borderRadius: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
             }}
             className="flex items-center justify-center"
           >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-black font-neuropol text-4xl">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-white font-neuropol text-4xl">
               INITIALIZING_ENV...
             </motion.div>
           </motion.div>
@@ -242,7 +250,7 @@ const Landing = () => {
 
       <main className="flex-1 w-full bg-black">
         
-        {/* --- HERO SECTION (UPDATED) --- */}
+        {/* --- HERO SECTION --- */}
         <div className="relative w-full h-[115vh] bg-black"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <motion.div 
@@ -254,24 +262,34 @@ const Landing = () => {
                 borderBottomRightRadius: smoothRadius,
               }}
             >
-              {/* Deep Black Background - Removed DarkVeil/Purple */}
+              {/* Full Deep Black Background - No Gradient Effects */}
               <div className="absolute inset-0 z-0 bg-black" />
 
               <div className="container mx-auto px-4 md:px-6 relative z-10 flex flex-col items-center justify-center h-full pb-20">
-                <div className="max-w-4xl mx-auto text-center space-y-8">
+                <div className="max-w-5xl mx-auto space-y-10 text-center">
+                  
+                  {/* Tagline Indicator */}
+                  <div className="flex justify-center mb-6">
+                    <div className="relative bg-white/5 backdrop-blur-md border border-white/10 rounded-full px-5 py-2 shadow-2xl flex items-center gap-3">
+                      <p className="font-mono text-xs md:text-sm text-zinc-400 font-medium tracking-wide">
+                        <span className="text-zinc-600 mr-2">$</span>{taglineText}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Main Heading - Alignment from last image, Fonts from third image */}
                   <h1 className="text-5xl md:text-8xl font-bold tracking-tighter text-white leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                    The coding platform for the <br />
+                    The coding platform for the <br className="hidden md:block" />
                     <span className="text-zinc-500">global developers</span>
                   </h1>
 
-                  {/* Description - Positioned slightly below */}
+                  {/* Description - Positioned slightly below heading */}
                   <p className="max-w-2xl mx-auto text-lg md:text-xl text-zinc-400 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
                     Over 1 million learners trust <span className="text-white font-semibold">CODéVO</span> to master what basic tutorials never could — from daily coding practice and logic building to real-world projects and professional careers.
                   </p>
 
-                  {/* Buttons - Middle Alignment */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+                  {/* Buttons - Middle alignment pill shape */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mt-12 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
                     <Button 
                       onClick={() => navigate('/auth')}
                       size="lg"
@@ -293,23 +311,24 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Scroll arrow preservation */}
+              {/* Scroll indicator preserved */}
               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000" onClick={scrollToContent}>
                 <div className="w-[30px] h-[54px] md:w-[36px] md:h-[64px] border border-white/20 rounded-full flex justify-center items-center bg-transparent hover:border-white/50 transition-colors">
-                  <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 md:w-5 md:h-5 text-white/70" /></div>
+                  <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 md:w-5 md:h-5 text-white/50" /></div>
                 </div>
               </div>
             </motion.div>
           </div>
         </div>
 
-        {/* --- SECTION 2: LAPTOP & TECHNOLOGIES (Preserved) --- */}
+        {/* --- SECTION 2: LAPTOP & TECHNOLOGIES (PRESERVED) --- */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
               
+              {/* LEFT: Text & Button */}
               <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase">
@@ -355,6 +374,7 @@ const Landing = () => {
                 </div>
               </div>
 
+              {/* RIGHT: 3D Laptop Mockup */}
               <div className="flex-1 w-full max-w-full lg:max-w-none perspective-1000 px-2 md:px-0">
                 <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
                   <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
@@ -408,7 +428,7 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 3: KEYBOARD & TERMINAL (Preserved) --- */}
+        {/* --- SECTION 3: KEYBOARD & TERMINAL (PRESERVED) --- */}
         <section className="py-12 md:py-24 relative overflow-hidden bg-black border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
@@ -461,10 +481,9 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 4: CODE ON CODEVO (Preserved) --- */}
+        {/* --- SECTION 4: CODE ON CODEVO (PRESERVED) --- */}
         <section className="w-full bg-[#050505] py-12 md:py-24 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6 max-w-7xl">
-            
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
               <div className="max-w-xl">
                 <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-[1.1]">
@@ -532,7 +551,7 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 5: "Play n Codé" (Preserved) --- */}
+        {/* --- SECTION 5: "Play n Codé" (PRESERVED) --- */}
         <section className="w-full bg-black py-12 md:py-20 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
             <div className="text-left mb-12">
