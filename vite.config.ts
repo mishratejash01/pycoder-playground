@@ -11,10 +11,10 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    // Explicitly disable strict isolation to allow external images
+    // ENABLE Cross-Origin Isolation for SharedArrayBuffer
     headers: {
-      "Cross-Origin-Embedder-Policy": "unsafe-none",
-      "Cross-Origin-Opener-Policy": "unsafe-none",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Opener-Policy": "same-origin",
     },
   },
   plugins: [
