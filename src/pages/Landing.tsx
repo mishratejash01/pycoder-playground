@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Activity } from 'lucide-react';
+import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -12,7 +12,7 @@ import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'fra
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // --- WIDGET IMPORT ---
-import { HitMeUpWidget } from '@/components/HitMeUpWidget'; 
+import { HitMeUpWidget } from '@/pages/Profile'; 
 
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
@@ -27,7 +27,20 @@ const TECH_STACK = [
 
 const DEMO_SCENARIO = {
   question: "How do I fast-track my coding career?",
-  code: `import codevo\n\ndef start_journey():\n    # 1. Pick a skill\n    skill = "Python"\n    \n    # 2. Practice daily\n    result = codevo.practice(skill)\n    \n    # 3. Get Hired\n    if result.score > 90:\n        return "SUCCESS!"\n\nprint(start_journey())`
+  code: `import codevo
+
+def start_journey():
+    # 1. Pick a skill
+    skill = "Python"
+    
+    # 2. Practice daily
+    result = codevo.practice(skill)
+    
+    # 3. Get Hired
+    if result.score > 90:
+        return "SUCCESS!"
+
+print(start_journey())`
 };
 
 const Landing = () => {
@@ -41,29 +54,37 @@ const Landing = () => {
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  
   const codeScrollRef = useRef<HTMLDivElement>(null);
 
-  // Background and Section Scroll Effects Preservation
+  // Scroll Effects Preservation (Stays for background scaling logic)
   const { scrollY } = useScroll();
   const rawScale = useTransform(scrollY, [0, 500], [1, isMobile ? 1 : 0.90]);
   const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.1 });
   const rawRadius = useTransform(scrollY, [0, 500], [0, isMobile ? 0 : 32]);
   const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.1 });
 
-  // Terminal Demo Animation Logic
+  // Terminal Animation Logic
   useEffect(() => {
-    if (isMobile) { setShowcasePhase('terminal'); setTypedCode(DEMO_SCENARIO.code); return; }
+    if (isMobile) {
+      setShowcasePhase('terminal');
+      setTypedCode(DEMO_SCENARIO.code);
+      return;
+    }
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
     const animate = () => {
-      setShowcasePhase('question'); setTypedCode(''); setActiveKey(null);
+      setShowcasePhase('question');
+      setTypedCode('');
+      setActiveKey(null);
       timeoutId = setTimeout(() => {
         setShowcasePhase('terminal');
         const typeChar = () => {
           if (charIndex < DEMO_SCENARIO.code.length) {
             const char = DEMO_SCENARIO.code[charIndex];
             setTypedCode(prev => prev + char);
-            setActiveKey(char); charIndex++;
+            setActiveKey(char); 
+            charIndex++;
             timeoutId = setTimeout(typeChar, Math.random() * 30 + 30);
           } else {
             setActiveKey(null);
@@ -81,7 +102,12 @@ const Landing = () => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setSession(session));
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
+
+  const scrollToContent = () => {
+    const element = document.getElementById('laptop-section');
+    if (element) element.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const handlePracticeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -91,18 +117,24 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black selection:bg-white/20 flex flex-col relative overflow-hidden font-sans">
-      <HitMeUpWidget />
+    <div className="min-h-screen bg-black selection:bg-white/20 flex flex-col relative overflow-hidden">
       
+      <HitMeUpWidget />
+
       <style>{`
-        @keyframes scroll-arrow-move { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(6px); opacity: 1; } }
+        @keyframes scroll-arrow-move {
+          0% { transform: translateY(0); opacity: 0.5; }
+          25% { transform: translateY(-4px); opacity: 0.8; }
+          75% { transform: translateY(4px); opacity: 0.8; }
+          100% { transform: translateY(0); opacity: 0.5; }
+        }
         .animate-scroll-arrow { animation: scroll-arrow-move 2s ease-in-out infinite; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .animate-marquee { animation: marquee 30s linear infinite; }
-        .cursor-blink { display: inline-block; width: 8px; height: 15px; background-color: #3b82f6; animation: blink 1s step-end infinite; vertical-align: middle; }
+        @keyframes code-blink { 50% { opacity: 0; } }
+        .cursor-blink { display: inline-block; width: 8px; height: 15px; background-color: #3b82f6; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
       `}</style>
 
-      {/* Page Transition Overlay */}
       <AnimatePresence>
         {isNavigating && (
           <motion.div
@@ -110,12 +142,14 @@ const Landing = () => {
             animate={{ top: 0, left: 0, width: '100vw', height: '100vh', borderRadius: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }}
             className="flex items-center justify-center"
           >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-black font-neuropol text-4xl">INITIALIZING...</motion.div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-black font-neuropol text-4xl">
+              INITIALIZING...
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <Header session={session} onLogout={() => supabase.auth.signOut()} />
+      <Header session={session} onLogout={() => { supabase.auth.signOut(); setSession(null); }} />
 
       <main className="flex-1 w-full bg-black">
         
@@ -123,131 +157,150 @@ const Landing = () => {
         <div className="relative w-full h-[100vh] bg-black"> 
           <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
             <motion.div 
-              className="relative w-full h-full bg-black flex flex-col justify-center items-center"
-              style={{ scale: smoothScale, transformOrigin: 'top center', borderBottomLeftRadius: smoothRadius, borderBottomRightRadius: smoothRadius }}
+              className="relative w-full h-full bg-black flex flex-col justify-center items-center shadow-2xl"
+              style={{
+                scale: smoothScale, 
+                transformOrigin: 'top center', 
+                borderBottomLeftRadius: smoothRadius,
+                borderBottomRightRadius: smoothRadius,
+              }}
             >
               <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-                <div className="max-w-5xl mx-auto space-y-8">
+                <div className="max-w-4xl mx-auto space-y-6">
                   
-                  {/* Heading - Neo Grotesk Font and Image Colors */}
-                  <h1 className="text-5xl md:text-8xl font-bold tracking-tight text-white leading-[1.05] font-grotesk">
+                  {/* Main Heading: No animation, static colors */}
+                  <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
                     The coding platform for the <br />
-                    <span className="text-zinc-600">global developers</span>
+                    <span className="text-zinc-500">global developers</span>
                   </h1>
 
-                  {/* Description */}
-                  <p className="max-w-2xl mx-auto text-lg md:text-xl text-zinc-400 leading-relaxed font-grotesk">
+                  {/* Description: Positioned slightly below */}
+                  <p className="max-w-2xl mx-auto text-base md:text-lg text-zinc-400 leading-relaxed">
                     Over 1 million learners trust <span className="text-zinc-200 font-semibold">CODéVO</span> to master what basic tutorials never could — from daily coding practice and logic building to real-world projects and professional careers.
                   </p>
 
-                  {/* Buttons - Middle Centered Alignment */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-8">
+                  {/* Buttons: Middle alignment, middle layer */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
                     <Button 
                       onClick={() => navigate('/auth')}
                       size="lg"
-                      className="h-14 px-10 bg-white text-black hover:bg-zinc-200 transition-all text-lg font-bold rounded-full min-w-[240px]"
+                      className="h-12 px-8 bg-white text-black hover:bg-zinc-200 transition-all text-base font-bold rounded-full min-w-[220px]"
                     >
                       Join 1M+ Developers
-                      <ArrowRight className="ml-2 w-5 h-5" />
+                      <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                     
                     <Button 
                       variant="outline"
                       size="lg"
-                      className="h-14 px-12 border-zinc-800 bg-transparent hover:bg-zinc-900 text-white transition-all text-lg font-medium rounded-full"
+                      className="h-12 px-10 border-zinc-800 bg-transparent hover:bg-zinc-900 text-white transition-all text-base font-medium rounded-full"
                     >
-                      <Play className="mr-2 w-4 h-4 fill-current" />
+                      <Play className="mr-2 w-3 h-3 fill-current" />
                       Try Now
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={() => document.getElementById('laptop-section')?.scrollIntoView({ behavior: 'smooth' })}>
-                <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-start pt-2 bg-transparent">
-                  <div className="w-1 h-2 bg-white/40 rounded-full animate-scroll-arrow" />
+              {/* Scroll Indicator */}
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
+                <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-center bg-transparent">
+                  <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 text-white/40" /></div>
                 </div>
               </div>
             </motion.div>
           </div>
         </div>
 
-        {/* --- SECTION 2: EXPERIENCE REAL CODING --- */}
-        <section id="laptop-section" className="w-full bg-black py-24 md:py-32 relative z-20 -mt-12 overflow-hidden border-b border-white/5">
-          <div className="container mx-auto px-4 md:px-6 relative z-10 text-center">
-            
-            {/* Content Centered and Static */}
-            <div className="max-w-4xl mx-auto space-y-6 mb-16">
-              <div className="flex items-center gap-2 justify-center text-[10px] font-mono text-green-500 tracking-widest uppercase">
-                <Activity className="w-3 h-3 animate-pulse" />
-                System::Online
-              </div>
-              <h2 className="text-4xl md:text-7xl font-bold tracking-tight text-white leading-tight font-grotesk">
-                EXPERIENCE <span className="text-zinc-600">REAL CODING</span>
-              </h2>
-              <p className="text-base md:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed font-grotesk">
-                A fully functional development environment right in your browser. <br/>
-                <span className="text-zinc-200 font-medium">Write. Run. Debug. Succeed.</span>
-              </p>
+        {/* --- SECTION 2: EXPERIENCE REAL CODING (UPDATED) --- */}
+        <section id="laptop-section" className="w-full bg-black py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
+          {/* Grid background removed for solid black effect */}
+          <div className="container mx-auto px-4 md:px-6 relative z-10">
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
               
-              {/* Buttons Aligned to Middle */}
-              <div className="flex justify-center pt-4">
-                <Button onClick={handlePracticeClick} className="h-14 px-12 rounded-full bg-white text-black hover:bg-white/90 text-lg font-bold shadow-2xl transition-transform hover:scale-105">
-                  Start Coding Now
-                </Button>
-              </div>
-            </div>
+              <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase">
+                    <Activity className="w-3 h-3 animate-pulse" />
+                    System::Online
+                  </div>
+                  <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
+                    EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
+                  </h2>
+                  <p className="font-mono text-xs md:text-base text-gray-400 w-full max-w-[90vw] md:max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                    A fully functional development environment right in your browser. <br/>
+                    <span className="text-white">Write. Run. Debug. Succeed.</span>
+                  </p>
+                </div>
 
-            {/* Centered Laptop Mockup */}
-            <div className="max-w-5xl mx-auto perspective-1000">
-               <div className="relative transform bg-[#0a0a0a] rounded-t-2xl p-2 border border-white/10 shadow-2xl">
-                 <div className="bg-[#000000] rounded-t-xl border border-white/5 overflow-hidden aspect-[16/9] relative group">
-                    <div className="absolute inset-0 flex flex-col font-mono text-[10px] md:text-sm text-zinc-500">
-                        <div className="h-8 border-b border-white/10 flex items-center px-4 justify-between bg-[#0a0a0a]">
-                          <div className="flex gap-2"><div className="w-2.5 h-2.5 rounded-full bg-red-500/20" /><div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20" /></div>
-                          <div className="text-xs text-zinc-500">codevo_practice.py</div>
-                        </div>
-                        <div className="flex-1 p-8 text-left space-y-2">
-                          <div className="text-blue-400">def optimize_route(nodes):</div>
-                          <div className="text-zinc-600 pl-4"># Initialize dynamic programming</div>
-                          <div className="text-purple-400 pl-4">dp = [float('inf')] * len(nodes)</div>
-                          <div className="text-white pl-4">dp[0] = 0</div>
-                          <div className="pl-4">for i in range(1, len(nodes)): <span className="cursor-blink" /></div>
-                        </div>
+                <div className="flex flex-col items-center lg:items-start gap-8">
+                  <Button onClick={handlePracticeClick} className="group h-12 md:h-14 px-8 md:px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-base md:text-lg font-bold">
+                    Start Coding
+                  </Button>
+                  
+                  <div className="w-full max-w-md">
+                    <div className="w-full overflow-hidden relative mask-gradient-x">
+                      <div className="flex gap-6 animate-marquee whitespace-nowrap items-center">
+                        {[...TECH_STACK, ...TECH_STACK].map((src, i) => (
+                          <div key={i} className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 opacity-50 grayscale transition-all hover:grayscale-0">
+                            <img src={src} alt="tech" className="w-full h-full object-contain" />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                 </div>
-               </div>
-               <div className="h-4 bg-[#111] rounded-b-2xl border-t border-black/50 mx-1" />
-            </div>
-
-            {/* Tech Stack Marquee Centered */}
-            <div className="mt-20 max-w-2xl mx-auto overflow-hidden relative">
-              <div className="flex gap-10 animate-marquee whitespace-nowrap items-center opacity-30 grayscale hover:opacity-100 transition-opacity">
-                {[...TECH_STACK, ...TECH_STACK].map((src, i) => (
-                  <img key={i} src={src} alt="tech" className="w-10 h-10 object-contain" />
-                ))}
+                  </div>
+                </div>
               </div>
+
+              {/* Laptop Viewport */}
+              <div className="flex-1 w-full max-w-full lg:max-w-none perspective-1000">
+                <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
+                  <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
+                    <div className="bg-[#09090b] rounded-t-md border border-white/5 overflow-hidden aspect-[16/10] relative group">
+                      <div className="absolute inset-0 flex flex-col font-mono text-[9px] md:text-[10px] text-gray-400">
+                        <div className="h-6 border-b border-white/10 flex items-center px-3 justify-between bg-[#0c0c0e]">
+                          <div className="flex gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-red-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-green-500/50" /></div>
+                          <div className="text-xs text-white/40">codevo_practice.py</div>
+                        </div>
+                        <div className="flex-1 flex overflow-hidden">
+                          <div className="w-8 md:w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
+                            <LayoutGrid className="w-3 h-3 text-primary" />
+                            <Code2 className="w-3 h-3 opacity-50" />
+                          </div>
+                          <div className="flex-1 p-2 md:p-3 relative bg-[#09090b]">
+                            <div className="text-blue-400">def optimize_route(nodes):</div>
+                            <div className="text-purple-400 pl-4">dp = [float('inf')] * len(nodes)</div>
+                            <div className="text-white pl-4">dp[0] = 0</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-2.5 md:h-3.5 bg-[#1f1f1f] rounded-b-lg border-t border-black/50 shadow-2xl" />
+                </div>
+              </div>
+
             </div>
           </div>
         </section>
 
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
-        <section className="py-24 bg-black border-t border-white/5">
+        <section className="py-12 md:py-24 relative overflow-hidden bg-black border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
-              <div className="relative h-[450px] bg-[#0a0a0a] rounded-3xl border border-white/10 flex flex-col overflow-hidden">
-                <div className="h-10 bg-[#0f0f0f] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
-                  <div className="w-3 h-3 rounded-full bg-zinc-800" /><div className="w-3 h-3 rounded-full bg-zinc-800" />
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
+              <div className="relative h-[300px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+                <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+                  <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
                   <div className="ml-4 text-xs text-muted-foreground font-mono opacity-50 flex-1 text-center">{showcasePhase === 'question' ? 'challenge.md' : 'solution.py'}</div>
                 </div>
-                <div className="flex-1 relative p-8 font-mono overflow-hidden">
-                  <div className={cn("absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700", showcasePhase === 'question' ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none")}>
-                    <Code2 className="w-12 h-12 text-zinc-600 mb-6" />
-                    <h3 className="text-2xl font-bold text-white mb-4 font-grotesk">Codevo Challenge</h3>
-                    <p className="text-zinc-500 leading-relaxed">"{DEMO_SCENARIO.question}"</p>
+                <div className="flex-1 relative p-6 md:p-8 font-mono text-sm md:text-base overflow-hidden">
+                  <div className={cn("absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700", showcasePhase === 'question' ? "opacity-100" : "opacity-0 pointer-events-none")}>
+                    <div className="relative w-20 h-20 bg-[#1a1a1a] border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-md mb-8"><Code2 className="w-10 h-10 text-white/90" /></div>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight">Codevo Challenge</h3>
+                    <p className="text-muted-foreground max-w-md leading-relaxed">"{DEMO_SCENARIO.question}"</p>
                   </div>
-                  <div className={cn("absolute inset-0 p-8 bg-[#000000] transition-all duration-500", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
-                    <div className="text-blue-400 whitespace-pre-wrap leading-relaxed text-sm md:text-base">{typedCode}<span className="cursor-blink" /></div>
+                  <div className={cn("absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 flex flex-col", showcasePhase === 'terminal' ? "opacity-100" : "opacity-0 pointer-events-none")}>
+                    <div className="font-mono text-blue-400 whitespace-pre-wrap leading-relaxed flex-1 pr-2 no-scrollbar">{typedCode}<span className="cursor-blink" /></div>
                   </div>
                 </div>
               </div>
@@ -257,28 +310,38 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 4: CODE ON CODEVO --- */}
-        <section className="w-full bg-[#050505] py-24 border-t border-white/5">
+        <section className="w-full bg-[#050505] py-12 md:py-24 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6 max-w-7xl">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
-              <div className="max-w-xl"><h2 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-[1.05] font-grotesk">Code on <span className="font-neuropol">CODéVO</span></h2></div>
-              <div className="max-w-sm"><p className="text-lg text-zinc-500 leading-relaxed font-grotesk">Experience frontier capabilities in real-time execution and global competition.</p></div>
+              <div className="max-w-xl"><h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-[1.1]">Code on <span className="font-neuropol text-white">CODéVO</span></h2></div>
+              <div className="max-w-sm"><p className="text-base md:text-lg text-gray-400 leading-relaxed">Experience the future of coding. Featuring frontier capabilities in real-time execution, secure proctoring, and global competition.</p></div>
             </div>
-            <div className="relative w-full h-[500px] md:h-[700px] bg-[#0a0a0a] rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden">
-              <div className="absolute left-10 top-10 w-full h-full bg-black rounded-3xl border border-white/10 p-10 font-mono text-sm space-y-4">
-                 <div className="text-purple-400">import <span className="text-white">React</span> from <span className="text-green-400">'react'</span>;</div>
-                 <div className="text-blue-400">const <span className="text-yellow-200">App</span> = () =&gt; {'{'}</div>
-                 <div className="pl-8 text-zinc-400">return &lt;<span className="text-blue-300">Codevo</span> /&gt;;</div>
-                 <div>{'}'}</div>
+            <div className="relative w-full h-[450px] md:h-[700px] mt-12">
+              <div className="absolute left-0 top-0 w-[95%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
+                 <div className="w-full h-full flex flex-col bg-[#0c0c0e] rounded-xl border border-white/5 overflow-hidden">
+                    <div className="h-12 border-b border-white/5 flex items-center px-4 md:px-6 justify-between bg-[#151517]"><div className="text-xs md:text-sm text-gray-500 font-mono">codevo_ide_v2.tsx</div></div>
+                    <div className="flex-1 p-4 md:p-8 font-mono text-xs md:text-base text-gray-400 space-y-2 md:space-y-4">
+                       <div><span className="text-purple-400">import</span> <span className="text-white">React</span> <span className="text-purple-400">from</span> <span className="text-green-400">'react'</span>;</div>
+                       <div><span className="text-blue-400">const</span> <span className="text-yellow-200">App</span> = () <span className="text-blue-400">=&gt;</span> {'{'}</div>
+                       <div className="pl-4 md:pl-8 text-pink-400">return (</div>
+                       <div className="pl-8 md:pl-12 text-gray-300">&lt;<span className="text-blue-300">CodevoEnvironment</span> /&gt;</div>
+                    </div>
+                 </div>
+              </div>
+              <div className="absolute right-[2%] md:right-[5%] bottom-[10px] md:bottom-[-20px] w-[120px] md:w-[300px] aspect-[9/19] bg-black rounded-[1.5rem] md:rounded-[3rem] border-[4px] md:border-[8px] border-[#1a1a1a] shadow-2xl z-30 overflow-hidden transform md:translate-y-10">
+                 <div className="h-full w-full bg-[#0c0c0e] pt-8 md:pt-12 px-2 md:px-5 pb-4 md:pb-8 flex flex-col relative">
+                    <div className="mt-auto w-full h-8 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-[8px] md:text-sm shadow-lg">Start</div>
+                 </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* --- SECTION 5: PLAY N CODÉ --- */}
-        <section className="w-full bg-black py-24 border-t border-white/5">
-          <div className="container mx-auto px-6 text-center">
-            <h2 className="text-4xl md:text-6xl font-bold text-white mb-16 tracking-tight font-grotesk">Play n Codé</h2>
-            <div className="w-full max-w-6xl mx-auto"><AsteroidGameFrame /></div>
+        <section className="w-full bg-black py-12 md:py-20 relative overflow-hidden border-t border-white/5">
+          <div className="container mx-auto px-6 relative z-20 max-w-7xl">
+            <div className="text-left mb-12"><h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-sans">Play n Codé</h2></div>
+            <div className="w-full"><AsteroidGameFrame /></div>
           </div>
         </section>
 
