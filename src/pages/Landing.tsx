@@ -155,16 +155,19 @@ const Landing = () => {
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
             <div className="max-w-[1100px] mx-auto flex flex-col items-center">
               
-              {/* Main Heading: Exact 88px, -0.06em spacing, 0.95 height */}
+              {/* Main Heading: Inter font, weight 500 */}
               <h1 
-                className="text-[54px] md:text-[88px] font-medium tracking-[-0.06em] leading-[0.95] text-white mb-[30px]" 
-                style={{ fontFamily: 'var(--font-geom)' }}
+                className="text-[54px] md:text-[88px] tracking-[-0.06em] leading-[0.95] text-white mb-[30px]" 
+                style={{ 
+                  fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+                  fontWeight: 500 
+                }}
               >
                 <span className="block">The Coding Platform built</span>
                 for global developers
               </h1>
 
-              {/* Description: Exact 21px, -0.02em spacing, 1.5 line height, 800px max-width */}
+              {/* Description: Geist Sans (unchanged) */}
               <p 
                 className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em] mb-[50px]" 
                 style={{ fontFamily: 'var(--font-geom)' }}
@@ -172,7 +175,7 @@ const Landing = () => {
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons: Exact padding 18px 38px, font 16px, gap 12px */}
+              {/* Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px]">
                 <Button 
                   onClick={() => navigate('/auth')}
