@@ -87,7 +87,6 @@ export function Header({ session, onLogout }: HeaderProps) {
   }
 
   useEffect(() => {
-    // Increased threshold slightly to prevent jitter at very top
     const handleScroll = () => setIsScrolled(window.scrollY > 30);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -134,15 +133,15 @@ export function Header({ session, onLogout }: HeaderProps) {
         className={cn(
           "fixed z-50 left-0 right-0 mx-auto transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
           isScrolled 
-            ? "top-5 max-w-7xl px-4 md:px-0" // Scrolled: Floating state
-            : "top-0 w-full max-w-full px-6 py-4" // Initial: Full width state
+            ? "top-6 max-w-7xl px-4 md:px-0" // Scrolled: Floating, slightly lower (top-6) and constrained width
+            : "top-0 w-full max-w-full px-10 py-6" // Initial: Full width, larger padding (Zoomed In feel)
         )}
       >
         <div 
           className={cn(
             "transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] w-full",
             isScrolled 
-              ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-2 px-6" 
+              ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" // Scrolled: Thicker pill (p-4 px-10)
               : "rounded-none border-transparent bg-transparent p-0"
           )}
         >
@@ -155,25 +154,25 @@ export function Header({ session, onLogout }: HeaderProps) {
             </Link>
 
             {/* Navigation Tabs - RIGHT ALIGNED */}
-            <div className="hidden md:flex flex-1 justify-end items-center gap-6 mr-6">
-              <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
+            <div className="hidden md:flex flex-1 justify-end items-center gap-8 mr-8">
+              <Link to="/degree" className="flex items-center gap-2 text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
                 <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
                 IITM BS
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
               </Link>
-              <Link to="/practice-arena" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
+              <Link to="/practice-arena" className="text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
                 Practice
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
               </Link>
-              <Link to="/events" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
+              <Link to="/events" className="text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
                 Events
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
               </Link>
-              <Link to="/compiler" className="text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors relative group">
+              <Link to="/compiler" className="text-[15px] font-medium text-muted-foreground hover:text-purple-400 transition-colors relative group">
                 Compiler
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-400 transition-all group-hover:w-full"></span>
               </Link>
-              <Link to="/leaderboard" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
+              <Link to="/leaderboard" className="text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
                 Leaderboard
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
               </Link>
@@ -184,19 +183,19 @@ export function Header({ session, onLogout }: HeaderProps) {
               {session ? (
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all relative">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border border-white/20">
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all relative">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20">
                         {userName.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-xs font-medium text-gray-200">{userName}</span>
+                      <span className="text-sm font-medium text-gray-200">{userName}</span>
                       <div className="relative flex h-2 w-2 ml-1">
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
                       </div>
-                      <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
                   </PopoverTrigger>
 
-                  <PopoverContent align="end" sideOffset={12} className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] rounded-none shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none">
+                  <PopoverContent align="end" sideOffset={16} className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] rounded-none shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none">
                     <div className="text-center">
                       <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8">Public Profile QR</p>
                       
@@ -266,8 +265,8 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
-                <Button size="sm" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6" onClick={() => navigate('/auth')}>
-                  <LogIn className="h-3.5 w-3.5 mr-2" /> Login
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-8" onClick={() => navigate('/auth')}>
+                  <LogIn className="h-4 w-4 mr-2" /> Login
                 </Button>
               )}
             </div>
