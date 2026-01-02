@@ -168,13 +168,13 @@ const Landing = () => {
       <main className="flex-1 w-full bg-black">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
-          <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-            <div className="max-w-[1100px] mx-auto flex flex-col items-center">
+        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center shadow-2xl py-32"> 
+          <div className="container mx-auto px-4 relative z-10 flex flex-col justify-center">
+            <div className="max-w-[1100px] mx-auto flex flex-col w-full">
               
-              {/* Main Heading: Reduced Size */}
+              {/* Main Heading: Left Aligned */}
               <h1 
-                className="text-[42px] md:text-[72px] tracking-[-0.06em] leading-[0.95] text-white mb-[20px]" 
+                className="text-[42px] md:text-[72px] tracking-[-0.06em] leading-[0.95] text-white mb-[20px] text-left" 
                 style={{ 
                   fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500 
@@ -184,16 +184,16 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description: Reduced Size */}
+              {/* Description: Left Aligned (Removed mx-auto) */}
               <p 
-                className="text-[14px] md:text-[18px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em] mb-[32px]" 
+                className="text-[14px] md:text-[18px] text-[#a1a1aa] max-w-[800px] leading-[1.5] tracking-[-0.02em] mb-[32px] text-left" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons: Shifted Up */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-12 relative z-30">
+              {/* Buttons: Left Aligned (justify-start) */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-start gap-[12px] mb-12 relative z-30">
                 <Button 
                   onClick={() => navigate('/auth')}
                   size="lg"
@@ -212,8 +212,7 @@ const Landing = () => {
               </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
-              {/* Shifted down to -mt-4 to fill space below and reduce aggressive overlap */}
-              <div className="w-full max-w-7xl relative z-20 -mt-4">
+              <div className="w-full max-w-7xl mx-auto relative z-20 -mt-4">
                 <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
