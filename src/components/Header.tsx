@@ -87,7 +87,7 @@ export function Header({ session, onLogout }: HeaderProps) {
   }
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 100);
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -129,9 +129,16 @@ export function Header({ session, onLogout }: HeaderProps) {
 
   return (
     <>
-      <header className="fixed z-50 left-0 right-0 mx-auto w-full max-w-6xl px-4 md:px-0 top-5">
-        <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl transition-all">
-          <nav className="flex items-center justify-between p-2 px-6">
+      <header className="fixed z-50 left-0 right-0 mx-auto w-full max-w-7xl px-4 md:px-0 top-5 transition-all duration-300">
+        <div 
+          className={cn(
+            "rounded-2xl transition-all duration-500 p-2 px-6",
+            isScrolled 
+              ? "border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl" 
+              : "border border-transparent bg-transparent"
+          )}
+        >
+          <nav className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3 group">
               <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white">
                 COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
