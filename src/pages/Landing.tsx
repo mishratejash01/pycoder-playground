@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
@@ -124,6 +124,19 @@ const Landing = () => {
     setTimeout(() => { session ? navigate('/practice') : navigate('/auth'); }, 800);
   };
 
+  // --- NEW HANDLERS ---
+  const handleJoinClick = () => {
+    if (session) {
+      navigate('/profile');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const handleTryNowClick = () => {
+    navigate('/practice-arena');
+  };
+
   return (
     <div className="min-h-screen bg-black selection:bg-white/20 flex flex-col relative overflow-hidden">
       
@@ -167,16 +180,14 @@ const Landing = () => {
 
       <main className="flex-1 w-full bg-black">
         
-        {/* --- HERO SECTION --- */}
-        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
-          {/* Main Container: Center Aligned, Text Center */}
+        {/* --- HERO SECTION (Zoomed Out / Compact) --- */}
+        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-24"> 
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-            {/* MATCHED WIDTH to IMAGE: max-w-7xl */}
             <div className="max-w-7xl mx-auto flex flex-col items-center w-full">
               
-              {/* Main Heading: Center Aligned, Relaxed Tracking & Leading */}
+              {/* Main Heading: Scaled Down */}
               <h1 
-                className="text-[42px] md:text-[72px] tracking-tight leading-[1.1] text-white mb-[20px] text-center" 
+                className="text-[35px] md:text-[64px] tracking-tight leading-[1.1] text-white mb-[16px] text-center" 
                 style={{ 
                   fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500 
@@ -186,35 +197,36 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description: Center Aligned, Relaxed Tracking */}
+              {/* Description: Scaled Down */}
               <p 
-                className="text-[14px] md:text-[18px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.6] tracking-normal mb-[32px] text-center" 
+                className="text-[13px] md:text-[16px] text-[#a1a1aa] max-w-[700px] mx-auto leading-[1.6] tracking-normal mb-[28px] text-center" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons: Center Aligned */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-12 relative z-30">
+              {/* Buttons: Updated Logic & Spacing */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-10 relative z-30">
                 <Button 
-                  onClick={() => navigate('/auth')}
+                  onClick={handleJoinClick}
                   size="lg"
-                  className="h-auto px-[38px] py-[18px] bg-white text-black hover:bg-zinc-200 transition-all text-[16px] font-semibold rounded-full min-w-[220px]"
+                  className="h-auto px-[32px] py-[16px] bg-white text-black hover:bg-zinc-200 transition-all text-[15px] font-semibold rounded-full min-w-[200px]"
                 >
                   Join 1M+ Developers -Auth
                 </Button>
                 
                 <Button 
+                  onClick={handleTryNowClick}
                   variant="outline"
                   size="lg"
-                  className="h-auto px-[38px] py-[18px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[16px] font-semibold rounded-full"
+                  className="h-auto px-[32px] py-[16px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[15px] font-semibold rounded-full"
                 >
                   Try Now
                 </Button>
               </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
-              <div className="w-full max-w-7xl mx-auto relative z-20 -mt-4">
+              <div className="w-full max-w-7xl mx-auto relative z-20 -mt-6">
                 <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
@@ -239,7 +251,7 @@ const Landing = () => {
           </div>
 
           {/* Scroll Indicator */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
             <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-center bg-transparent">
               <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 text-white/40" /></div>
             </div>
