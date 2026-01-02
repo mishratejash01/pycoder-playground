@@ -1,3 +1,5 @@
+// mishratejash01/codevo/codevo-1890e334b2b9948d077d3cae82ff7478bd54648e/src/pages/Landing.tsx
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -143,8 +145,6 @@ const Landing = () => {
       <HitMeUpWidget />
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;500;600;700&display=swap');
-        
         :root {
           --font-geom: 'Inter', system-ui, sans-serif;
         }
