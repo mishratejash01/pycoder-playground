@@ -3,10 +3,10 @@ import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { StickyBanner } from "@/components/ui/sticky-banner";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
 
+// Update the type to include the new column
 type Announcement = {
   id: string;
   message: string;
@@ -14,6 +14,7 @@ type Announcement = {
   button_text: string | null;
   page_route: string;
   is_active: boolean | null;
+  is_dismissible?: boolean | null; // Added this field
 };
 
 export const AnnouncementBanner = () => {
@@ -38,6 +39,7 @@ export const AnnouncementBanner = () => {
             (item) =>
               item.page_route === "*" || item.page_route === location.pathname
           );
+          // Cast data to Announcement[] to handle the new column dynamically
           setAnnouncements(filtered as Announcement[]);
         }
       } catch (err) {
@@ -80,6 +82,10 @@ export const AnnouncementBanner = () => {
 
   const currentAnnouncement = announcements[currentIndex];
 
+  // Logic: Only show the close button if 'is_dismissible' is explicitly NOT false.
+  // This handles the default case where it might be true or undefined.
+  const showCloseButton = currentAnnouncement.is_dismissible !== false;
+
   return (
     <>
       <style>{`
@@ -103,10 +109,11 @@ export const AnnouncementBanner = () => {
 
       <StickyBanner 
         ref={bannerRef}
-        onClose={() => setIsVisible(false)}
+        // Conditionally pass the onClose handler. If undefined, StickyBanner hides the button.
+        onClose={showCloseButton ? () => setIsVisible(false) : undefined}
         className={cn(
           "fixed top-0 left-0 right-0 z-[60] transition-all duration-500 ease-in-out",
-          "border-b border-white/5 backdrop-blur-xl py-0", // Added py-0 to override default padding
+          "border-b border-white/5 backdrop-blur-xl py-0", 
           // Sleek Dark Gradient
           "bg-[#020202] bg-[linear-gradient(180deg,rgba(109,40,217,0.1)_0%,rgba(2,2,2,0.9)_100%)]"
         )}
