@@ -151,7 +151,7 @@ const Landing = () => {
       <main className="flex-1 w-full bg-black">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-screen bg-black flex flex-col justify-center items-center shadow-2xl pb-32"> 
+        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
             <div className="max-w-[1100px] mx-auto flex flex-col items-center">
               
@@ -176,7 +176,7 @@ const Landing = () => {
               </p>
 
               {/* Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px]">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-16">
                 <Button 
                   onClick={() => navigate('/auth')}
                   size="lg"
@@ -193,6 +193,18 @@ const Landing = () => {
                   Try Now
                 </Button>
               </div>
+
+              {/* --- NEW IMAGE SECTION --- */}
+              <div className="w-full max-w-[1000px] relative z-20">
+                <div className="rounded-xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0c0c0e]">
+                  <img 
+                    src="/image_dd8214.png" 
+                    alt="Platform Preview" 
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
 
