@@ -181,14 +181,15 @@ const Landing = () => {
       <main className="flex-1 w-full bg-black">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-24"> 
+        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-            {/* Reduced width to max-w-5xl to prevent image stretching */}
+            
+            {/* Wider container for Zoomed In Feel */}
             <div className="max-w-5xl mx-auto flex flex-col items-center w-full">
               
-              {/* Main Heading */}
+              {/* Main Heading: Large & Bold */}
               <h1 
-                className="text-[35px] md:text-[64px] tracking-tight leading-[1.1] text-white mb-[16px] text-center" 
+                className="text-[48px] md:text-[88px] tracking-tight leading-[1] text-white mb-[24px] text-center" 
                 style={{ 
                   fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500 
@@ -198,20 +199,20 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description */}
+              {/* Description: Larger Text */}
               <p 
-                className="text-[13px] md:text-[16px] text-[#a1a1aa] max-w-[700px] mx-auto leading-[1.6] tracking-normal mb-[28px] text-center" 
+                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-10 relative z-30">
+              {/* Buttons: Large & Prominent */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[16px] mb-12 relative z-30">
                 <Button 
                   onClick={handleJoinClick}
                   size="lg"
-                  className="h-auto px-[32px] py-[16px] bg-white text-black hover:bg-zinc-200 transition-all text-[15px] font-semibold rounded-full min-w-[200px]"
+                  className="h-auto px-[42px] py-[20px] bg-white text-black hover:bg-zinc-200 transition-all text-[17px] font-semibold rounded-full min-w-[240px]"
                 >
                   Join 1M+ Developers -Auth
                 </Button>
@@ -220,14 +221,14 @@ const Landing = () => {
                   onClick={handleTryNowClick}
                   variant="outline"
                   size="lg"
-                  className="h-auto px-[32px] py-[16px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[15px] font-semibold rounded-full"
+                  className="h-auto px-[42px] py-[20px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[17px] font-semibold rounded-full"
                 >
                   Try Now
                 </Button>
               </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
-              <div className="w-full relative z-20 -mt-6">
+              <div className="w-full relative z-20 -mt-8">
                 <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg shadow-2xl">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
