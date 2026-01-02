@@ -214,7 +214,7 @@ const Landing = () => {
                   size="lg"
                   className="h-auto px-[42px] py-[20px] bg-white text-black hover:bg-zinc-200 transition-all text-[17px] font-semibold rounded-full min-w-[240px]"
                 >
-                  Join 1M+ Developers -Auth
+                  Join 1M+ Developers
                 </Button>
                 
                 <Button 
