@@ -129,13 +129,20 @@ export function Header({ session, onLogout }: HeaderProps) {
 
   return (
     <>
-      <header className="fixed z-50 left-0 right-0 mx-auto w-full max-w-7xl px-4 md:px-0 top-5 transition-all duration-300">
+      <header 
+        className={cn(
+          "fixed z-50 left-0 right-0 mx-auto transition-all duration-500 ease-in-out",
+          isScrolled 
+            ? "top-5 max-w-7xl px-4 md:px-0" // Scrolled: Floating, centered, constrained width
+            : "top-0 w-full px-6 py-4"       // Initial: Full width, stuck to top, wider padding
+        )}
+      >
         <div 
           className={cn(
-            "rounded-2xl transition-all duration-500 p-2 px-6",
+            "transition-all duration-500 ease-in-out",
             isScrolled 
-              ? "border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl" 
-              : "border border-transparent bg-transparent"
+              ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-2 px-6" 
+              : "rounded-none border-none bg-transparent p-0"
           )}
         >
           <nav className="flex items-center justify-between">
