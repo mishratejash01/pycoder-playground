@@ -133,7 +133,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         className={cn(
           "fixed z-50 left-0 right-0 mx-auto transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
           isScrolled 
-            ? "top-6 max-w-7xl px-4 md:px-0" // Scrolled: Floating, slightly lower (top-6) and constrained width
+            ? "top-6 max-w-7xl px-4 md:px-0" // Scrolled: Floating, slightly lower
             : "top-0 w-full max-w-full px-10 py-6" // Initial: Full width, larger padding (Zoomed In feel)
         )}
       >
@@ -141,7 +141,7 @@ export function Header({ session, onLogout }: HeaderProps) {
           className={cn(
             "transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] w-full",
             isScrolled 
-              ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" // Scrolled: Thicker pill (p-4 px-10)
+              ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" // Scrolled: Thicker pill
               : "rounded-none border-transparent bg-transparent p-0"
           )}
         >
@@ -265,6 +265,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
+                /* KEPT LOGIN BUTTON AS REQUESTED: Large size, pill shape */
                 <Button size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-8" onClick={() => navigate('/auth')}>
                   <LogIn className="h-4 w-4 mr-2" /> Login
                 </Button>
