@@ -321,29 +321,27 @@ export default function EventDetailsPage() {
           <div className="content-col space-y-[60px] md:space-y-[120px]">
             
             {/* MOBILE ACTION BUTTON */}
-            <div className="lg:hidden block bg-[#0a0a0a] p-6 border border-[#1a1a1a]">
-               {!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation ? (
-                  <button 
-                    onClick={handleRegisterClick}
-                    disabled={regLoading}
-                    className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px] cursor-pointer"
-                  >
-                    {regLoading ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : 'Join Event'}
-                  </button>
-                ) : isRegistered && event.is_paid && registration?.payment_status === 'pending' ? (
-                  <button 
-                    className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px]"
-                    onClick={handlePayment}
-                    disabled={isProcessingPayment}
-                  >
-                    {isProcessingPayment ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : `Pay ${event.currency} ${event.registration_fee}`}
-                  </button>
-                ) : isRegistered ? (
-                  <div className="w-full border border-[#00ff88] p-4 text-center bg-[#00ff88]/5">
-                    <span className="text-[#00ff88] text-[0.6rem] font-bold uppercase tracking-[2px]">Registration Active</span>
-                  </div>
-                ) : null}
-            </div>
+            {(!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation) || (isRegistered && event.is_paid && registration?.payment_status === 'pending') ? (
+              <div className="lg:hidden block bg-[#0a0a0a] p-6 border border-[#1a1a1a]">
+                 {!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation ? (
+                    <button 
+                      onClick={handleRegisterClick}
+                      disabled={regLoading}
+                      className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px] cursor-pointer"
+                    >
+                      {regLoading ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : 'Join Event'}
+                    </button>
+                  ) : (
+                    <button 
+                      className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px]"
+                      onClick={handlePayment}
+                      disabled={isProcessingPayment}
+                    >
+                      {isProcessingPayment ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : `Pay ${event.currency} ${event.registration_fee}`}
+                    </button>
+                  )}
+              </div>
+            ) : null}
 
             {!hasPendingInvitation && <InvitationBanner />}
 
@@ -463,10 +461,6 @@ export default function EventDetailsPage() {
                   >
                     <CreditCard size={16} /> Pay {event.currency} {event.registration_fee}
                   </button>
-                ) : isRegistered ? (
-                  <div className="w-full border border-[#00ff88] p-[20px] text-center bg-[#00ff88]/5">
-                    <span className="text-[#00ff88] text-[0.65rem] font-bold uppercase tracking-[2px]">Registration Active</span>
-                  </div>
                 ) : null}
               </div>
 
