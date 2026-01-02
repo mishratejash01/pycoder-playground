@@ -20,6 +20,7 @@ export const StickyBanner = React.forwardRef<HTMLDivElement, StickyBannerProps>(
         <div className="container mx-auto flex items-center justify-center">
           {children}
         </div>
+        {/* The cross button only renders if onClose is provided */}
         {onClose && (
           <button
             onClick={onClose}
