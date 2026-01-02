@@ -168,13 +168,14 @@ const Landing = () => {
       <main className="flex-1 w-full bg-black">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center shadow-2xl py-32"> 
-          <div className="container mx-auto px-4 relative z-10 flex flex-col justify-center">
-            <div className="max-w-[1100px] mx-auto flex flex-col w-full">
+        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
+          {/* Main Container: Center Aligned, Text Center */}
+          <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
+            <div className="max-w-[1100px] mx-auto flex flex-col items-center w-full">
               
-              {/* Main Heading: Left Aligned */}
+              {/* Main Heading: Center Aligned, Relaxed Tracking & Leading */}
               <h1 
-                className="text-[42px] md:text-[72px] tracking-[-0.06em] leading-[0.95] text-white mb-[20px] text-left" 
+                className="text-[42px] md:text-[72px] tracking-tight leading-[1.1] text-white mb-[20px] text-center" 
                 style={{ 
                   fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500 
@@ -184,16 +185,16 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description: Left Aligned (Removed mx-auto) */}
+              {/* Description: Center Aligned, Relaxed Tracking */}
               <p 
-                className="text-[14px] md:text-[18px] text-[#a1a1aa] max-w-[800px] leading-[1.5] tracking-[-0.02em] mb-[32px] text-left" 
+                className="text-[14px] md:text-[18px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.6] tracking-normal mb-[32px] text-center" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons: Left Aligned (justify-start) */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-start gap-[12px] mb-12 relative z-30">
+              {/* Buttons: Center Aligned */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-12 relative z-30">
                 <Button 
                   onClick={() => navigate('/auth')}
                   size="lg"
