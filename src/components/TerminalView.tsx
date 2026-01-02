@@ -25,6 +25,14 @@ export const TerminalView = ({
   const fitAddonRef = useRef<FitAddon | null>(null);
   const writtenCharsRef = useRef<number>(0);
   const isInitializedRef = useRef(false);
+  
+  // Ref to track current language inside the closure
+  const languageRef = useRef(language);
+
+  // Update language ref when prop changes
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
 
   // Update Font Size dynamically
   useEffect(() => {
@@ -101,9 +109,18 @@ export const TerminalView = ({
     });
 
     // --- FIX IS HERE ---
-    // Restored local echo so user sees what they type immediately.
+    // JavaScript/TypeScript runners typically echo input back (Remote Echo).
+    // Python (Pyodide) typically does NOT echo input back (requires Local Echo).
+    // We conditionally apply local echo to avoid double typing in JS/TS.
     term.onData((data) => {
-      term.write(data);
+      const currentLang = languageRef.current || 'python';
+      const remoteEchoLanguages = ['javascript', 'typescript', 'bash'];
+
+      // Only local echo if the language runner doesn't do it for us
+      if (!remoteEchoLanguages.includes(currentLang)) {
+        term.write(data);
+      }
+      
       onInput(data);
     });
 
