@@ -270,7 +270,6 @@ export default function EventDetailsPage() {
             >
               ← GO BACK
             </button>
-            <div className="text-[0.8rem] md:text-[1.1rem] tracking-[3px] md:tracking-[5px] uppercase font-light">STUDIO.DEI</div>
           </div>
           <div className="hidden sm:block text-[0.5rem] md:text-[0.6rem] tracking-[2px] text-[#777777] uppercase font-mono">
             REF_CODE: {event.id.slice(0, 8).toUpperCase()}
