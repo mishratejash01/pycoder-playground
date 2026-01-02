@@ -101,10 +101,9 @@ export const TerminalView = ({
     });
 
     // --- FIX IS HERE ---
-    // We removed 'term.write(data)' from here. 
-    // Now we only send the keystroke to the runner.
-    // The runner updates 'output', which triggers the useEffect below to write to screen.
+    // Restored local echo so user sees what they type immediately.
     term.onData((data) => {
+      term.write(data);
       onInput(data);
     });
 
