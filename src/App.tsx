@@ -35,7 +35,8 @@ const AppContent = () => {
       setShowSplash(false);
     } else {
       sessionStorage.setItem("has_seen_splash", "true");
-      const timer = setTimeout(() => setShowSplash(false), 3000);
+      // Increased splash duration slightly to ensure the animation plays out
+      const timer = setTimeout(() => setShowSplash(false), 3500);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -90,6 +91,11 @@ const AppContent = () => {
     if (path === '/about') return 'about';
     return null;
   };
+
+  // --- RENDER SPLASH SCREEN IF ACTIVE ---
+  if (showSplash) {
+    return <SplashScreen />;
+  }
 
   return (
     <AvailabilityGuard sectionKey="main_website">
