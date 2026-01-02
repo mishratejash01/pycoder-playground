@@ -1,0 +1,132 @@
+:root {
+  --pl-bg: transparent;
+  --pl-main: #ffffff; /* Snowball White */
+  --pl-track: #2a2a2e; 
+  /* Using the exact Codevo primary purple: 263.4 70% 50.4% */
+  --pl-primary: hsl(263.4 70% 50.4%); 
+}
+
+.pl {
+  width: 12em;
+  height: 12em;
+  font-size: 10px; /* Scales the entire spinner */
+  position: relative;
+  perspective: 800px;
+}
+
+.pl__ball,
+.pl__ball-inner-shadow,
+.pl__ball-outer-shadow,
+.pl__ball-side-shadows,
+.pl__ball-texture,
+.pl__inner-ring,
+.pl__outer-ring,
+.pl__track-cover {
+  border-radius: 50%;
+  position: absolute;
+}
+
+/* --- The Rings (Themed Purple) --- */
+.pl__outer-ring {
+  box-shadow: 0 -0.45em 0.375em var(--pl-primary) inset;
+  top: 0.75em;
+  left: 0.75em;
+  width: 10.5em;
+  height: 10.5em;
+}
+
+.pl__inner-ring {
+  box-shadow: 0 0.45em 0.375em var(--pl-primary) inset;
+  top: 2.375em;
+  left: 2.375em;
+  width: 7.25em;
+  height: 7.25em;
+}
+
+/* --- Track Cover (creates depth) --- */
+.pl__track-cover {
+  background-image: conic-gradient(
+    transparent 0%,
+    var(--pl-bg) 30%,
+    var(--pl-bg) 60%,
+    transparent 100%
+  );
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  transform: rotate(-45deg);
+}
+
+/* --- The Ball --- */
+.pl__ball {
+  background-color: var(--pl-main);
+  top: 4.5em;
+  left: 4.5em;
+  width: 3em;
+  height: 3em;
+  z-index: 2;
+  animation: ball 2s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.pl__ball-texture {
+  background-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1) 0%, transparent 50%);
+  width: 100%;
+  height: 100%;
+  transform: rotate(0deg);
+  animation: ballTexture 2s linear infinite;
+}
+
+.pl__ball-outer-shadow {
+  background-image: radial-gradient(closest-side, rgba(0,0,0,0.5) 0%, transparent 100%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: translateY(150%) scaleY(0.3);
+  opacity: 0.6;
+  z-index: -1;
+  animation: ballOuterShadow 2s linear infinite;
+}
+
+.pl__ball-inner-shadow {
+  box-shadow: inset 0 -0.5em 1em rgba(0,0,0,0.3);
+  width: 100%;
+  height: 100%;
+  animation: ballInnerShadow 2s linear infinite;
+}
+
+.pl__ball-side-shadows {
+  background-color: rgba(0,0,0,0.1);
+  filter: blur(2px);
+  width: 100%;
+  height: 100%;
+  transform: scale(0.8);
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: -1;
+}
+
+/* --- Animations --- */
+@keyframes ball {
+  from { transform: rotate(0deg) translateY(-4.875em); }
+  50% { transform: rotate(180deg) translateY(-4.5em); }
+  to { transform: rotate(360deg) translateY(-4.875em); }
+}
+
+@keyframes ballTexture {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes ballInnerShadow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes ballOuterShadow {
+  from { transform: rotate(0deg) translateY(2em) scaleY(0.3); }
+  to { transform: rotate(-360deg) translateY(2em) scaleY(0.3); }
+}
