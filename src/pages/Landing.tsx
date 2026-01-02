@@ -212,21 +212,19 @@ const Landing = () => {
               </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
-              <div className="w-full max-w-[1000px] relative z-20">
-                <div className="rounded-xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0c0c0e] aspect-[16/9] relative">
-                  <AnimatePresence>
-                    <motion.img 
-                      key={currentImageIndex}
-                      src={HERO_IMAGES[currentImageIndex]}
-                      alt="Platform Preview" 
-                      className="absolute inset-0 w-full h-full object-cover"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 1 }}
-                    />
-                  </AnimatePresence>
-                </div>
+              <div className="w-full max-w-[1000px] relative z-20 h-[500px] overflow-hidden">
+                <AnimatePresence>
+                  <motion.img 
+                    key={currentImageIndex}
+                    src={HERO_IMAGES[currentImageIndex]}
+                    alt="Platform Preview" 
+                    className="absolute inset-0 w-full h-full object-cover object-bottom"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1 }}
+                  />
+                </AnimatePresence>
               </div>
 
             </div>
