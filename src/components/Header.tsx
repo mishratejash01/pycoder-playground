@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
   LogOut, 
   ChevronDown, 
   ArrowRight,
-  Loader2,
   Terminal,
   Gamepad2,
   UserCircle,
@@ -17,7 +15,11 @@ import {
   Lock,
   Cookie,
   BookOpen,
-  Copy
+  Info,
+  Briefcase,
+  Search,
+  Copy,
+  Loader2
 } from 'lucide-react'; 
 import {
   Popover,
@@ -29,27 +31,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
-interface HeaderProps {
-  session: Session | null;
-  onLogout: () => void;
-}
-
-interface ProfileData {
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  github_handle: string | null;
-  linkedin_url: string | null;
-}
+interface HeaderProps { session: Session | null; onLogout: () => void; }
 
 export function Header({ session, onLogout }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
   const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam') || location.pathname.includes('/compiler');
@@ -59,13 +49,7 @@ export function Header({ session, onLogout }: HeaderProps) {
   }, [session?.user?.id]);
 
   async function fetchProfile() {
-    if (!session?.user?.id) return;
-    const { data } = await supabase
-      .from('profiles')
-      .select('username, full_name, avatar_url, bio, github_handle, linkedin_url')
-      .eq('id', session.user.id)
-      .maybeSingle();
-    
+    const { data } = await supabase.from('profiles').select('*').eq('id', session?.user?.id).maybeSingle();
     if (data) setProfile(data);
   }
 
@@ -78,7 +62,6 @@ export function Header({ session, onLogout }: HeaderProps) {
   if (isPracticeOrExam) return null;
 
   const displayUrl = `${window.location.host}/u/${profile?.username || 'username'}`;
-  const qrFullUrl = `${window.location.origin}/u/${profile?.username || ''}`;
 
   return (
     <header className={cn(
@@ -97,82 +80,81 @@ export function Header({ session, onLogout }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Navigation Tabs */}
-          <div className="hidden md:flex flex-1 justify-end items-center gap-7 mr-6">
+          {/* Professional Navigation Tabs */}
+          <div className="hidden md:flex flex-1 justify-end items-center gap-8 mr-8">
             
-            {/* Products Dropdown (Hover) */}
-            <div 
-              className="relative"
-              onMouseEnter={() => setOpenDropdown('products')}
-              onMouseLeave={() => setOpenDropdown(null)}
-            >
-              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group py-2">
+            {/* Products Mega Dropdown */}
+            <div className="relative" onMouseEnter={() => setActiveDropdown('products')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
                 Products
-                <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-200", openDropdown === 'products' && "rotate-180 opacity-100")} />
+                <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-300", activeDropdown === 'products' && "rotate-180 opacity-100")} />
               </button>
               
-              {openDropdown === 'products' && (
-                <div className="absolute top-full right-0 w-72 p-2 bg-[#0c0c0e] border border-white/10 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="grid gap-1">
-                    <Link to="/compiler" className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors">
-                      <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center"><Terminal className="w-4 h-4 text-purple-400" /></div>
-                      <div><p className="text-sm font-semibold text-white">Compiler</p><p className="text-[11px] text-muted-foreground">Professional IDE Environment</p></div>
+              {activeDropdown === 'products' && (
+                <div className="absolute top-full right-[-100px] w-[850px] bg-[#050505] border border-white/10 rounded-md p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="col-span-2"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">Solutions</p></div>
+                  <div className="col-span-1 border-left border-white/10 pl-10"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">Ecosystem</p></div>
+                  
+                  <div className="grid grid-cols-2 col-span-2 gap-x-10 gap-y-6">
+                    <Link to="/compiler" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1">
+                      <Terminal className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Compiler</span>
                     </Link>
-                    <Link to="/practice-arena" className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center"><Gamepad2 className="w-4 h-4 text-blue-400" /></div>
-                      <div><p className="text-sm font-semibold text-white">Practice Arena</p><p className="text-[11px] text-muted-foreground">Gamified Coding Challenges</p></div>
+                    <Link to="/practice-arena" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1">
+                      <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Practice Arena</span>
                     </Link>
-                    <Link to="/profile" className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors">
-                      <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center"><UserCircle className="w-4 h-4 text-green-400" /></div>
-                      <div><p className="text-sm font-semibold text-white">Profile Card</p><p className="text-[11px] text-muted-foreground">Your Developer Identity</p></div>
+                    <Link to="/profile" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1">
+                      <UserCircle className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Profile Card</span>
                     </Link>
+                  </div>
+
+                  <div className="featured-section border-l border-white/10 pl-10 flex flex-col gap-6">
+                    <div className="group relative rounded-lg overflow-hidden border border-white/5 aspect-[16/9] bg-[#111]">
+                       <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-sm opacity-30" />
+                       <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                         <span className="px-2 py-1 bg-white text-black text-[10px] font-black uppercase tracking-tighter rounded rotate-[-4deg]">Coming Soon</span>
+                       </div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Resources Dropdown (Hover) */}
-            <div 
-              className="relative"
-              onMouseEnter={() => setOpenDropdown('resources')}
-              onMouseLeave={() => setOpenDropdown(null)}
-            >
-              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group py-2">
+            {/* Resources Mega Dropdown */}
+            <div className="relative" onMouseEnter={() => setActiveDropdown('resources')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
                 Resources
-                <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-200", openDropdown === 'resources' && "rotate-180 opacity-100")} />
+                <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-300", activeDropdown === 'resources' && "rotate-180 opacity-100")} />
               </button>
 
-              {openDropdown === 'resources' && (
-                <div className="absolute top-full right-0 w-[520px] bg-[#0c0c0e] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="flex">
-                    <div className="flex-1 p-5 border-r border-white/5 bg-white/[0.01]">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 px-2">Support & Legal</p>
-                      <div className="grid gap-1">
-                        {[
-                          { label: 'Contact Us', icon: Mail, to: '/contact' },
-                          { label: 'Security', icon: ShieldCheck, to: '/security' },
-                          { label: 'Terms & Conditions', icon: FileText, to: '/terms' },
-                          { label: 'Privacy Policy', icon: Lock, to: '/privacy' },
-                          { label: 'Cookies', icon: Cookie, to: '/cookies' },
-                        ].map((item) => (
-                          <Link key={item.label} to={item.to} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 transition-colors group">
-                            <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-white" />
-                            <span className="text-sm text-gray-300 group-hover:text-white font-medium">{item.label}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="w-64 p-5 flex flex-col">
-                      <div className="flex items-center justify-between mb-4"><p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Featured Blog</p></div>
-                      <div className="relative flex-1 rounded-xl overflow-hidden border border-white/10 group/blog">
-                        <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop" alt="Blog" className="w-full h-full object-cover blur-[8px] opacity-30 scale-110" />
-                        <div className="absolute inset-0 p-4 flex flex-col justify-end bg-black/40">
-                          <p className="text-[13px] font-bold text-white/40 blur-[2px] leading-tight mb-2">Architecting Modern AI Platforms</p>
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/30 blur-[1px]"><BookOpen className="w-3 h-3" /><span>coming soon</span></div>
+              {activeDropdown === 'resources' && (
+                <div className="absolute top-full right-[-100px] w-[850px] bg-[#050505] border border-white/10 rounded-md p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="col-span-2"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">In Scale</p></div>
+                  <div className="col-span-1 pl-10"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">Featured Blog Posts</p></div>
+
+                  <div className="grid grid-cols-2 col-span-2 gap-x-10 gap-y-6">
+                    <Link to="/contact" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><Mail className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Contact Us</span></Link>
+                    <Link to="/security" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><ShieldCheck className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Security</span></Link>
+                    <Link to="/terms" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><FileText className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Terms & Conditions</span></Link>
+                    <Link to="/cookies" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><Cookie className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Cookies</span></Link>
+                    <Link to="/privacy" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><Lock className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Privacy Policy</span></Link>
+                    <Link to="/blog" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><BookOpen className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Blog</span></Link>
+                  </div>
+
+                  <div className="featured-section border-l border-white/10 pl-10 flex flex-col gap-8">
+                    {[
+                      { title: "MoReBench: Evaluating AI Moral Reasoning", img: "https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" },
+                      { title: "The Agentic Era: Building Foundations", img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=300" }
+                    ].map((blog, i) => (
+                      <div key={i} className="flex gap-4 relative group cursor-not-allowed">
+                        <div className="w-[130px] h-[75px] bg-[#111] rounded-md border border-white/10 overflow-hidden flex-shrink-0">
+                          <img src={blog.img} className="w-full h-full object-cover blur-[5px] opacity-30" />
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center"><span className="px-3 py-1 bg-white text-black text-[10px] font-black uppercase tracking-tighter rounded shadow-2xl rotate-[-4deg]">COMING SOON</span></div>
+                        <p className="text-[14px] text-white/30 blur-[2.5px] line-clamp-2 leading-tight self-start">{blog.title}</p>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                          <span className="px-2 py-0.5 bg-white text-black text-[9px] font-black uppercase tracking-tighter rounded-sm shadow-xl rotate-[-2deg]">Coming Soon</span>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -180,7 +162,12 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <Link to="/events" className="text-[14px] font-medium text-muted-foreground hover:text-white transition-colors">Events</Link>
 
-            <Button onClick={() => navigate('/practice-arena')} variant="outline" className="group border-white/20 bg-transparent hover:bg-white text-white hover:text-black rounded-full px-6 h-10 text-[13px] font-bold transition-all flex items-center gap-2">
+            {/* Try CODéVO Play Button */}
+            <Button 
+              onClick={() => navigate('/practice-arena')}
+              variant="outline" 
+              className="group border-white/20 bg-transparent hover:bg-white text-white hover:text-black rounded-full px-6 h-10 text-[13px] font-bold transition-all flex items-center gap-2"
+            >
               Try CODéVO Play
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Button>
@@ -197,17 +184,18 @@ export function Header({ session, onLogout }: HeaderProps) {
                     <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
                 </PopoverTrigger>
-                <PopoverContent align="end" sideOffset={16} className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] rounded-none shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
+                <PopoverContent align="end" className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
                   <div className="text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8">Public Profile QR</p>
-                    <div className="bg-white p-4 inline-block mb-6 rounded-sm"><QRCodeSVG value={qrFullUrl} size={140} /></div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8">Public Profile</p>
+                    <div className="bg-white p-4 inline-block mb-6 rounded-sm">
+                      <QRCodeSVG value={displayUrl} size={140} />
+                    </div>
                     <div className="flex items-center justify-center gap-2 mb-10 group cursor-pointer" onClick={() => { navigator.clipboard.writeText(displayUrl); toast.success('Link copied!'); }}>
                       <p className="text-[#444444] text-[13px] font-medium group-hover:text-[#888888]">{displayUrl}</p>
-                      <Copy className="w-3 h-3 text-[#444444] group-hover:text-[#888888]" />
                     </div>
-                    <Link to="/profile" className="w-full block py-4 text-[13px] font-bold uppercase tracking-widest text-center bg-white text-black hover:bg-transparent hover:text-white border border-white transition-all">Edit Profile</Link>
+                    <Link to="/profile" className="w-full block py-4 text-[13px] font-bold uppercase tracking-widest bg-white text-black hover:bg-transparent hover:text-white border border-white transition-all">Edit Profile</Link>
                     <div className="mt-4 pt-4 border-t border-[#222222]">
-                      <button onClick={() => { setPopoverOpen(false); onLogout(); }} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity"><LogOut className="mr-3 w-[18px] h-[18px]" /> Logout</button>
+                      <button onClick={onLogout} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity"><LogOut className="mr-3 w-[18px] h-[18px]" /> Logout</button>
                     </div>
                   </div>
                 </PopoverContent>
