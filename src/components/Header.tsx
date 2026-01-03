@@ -13,7 +13,16 @@ import {
   LogIn, 
   Copy, 
   ArrowRight,
-  Loader2
+  Loader2,
+  Terminal,
+  Gamepad2,
+  UserCircle,
+  ShieldCheck,
+  FileText,
+  Mail,
+  Lock,
+  Cookie,
+  BookOpen
 } from 'lucide-react'; 
 import {
   Popover,
@@ -62,7 +71,7 @@ export function Header({ session, onLogout }: HeaderProps) {
     const { data } = await supabase
       .from('profiles')
       .select('username, full_name, avatar_url, bio, github_handle, linkedin_url')
-      .eq( 'id', session.user.id)
+      .eq('id', session.user.id)
       .maybeSingle();
     
     if (data) {
@@ -81,35 +90,6 @@ export function Header({ session, onLogout }: HeaderProps) {
 
   const hasUsername = !!profile?.username;
   const isProfileIncomplete = !profile?.bio || !profile?.avatar_url || !profile?.github_handle || !profile?.username;
-  const isProfileComplete = !isProfileIncomplete;
-  
-  const currentHost = window.location.host.replace(/^www\./, '');
-  const displayUrl = `${currentHost}/u/${profile?.username || 'username'}`;
-  const qrFullUrl = `${window.location.origin}/u/${profile?.username || ''}`;
-
-  const copyToClipboard = () => {
-    if (hasUsername) {
-      navigator.clipboard.writeText(displayUrl);
-      toast.success('Profile link copied!');
-    }
-  };
-
-  const NavItem = ({ to, icon: Icon, label, active, size = "normal" }: { to: string; icon: any; label: string; active?: boolean, size?: "normal" | "large" }) => (
-    <Link 
-      to={to} 
-      className={cn(
-        "flex flex-col items-center justify-center rounded-xl transition-all duration-300 group relative",
-        size === "large" ? "p-3 -mt-6 bg-[#0c0c0e] border border-primary/30 shadow-[0_0_20px_rgba(59,130,246,0.2)] z-10" : "p-2",
-        active 
-          ? (size === "large" ? "text-primary ring-2 ring-primary/50" : "bg-primary/10 text-primary")
-          : "text-muted-foreground hover:text-white"
-      )}
-    >
-      <Icon className={cn("transition-transform group-hover:scale-110", size === "large" ? "w-6 h-6" : "w-5 h-5")} />
-      {size === "large" && <span className="text-[10px] font-bold mt-1 text-primary animate-pulse">UPSKILL</span>}
-      {size !== "large" && <span className="sr-only">{label}</span>}
-    </Link>
-  );
 
   return (
     <>
@@ -139,15 +119,107 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             {/* Professional Navigation Tabs */}
             <div className="hidden md:flex flex-1 justify-end items-center gap-7 mr-6">
-              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group">
-                Products
-                <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
-              </button>
               
-              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group">
-                Resources
-                <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
-              </button>
+              {/* Products Dropdown */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group outline-none">
+                    Products
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2 bg-[#0c0c0e] border-white/10 rounded-xl shadow-2xl backdrop-blur-xl">
+                  <div className="grid gap-1">
+                    <Link to="/compiler" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group">
+                      <Terminal className="w-4 h-4 text-purple-400" />
+                      <div>
+                        <p className="text-sm font-medium text-white">Compiler</p>
+                        <p className="text-[11px] text-muted-foreground">High-performance IDE</p>
+                      </div>
+                    </Link>
+                    <Link to="/practice-arena" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group">
+                      <Gamepad2 className="w-4 h-4 text-blue-400" />
+                      <div>
+                        <p className="text-sm font-medium text-white">Practice Arena</p>
+                        <p className="text-[11px] text-muted-foreground">Gamified coding challenges</p>
+                      </div>
+                    </Link>
+                    <Link to="/profile" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group">
+                      <UserCircle className="w-4 h-4 text-green-400" />
+                      <div>
+                        <p className="text-sm font-medium text-white">Profile Card</p>
+                        <p className="text-[11px] text-muted-foreground">Showcase your skills</p>
+                      </div>
+                    </Link>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              {/* Resources Dropdown */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group outline-none">
+                    Resources
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[480px] p-0 bg-[#0c0c0e] border-white/10 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden">
+                  <div className="flex">
+                    {/* Left: Links */}
+                    <div className="flex-1 p-4 border-r border-white/5">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 px-2">Legal & Support</p>
+                      <div className="grid gap-1">
+                        {[
+                          { label: 'Contact Us', icon: Mail, to: '/contact' },
+                          { label: 'Security', icon: ShieldCheck, to: '/security' },
+                          { label: 'Terms & Conditions', icon: FileText, to: '/terms' },
+                          { label: 'Privacy Policy', icon: Lock, to: '/privacy' },
+                          { label: 'Cookies', icon: Cookie, to: '/cookies' },
+                        ].map((item) => (
+                          <Link key={item.label} to={item.to} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group">
+                            <item.icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-white transition-colors" />
+                            <span className="text-sm text-gray-300 group-hover:text-white">{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Right: Featured Blog (Coming Soon) */}
+                    <div className="w-[240px] bg-white/[0.02] p-4 flex flex-col">
+                      <div className="flex items-center justify-between mb-3 px-1">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Featured Blog</p>
+                        <Link to="/blog" className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors">View All</Link>
+                      </div>
+                      
+                      <div className="relative group/blog flex-1 rounded-lg overflow-hidden border border-white/5">
+                        {/* Image Layer - Blurred */}
+                        <img 
+                          src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop" 
+                          alt="Blog" 
+                          className="w-full h-24 object-cover blur-[4px] opacity-40 scale-105"
+                        />
+                        
+                        {/* Overlay Content */}
+                        <div className="p-3">
+                          <p className="text-[13px] font-bold text-white/50 blur-[2px] leading-tight mb-2">
+                            Mastering Neural AI with Codevo
+                          </p>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/50 blur-[1px]">
+                            <BookOpen className="w-3 h-3" />
+                            <span>5 min read</span>
+                          </div>
+                        </div>
+
+                        {/* Coming Soon Center Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
+                          <span className="px-3 py-1 bg-white text-black text-[10px] font-bold uppercase tracking-tighter rounded-sm rotate-[-5deg] shadow-xl">
+                            Coming Soon
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               <Link to="/events" className="text-[14px] font-medium text-muted-foreground hover:text-white transition-colors">
                 Events
@@ -199,7 +271,12 @@ export function Header({ session, onLogout }: HeaderProps) {
                         )}
                       </div>
 
-                      <div className="flex items-center justify-center gap-2 mb-10 group cursor-pointer" onClick={copyToClipboard}>
+                      <div className="flex items-center justify-center gap-2 mb-10 group cursor-pointer" onClick={() => {
+                        if (hasUsername) {
+                          navigator.clipboard.writeText(displayUrl);
+                          toast.success('Profile link copied!');
+                        }
+                      }}>
                         <p className="text-[#444444] text-[13px] tracking-wide font-medium group-hover:text-[#888888] transition-colors">
                           {displayUrl}
                         </p>
@@ -212,12 +289,12 @@ export function Header({ session, onLogout }: HeaderProps) {
                           onClick={() => setPopoverOpen(false)} 
                           className={cn(
                             "w-full py-4 text-[13px] font-bold uppercase tracking-widest text-center transition-all border", 
-                            isProfileIncomplete 
+                            !profile?.username 
                               ? "bg-red-600 border-red-600 text-white hover:bg-transparent hover:text-red-600" 
                               : "bg-white border-white text-black hover:bg-transparent hover:text-white"
                           )}
                         >
-                          {isProfileIncomplete ? 'Complete Your Profile' : 'Edit Profile'}
+                          {!profile?.username ? 'Complete Your Profile' : 'Edit Profile'}
                         </Link>
 
                         <div className="mt-4 pt-4 border-t border-[#222222]">
