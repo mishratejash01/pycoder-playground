@@ -261,10 +261,10 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
-                /* UPDATED SIGN IN BUTTON: Vibrant Blue color (#3b82f6) and Pill Shape as per image */
+                /* UPDATED SIGN IN BUTTON: Transparent Grayish White (Glass effect) */
                 <Button 
                   size="lg" 
-                  className="bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-full px-8 font-semibold h-11 transition-all border-none" 
+                  className="bg-white/10 hover:bg-white/20 text-white rounded-full px-8 font-semibold h-11 transition-all border border-white/10 backdrop-blur-md" 
                   onClick={() => navigate('/auth')}
                 >
                   Sign in
@@ -275,7 +275,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Navigation Updates */}
+      {/* Mobile Navigation */}
       <div className={cn("fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform", (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none")}>
         <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl relative">
           <div className="flex justify-between items-end px-2">
