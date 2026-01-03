@@ -129,7 +129,7 @@ export function Header({ session, onLogout }: HeaderProps) {
 
               {activeDropdown === 'resources' && (
                 <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-md p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="col-span-2"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">In Scale</p></div>
+                  <div className="col-span-2"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">CODéVO</p></div>
                   <div className="col-span-1 pl-10"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">Featured Blog Posts</p></div>
 
                   <div className="grid grid-cols-2 col-span-2 gap-x-10 gap-y-6">
