@@ -1,9 +1,9 @@
 // mishratejash01/codevo/codevo-1890e334b2b9948d077d3cae82ff7478bd54648e/src/pages/Landing.tsx
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Loader2, Maximize2, Minimize2, RefreshCw, Minus, Plus, Download, Square } from 'lucide-react';
+import { Code2, ChevronsDown, Terminal, Activity, Maximize2, RefreshCw, Minus, Plus, Download, Play, Square } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -260,7 +260,7 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* --- SECTION 2: EXPERIENCE REAL CODING --- */}
+        {/* --- SECTION 2: EXPERIENCE REAL CODING (With MacBook Pro Frame) --- */}
         <section id="laptop-section" className="w-full bg-black py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
@@ -299,100 +299,126 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Laptop Viewport - Mocking the Compiler.tsx UI */}
-              <div className="flex-1 w-full max-w-full lg:max-w-none perspective-1000">
-                <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
-                  <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
-                    <div className="bg-[#050505] rounded-t-md border border-white/5 overflow-hidden aspect-[16/10] relative flex flex-col font-sans select-none">
-                      
-                      {/* 1. COMPILER HEADER */}
-                      <div className="h-[12%] flex items-center justify-between px-3 border-b border-white/10 bg-[#050505] z-10">
-                         <div className="flex items-center gap-1.5">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5 text-[#666]">
-                              <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
-                            </svg>
-                         </div>
-                         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-                            <span className="font-neuropol text-[10px] md:text-xs tracking-[0.2em] text-white/90">
-                              CODéVO
-                            </span>
-                         </div>
-                         <div className="flex items-center gap-1.5 text-[#666]">
-                            <Maximize2 className="w-2 h-2" />
-                         </div>
-                      </div>
+              {/* --- MACBOOK PRO VIEWPORT --- */}
+              <div className="flex-1 w-full max-w-full lg:max-w-none perspective-2000">
+                <div className="relative group w-full max-w-[650px] mx-auto transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
+                  
+                  {/* Top Case / Lid */}
+                  <div className="relative bg-[#0d0d0d] rounded-[14px] md:rounded-[22px] p-1.5 md:p-2.5 shadow-2xl border border-[#222]">
+                     
+                     {/* Screen Bezel (Glossy Black) */}
+                     <div className="relative bg-black rounded-[10px] md:rounded-[18px] overflow-hidden border border-white/5 ring-1 ring-white/5">
+                        
+                        {/* Notch Area */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80px] md:w-[120px] h-[12px] md:h-[18px] bg-black rounded-b-[6px] md:rounded-b-[10px] z-50 flex justify-center items-center">
+                           {/* Camera Lens */}
+                           <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-[#1a1a1a] shadow-inner border border-white/10" />
+                        </div>
 
-                      {/* 2. WORKSPACE SPLIT */}
-                      <div className="flex-1 flex relative bg-[#0a0a0a] overflow-hidden">
-                          {/* LEFT PANEL: EDITOR */}
-                          <div className="w-[60%] border-r border-white/5 flex flex-col bg-[#050505]">
-                              {/* Left Toolbar */}
-                              <div className="h-[12%] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
-                                  <div className="flex items-center gap-2">
-                                     <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" className="w-2.5 h-2.5 opacity-80" alt="py" />
-                                     <div className="bg-transparent border border-white/10 text-[6px] text-gray-300 px-1 py-0.5 rounded-sm uppercase flex items-center gap-1">
-                                       Python <span className="text-[5px] text-[#666]">▼</span>
-                                     </div>
-                                     <div className="w-[1px] h-2 bg-white/10" />
-                                     <span className="text-[6px] font-mono text-[#666]">0.00s</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 text-[#666]">
-                                      <div className="flex border border-white/10 rounded overflow-hidden">
-                                        <div className="p-0.5 hover:bg-white/5"><Minus className="w-2 h-2" /></div>
-                                        <div className="w-[1px] bg-white/10" />
-                                        <div className="p-0.5 hover:bg-white/5"><Plus className="w-2 h-2" /></div>
+                        {/* --- COMPILER SCREEN CONTENT --- */}
+                        <div className="aspect-[16/10] relative flex flex-col font-sans select-none bg-[#050505]">
+                          
+                          {/* 1. COMPILER HEADER */}
+                          <div className="h-[36px] flex items-center justify-between px-3 border-b border-white/10 bg-[#050505] z-10">
+                             <div className="flex items-center gap-1.5">
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-[#666]">
+                                  <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+                                </svg>
+                             </div>
+                             {/* Logo Centered */}
+                             <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 flex items-center justify-center">
+                                <span className="font-neuropol text-[10px] md:text-xs tracking-[0.2em] text-white/90">
+                                  CODéVO
+                                </span>
+                             </div>
+                             <div className="flex items-center gap-2 text-[#666]">
+                                <Maximize2 className="w-3 h-3" />
+                             </div>
+                          </div>
+
+                          {/* 2. WORKSPACE SPLIT */}
+                          <div className="flex-1 flex relative bg-[#0a0a0a] overflow-hidden">
+                              {/* LEFT PANEL: EDITOR */}
+                              <div className="w-[60%] border-r border-white/5 flex flex-col bg-[#050505]">
+                                  {/* Left Toolbar */}
+                                  <div className="h-[32px] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
+                                      <div className="flex items-center gap-2">
+                                         <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" className="w-3 h-3 opacity-80" alt="py" />
+                                         <div className="bg-transparent border border-white/10 text-[8px] text-gray-300 px-1.5 py-0.5 rounded-sm uppercase flex items-center gap-1">
+                                           Python <span className="text-[6px] text-[#666]">▼</span>
+                                         </div>
+                                         <div className="w-[1px] h-3 bg-white/10 mx-1" />
+                                         <span className="text-[8px] font-mono text-[#666]">0.00s</span>
                                       </div>
-                                      <RefreshCw className="w-2 h-2" />
+                                      <div className="flex items-center gap-1.5 text-[#666]">
+                                          <div className="flex border border-white/10 rounded overflow-hidden">
+                                            <div className="p-0.5 hover:bg-white/5"><Minus className="w-2.5 h-2.5" /></div>
+                                            <div className="w-[1px] bg-white/10" />
+                                            <div className="p-0.5 hover:bg-white/5"><Plus className="w-2.5 h-2.5" /></div>
+                                          </div>
+                                          <RefreshCw className="w-2.5 h-2.5" />
+                                      </div>
+                                  </div>
+                                  {/* Editor Area */}
+                                  <div className="flex-1 p-3 font-mono text-[8px] md:text-[10px] text-gray-300 leading-relaxed overflow-hidden">
+                                      <div><span className="text-blue-400">def</span> <span className="text-yellow-200">optimize_route</span>(nodes):</div>
+                                      <div className="pl-3 text-[#6a9955]"># Initialize DP table</div>
+                                      <div className="pl-3">dp = [<span className="text-blue-400">float</span>(<span className="text-green-400">'inf'</span>)] * <span className="text-blue-400">len</span>(nodes)</div>
+                                      <div className="pl-3">dp[0] = <span className="text-green-400">0</span></div>
+                                      <br/>
+                                      <div className="pl-3 text-purple-400">for</div>
+                                      <div className="pl-3 text-white">...</div>
                                   </div>
                               </div>
-                              {/* Editor Area */}
-                              <div className="flex-1 p-3 font-mono text-[7px] md:text-[9px] text-gray-300 leading-relaxed overflow-hidden">
-                                  <div><span className="text-blue-400">def</span> <span className="text-yellow-200">optimize_route</span>(nodes):</div>
-                                  <div className="pl-3 text-[#6a9955]"># Initialize DP table</div>
-                                  <div className="pl-3">dp = [<span className="text-blue-400">float</span>(<span className="text-green-400">'inf'</span>)] * <span className="text-blue-400">len</span>(nodes)</div>
-                                  <div className="pl-3">dp[0] = <span className="text-green-400">0</span></div>
-                                  <br/>
-                                  <div className="pl-3 text-purple-400">for</div>
-                                  <div className="pl-3 text-white">...</div>
+
+                              {/* RIGHT PANEL: TERMINAL */}
+                              <div className="flex-1 flex flex-col bg-[#050505]">
+                                  {/* Right Toolbar */}
+                                  <div className="h-[32px] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
+                                      <span className="text-[7px] md:text-[8px] font-semibold uppercase tracking-widest text-[#666] flex items-center gap-1">
+                                        <Terminal className="w-2.5 h-2.5" /> Console
+                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                         <Download className="w-2.5 h-2.5 text-[#666]" />
+                                         <div className="bg-white text-black px-2 py-0.5 rounded-[1px] flex items-center gap-0.5">
+                                            <Play className="w-2 h-2 fill-current" />
+                                            <span className="text-[7px] font-bold uppercase tracking-wider">Run</span>
+                                         </div>
+                                      </div>
+                                  </div>
+                                  {/* Terminal Area */}
+                                  <div className="flex-1 bg-[#010409] p-3 font-mono text-[8px] md:text-[10px] text-green-400/90 leading-relaxed">
+                                      <div>&gt;&gt; SYSTEM READY</div>
+                                      <div className="text-gray-500">&gt;&gt; Initializing Kernel...</div>
+                                      <div className="mt-1">&gt;&gt; <span className="animate-pulse">_</span></div>
+                                  </div>
                               </div>
                           </div>
 
-                          {/* RIGHT PANEL: TERMINAL */}
-                          <div className="flex-1 flex flex-col bg-[#050505]">
-                              {/* Right Toolbar */}
-                              <div className="h-[12%] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
-                                  <span className="text-[5px] md:text-[6px] font-semibold uppercase tracking-widest text-[#666] flex items-center gap-1">
-                                    <Terminal className="w-2 h-2" /> Console
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                     <Download className="w-2 h-2 text-[#666]" />
-                                     <div className="bg-white text-black px-1.5 py-0.5 rounded-[1px] flex items-center gap-0.5">
-                                        <Play className="w-1.5 h-1.5 fill-current" />
-                                        <span className="text-[5px] font-bold uppercase tracking-wider">Run</span>
-                                     </div>
-                                  </div>
-                              </div>
-                              {/* Terminal Area */}
-                              <div className="flex-1 bg-[#010409] p-2 font-mono text-[7px] md:text-[9px] text-green-400/90 leading-relaxed">
-                                  <div>&gt;&gt; SYSTEM READY</div>
-                                  <div className="text-gray-500">&gt;&gt; Initializing Kernel...</div>
-                                  <div className="mt-1">&gt;&gt; <span className="animate-pulse">_</span></div>
-                              </div>
+                          {/* 3. FOOTER */}
+                          <div className="h-[24px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-3 text-[8px] text-[#666] uppercase tracking-widest">
+                             <div className="flex items-center gap-1.5">
+                               <div className="w-1.5 h-1.5 rounded-full bg-[#3fb950] shadow-[0_0_4px_#3fb950]" />
+                               <span>Connected / encrypted_v2</span>
+                             </div>
+                             <span>Codevo 2025</span>
                           </div>
-                      </div>
 
-                      {/* 3. FOOTER */}
-                      <div className="h-[8%] border-t border-white/10 bg-[#050505] flex items-center justify-between px-2 text-[6px] text-[#666] uppercase tracking-widest">
-                         <div className="flex items-center gap-1">
-                           <div className="w-1 h-1 rounded-full bg-[#3fb950] shadow-[0_0_4px_#3fb950]" />
-                           <span>Connected / encrypted_v2</span>
-                         </div>
-                         <span>Codevo 2025</span>
-                      </div>
-
-                    </div>
+                        </div>
+                     </div>
                   </div>
-                  <div className="h-2.5 md:h-3.5 bg-[#1f1f1f] rounded-b-lg border-t border-black/50 shadow-2xl" />
+
+                  {/* Bottom Case / Base */}
+                  <div className="relative -mt-[1px] mx-[2%]">
+                     {/* Hinge Area */}
+                     <div className="h-2 bg-[#111] rounded-b-sm border-x border-b border-[#222]" />
+                     {/* Main Base */}
+                     <div className="h-2.5 md:h-3.5 bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-b-[10px] md:rounded-b-[16px] border border-[#222] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] flex justify-center">
+                        {/* Opening Indent */}
+                        <div className="w-[15%] h-[2px] md:h-[3px] bg-[#222] rounded-b-md border-x border-b border-[#333]" />
+                     </div>
+                  </div>
+
                 </div>
               </div>
 
