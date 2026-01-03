@@ -303,8 +303,8 @@ const Landing = () => {
               <div className="flex-1 w-full max-w-full lg:max-w-none perspective-2000">
                 <div className="relative group w-full max-w-[650px] mx-auto transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
                   
-                  {/* Top Case / Lid */}
-                  <div className="relative bg-[#0d0d0d] rounded-[14px] md:rounded-[22px] p-1.5 md:p-2.5 shadow-2xl border border-[#222]">
+                  {/* Top Case / Lid (Reduced padding from p-2.5 to p-1.5 to thin out the bezel) */}
+                  <div className="relative bg-[#0d0d0d] rounded-[14px] md:rounded-[22px] p-1 md:p-1.5 shadow-2xl border border-[#222]">
                      
                      {/* Screen Bezel (Glossy Black) */}
                      <div className="relative bg-black rounded-[10px] md:rounded-[18px] overflow-hidden border border-white/5 ring-1 ring-white/5">
