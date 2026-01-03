@@ -15,11 +15,7 @@ import {
   Lock,
   Cookie,
   BookOpen,
-  Info,
-  Briefcase,
-  Search,
-  Copy,
-  Loader2
+  Copy
 } from 'lucide-react'; 
 import {
   Popover,
@@ -65,7 +61,7 @@ export function Header({ session, onLogout }: HeaderProps) {
 
   return (
     <header className={cn(
-      "fixed z-50 left-0 right-0 mx-auto transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
+      "fixed z-50 left-0 right-0 mx-auto transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] font-sans",
       isScrolled ? "top-6 max-w-7xl px-4 md:px-0" : "top-0 w-full max-w-full px-10 py-6"
     )}>
       <div className={cn(
@@ -80,10 +76,10 @@ export function Header({ session, onLogout }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Professional Navigation Tabs */}
+          {/* Navigation Tabs */}
           <div className="hidden md:flex flex-1 justify-end items-center gap-8 mr-8">
             
-            {/* Products Mega Dropdown */}
+            {/* Products Mega Dropdown (Hover) */}
             <div className="relative" onMouseEnter={() => setActiveDropdown('products')} onMouseLeave={() => setActiveDropdown(null)}>
               <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
                 Products
@@ -91,27 +87,32 @@ export function Header({ session, onLogout }: HeaderProps) {
               </button>
               
               {activeDropdown === 'products' && (
-                <div className="absolute top-full right-[-100px] w-[850px] bg-[#050505] border border-white/10 rounded-md p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="col-span-2"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">Solutions</p></div>
-                  <div className="col-span-1 border-left border-white/10 pl-10"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">Ecosystem</p></div>
-                  
-                  <div className="grid grid-cols-2 col-span-2 gap-x-10 gap-y-6">
-                    <Link to="/compiler" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1">
-                      <Terminal className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Compiler</span>
-                    </Link>
-                    <Link to="/practice-arena" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1">
-                      <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Practice Arena</span>
-                    </Link>
-                    <Link to="/profile" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1">
-                      <UserCircle className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Profile Card</span>
-                    </Link>
+                <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-md p-10 grid grid-cols-[1.5fr_1fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="nav-column flex flex-col gap-6">
+                    <p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-2">Our Solutions</p>
+                    <div className="grid grid-cols-2 gap-6">
+                      <Link to="/compiler" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item">
+                        <Terminal className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                        <span className="text-[15px]">Compiler</span>
+                      </Link>
+                      <Link to="/practice-arena" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item">
+                        <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                        <span className="text-[15px]">Practice Arena</span>
+                      </Link>
+                      <Link to="/profile" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item">
+                        <UserCircle className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                        <span className="text-[15px]">Profile Card</span>
+                      </Link>
+                    </div>
                   </div>
 
                   <div className="featured-section border-l border-white/10 pl-10 flex flex-col gap-6">
+                    <p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em]">New Release</p>
                     <div className="group relative rounded-lg overflow-hidden border border-white/5 aspect-[16/9] bg-[#111]">
-                       <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-sm opacity-30" />
-                       <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-                         <span className="px-2 py-1 bg-white text-black text-[10px] font-black uppercase tracking-tighter rounded rotate-[-4deg]">Coming Soon</span>
+                       <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-md opacity-20" />
+                       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                         <p className="text-white/40 text-[13px] font-medium blur-[1.5px] mb-1">Advanced Neural IDE v3</p>
+                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Coming Soon</p>
                        </div>
                     </div>
                   </div>
@@ -119,7 +120,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               )}
             </div>
 
-            {/* Resources Mega Dropdown */}
+            {/* Resources Mega Dropdown (Hover) */}
             <div className="relative" onMouseEnter={() => setActiveDropdown('resources')} onMouseLeave={() => setActiveDropdown(null)}>
               <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
                 Resources
@@ -127,31 +128,31 @@ export function Header({ session, onLogout }: HeaderProps) {
               </button>
 
               {activeDropdown === 'resources' && (
-                <div className="absolute top-full right-[-100px] w-[850px] bg-[#050505] border border-white/10 rounded-md p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-md p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="col-span-2"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">In Scale</p></div>
                   <div className="col-span-1 pl-10"><p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em] mb-8">Featured Blog Posts</p></div>
 
                   <div className="grid grid-cols-2 col-span-2 gap-x-10 gap-y-6">
-                    <Link to="/contact" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><Mail className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Contact Us</span></Link>
-                    <Link to="/security" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><ShieldCheck className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Security</span></Link>
-                    <Link to="/terms" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><FileText className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Terms & Conditions</span></Link>
-                    <Link to="/cookies" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><Cookie className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Cookies</span></Link>
-                    <Link to="/privacy" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><Lock className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Privacy Policy</span></Link>
-                    <Link to="/blog" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1"><BookOpen className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Blog</span></Link>
+                    <Link to="/contact" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item"><Mail className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Contact Us</span></Link>
+                    <Link to="/security" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item"><ShieldCheck className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Security</span></Link>
+                    <Link to="/terms" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item"><FileText className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Terms & Conditions</span></Link>
+                    <Link to="/cookies" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item"><Cookie className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Cookies</span></Link>
+                    <Link to="/privacy" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item"><Lock className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Privacy Policy</span></Link>
+                    <Link to="/blog" className="flex items-center gap-4 text-gray-300 hover:text-white transition-all hover:translate-x-1 group/item"><BookOpen className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Blog</span></Link>
                   </div>
 
-                  <div className="featured-section border-l border-white/10 pl-10 flex flex-col gap-8">
+                  <div className="featured-section border-l border-white/10 pl-10 flex flex-col gap-10">
                     {[
                       { title: "MoReBench: Evaluating AI Moral Reasoning", img: "https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" },
                       { title: "The Agentic Era: Building Foundations", img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=300" }
                     ].map((blog, i) => (
-                      <div key={i} className="flex gap-4 relative group cursor-not-allowed">
+                      <div key={i} className="flex gap-4 relative">
                         <div className="w-[130px] h-[75px] bg-[#111] rounded-md border border-white/10 overflow-hidden flex-shrink-0">
-                          <img src={blog.img} className="w-full h-full object-cover blur-[5px] opacity-30" />
+                          <img src={blog.img} className="w-full h-full object-cover blur-md opacity-20" />
                         </div>
-                        <p className="text-[14px] text-white/30 blur-[2.5px] line-clamp-2 leading-tight self-start">{blog.title}</p>
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                          <span className="px-2 py-0.5 bg-white text-black text-[9px] font-black uppercase tracking-tighter rounded-sm shadow-xl rotate-[-2deg]">Coming Soon</span>
+                        <div className="flex flex-col">
+                          <p className="text-[14px] text-white/30 blur-[2px] line-clamp-2 leading-tight font-medium mb-1.5">{blog.title}</p>
+                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Coming Soon</p>
                         </div>
                       </div>
                     ))}
