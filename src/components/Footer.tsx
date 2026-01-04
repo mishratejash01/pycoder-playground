@@ -33,35 +33,35 @@ export const Footer = () => {
             </div>
           </div>
           
-          {/* Platform Links */}
+          {/* Products Links (Matches Header 'Products' tab) */}
           <div>
-            <h4 className="font-bold text-white mb-6">Platform</h4>
+            <h4 className="font-bold text-white mb-6">Products</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link to="/practice" className="hover:text-white transition-colors">Practice Arena</Link></li>
-              <li><Link to="/compiler" className="hover:text-white transition-colors">Online Compiler</Link></li>
-              <li><Link to="/leaderboard" className="hover:text-white transition-colors">Global Leaderboard</Link></li>
+              <li><Link to="/compiler" className="hover:text-white transition-colors">Compiler</Link></li>
+              <li><Link to="/practice-arena" className="hover:text-white transition-colors">Practice Arena</Link></li>
+              <li><Link to="/profile" className="hover:text-white transition-colors">Profile Card</Link></li>
+              <li><Link to="/events" className="hover:text-white transition-colors">Events</Link></li>
             </ul>
           </div>
 
-          {/* Resources Links */}
+          {/* Resources Links (Matches Header 'Resources' tab) */}
           <div>
             <h4 className="font-bold text-white mb-6">Resources</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
               <li><Link to="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
-              <li><Link to="#" className="hover:text-white transition-colors">API Reference</Link></li>
-              <li><Link to="#" className="hover:text-white transition-colors">Community Guidelines</Link></li>
-              <li><Link to="#" className="hover:text-white transition-colors">FAQ & Support</Link></li>
+              <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
             </ul>
           </div>
 
-          {/* Legal Links */}
+          {/* Legal Links (Matches Header 'Resources' sub-items) */}
           <div>
             <h4 className="font-bold text-white mb-6">Legal</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><Link to="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link></li>
               <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link to="#" className="hover:text-white transition-colors">Cookie Policy</Link></li>
-              <li><Link to="#" className="hover:text-white transition-colors">Security</Link></li>
+              <li><Link to="/cookies" className="hover:text-white transition-colors">Cookies</Link></li>
+              <li><Link to="/security" className="hover:text-white transition-colors">Security</Link></li>
             </ul>
           </div>
         </div>
