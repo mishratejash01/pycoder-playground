@@ -22,7 +22,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
 
 // --- CUSTOM ICONS ---
-
 const CompilerIcon = () => (
   <svg viewBox="0 0 100 100" className="w-[22px] h-[22px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
     <rect x="20" y="30" width="60" height="40" rx="4" fill="#222" stroke="#666" strokeWidth="4" />
@@ -50,8 +49,6 @@ const ProfileIcon = () => (
      <path d="M30 65 Q50 75 70 65" fill="none" stroke="#555" strokeWidth="3" />
    </svg>
 );
-
-// ---
 
 const FilledDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
   <svg 
@@ -89,13 +86,9 @@ export function Header({ session, onLogout }: HeaderProps) {
     }
   }, [session?.user?.id]);
 
-  // UPDATED SCROLL HANDLER: Closes dropdown on scroll and manages blur state
   useEffect(() => {
     const handleScroll = () => {
-      // Always update scroll state
       setIsScrolled(window.scrollY > 30);
-      
-      // Close dropdown if user scrolls
       if (activeDropdown) {
         setActiveDropdown(null);
       }
@@ -127,10 +120,10 @@ export function Header({ session, onLogout }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Navigation Menu (Hidden on Mobile) */}
+          {/* Navigation Menu */}
           <div className="hidden md:flex flex-1 justify-end items-center gap-9 mr-8">
             
-            {/* PRODUCTS MEGA DROPDOWN */}
+            {/* PRODUCTS DROPDOWN */}
             <div 
               className="relative group" 
               onMouseEnter={() => setActiveDropdown('products')} 
@@ -149,21 +142,15 @@ export function Header({ session, onLogout }: HeaderProps) {
                     
                     <div className="grid grid-cols-2 col-span-2 gap-y-7">
                       <Link to="/compiler" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
-                        <div className="shrink-0 transition-transform group-hover/item:scale-110">
-                           <CompilerIcon />
-                        </div>
+                        <div className="shrink-0 transition-transform group-hover/item:scale-110"><CompilerIcon /></div>
                         <span className="text-[17px] font-medium font-sans">Compiler</span>
                       </Link>
                       <Link to="/practice-arena" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
-                        <div className="shrink-0 transition-transform group-hover/item:scale-110">
-                           <PracticeIcon />
-                        </div>
+                        <div className="shrink-0 transition-transform group-hover/item:scale-110"><PracticeIcon /></div>
                         <span className="text-[17px] font-medium font-sans">Practice Arena</span>
                       </Link>
                       <Link to="/profile" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
-                        <div className="shrink-0 transition-transform group-hover/item:scale-110">
-                           <ProfileIcon />
-                        </div>
+                        <div className="shrink-0 transition-transform group-hover/item:scale-110"><ProfileIcon /></div>
                         <span className="text-[17px] font-medium font-sans">Profile Card</span>
                       </Link>
                     </div>
@@ -182,7 +169,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               )}
             </div>
 
-            {/* RESOURCES MEGA DROPDOWN */}
+            {/* RESOURCES DROPDOWN (Contains Legal Links) */}
             <div 
               className="relative group" 
               onMouseEnter={() => setActiveDropdown('resources')} 
@@ -200,6 +187,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Featured Blog Posts</div>
 
                     <div className="grid grid-cols-2 col-span-2 gap-y-7">
+                      {/* CONNECTING PATHS HERE */}
                       <Link to="/contact" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Contact Us</span></Link>
                       <Link to="/security" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Security</span></Link>
                       <Link to="/terms" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><FileText className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Terms & Conditions</span></Link>
@@ -235,11 +223,8 @@ export function Header({ session, onLogout }: HeaderProps) {
             <Button 
               onClick={() => {
                 const element = document.getElementById('features-section');
-                if (element) {
-                   element.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                   navigate('/practice-arena');
-                }
+                if (element) element.scrollIntoView({ behavior: 'smooth' });
+                else navigate('/practice-arena');
               }}
               className="group border border-white/20 bg-transparent hover:bg-white text-white hover:text-black rounded-full px-6 h-10 text-[13px] font-bold transition-all flex items-center gap-2 font-sans"
             >
@@ -254,7 +239,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
                   <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all outline-none">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_15px_rgba(34,197,94,0.6)] font-sans">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_15px_rgba(34,197,94,0.6)] font-sans">
                       {userName.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-sm font-semibold text-white font-sans">{userName}</span>
