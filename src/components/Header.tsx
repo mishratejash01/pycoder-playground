@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
 
-// --- CUSTOM 3D ICONS FROM FEATURE SECTION ---
+// --- CUSTOM ICONS ---
 
 const CompilerIcon = () => (
   <svg viewBox="0 0 100 100" className="w-[22px] h-[22px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
@@ -89,11 +89,16 @@ export function Header({ session, onLogout }: HeaderProps) {
     }
   }, [session?.user?.id]);
 
+  // SCROLL HANDLER: Locks state if dropdown is open to prevent layout shifts
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 30);
+    const handleScroll = () => {
+      if (!activeDropdown) {
+        setIsScrolled(window.scrollY > 30);
+      }
+    };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [activeDropdown]);
 
   if (isPracticeOrExam) return null;
 
@@ -107,7 +112,7 @@ export function Header({ session, onLogout }: HeaderProps) {
       <div className={cn(
         "transition-all duration-700 w-full",
         isScrolled 
-          ? "rounded-2xl border border-white/10 bg-black/40 backdrop-blur-[50px] shadow-2xl p-3 md:p-4 md:px-10" 
+          ? "rounded-2xl border border-white/10 bg-black/40 backdrop-blur-3xl shadow-2xl p-3 md:p-4 md:px-10" 
           : "p-0 border border-transparent"
       )}>
         <nav className="flex items-center justify-between w-full">
@@ -118,10 +123,10 @@ export function Header({ session, onLogout }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Navigation Menu */}
+          {/* Navigation Menu (Hidden on Mobile) */}
           <div className="hidden md:flex flex-1 justify-end items-center gap-9 mr-8">
             
-            {/* PRODUCTS MEGA DROPDOWN (HOVER) */}
+            {/* PRODUCTS MEGA DROPDOWN */}
             <div 
               className="relative group" 
               onMouseEnter={() => setActiveDropdown('products')} 
@@ -134,8 +139,8 @@ export function Header({ session, onLogout }: HeaderProps) {
               
               {activeDropdown === 'products' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  {/* UPDATE: Increased Blur to 80px and Opacity to 40% for stronger glass effect */}
-                  <div className="bg-black/40 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-[80px]">
+                  {/* UPDATE: Stronger Blur (3xl) and consistent BG */}
+                  <div className="bg-black/50 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-3xl">
                     <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Our Solutions</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Ecosystem</div>
                     
@@ -174,7 +179,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               )}
             </div>
 
-            {/* RESOURCES MEGA DROPDOWN (HOVER) */}
+            {/* RESOURCES MEGA DROPDOWN */}
             <div 
               className="relative group" 
               onMouseEnter={() => setActiveDropdown('resources')} 
@@ -187,7 +192,7 @@ export function Header({ session, onLogout }: HeaderProps) {
 
               {activeDropdown === 'resources' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="bg-black/40 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-[80px]">
+                  <div className="bg-black/50 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-3xl">
                     <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">CODéVO</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Featured Blog Posts</div>
 
