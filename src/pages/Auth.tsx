@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SEO } from '@/components/SEO';
 
-// --- Custom Typewriter Hook (Kept from your original code) ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [started, setStarted] = useState(false);
@@ -43,24 +43,21 @@ const Auth = () => {
   const googleBtnRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    // Check for existing session
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) navigate("/");
     };
     checkSession();
 
-    // Polling for Google GSI script availability
     const interval = setInterval(() => {
       if ((window as any).google) {
         setIsGoogleLoaded(true);
         (window as any).google.accounts.id.initialize({
           client_id: "29616950088-p64jd8affh5s0q1c3eq48fgfn9mu28e2.apps.googleusercontent.com",
           callback: handleGoogleResponse,
-          ux_mode: 'popup', // Ensures standard popup behavior
+          ux_mode: 'popup', 
         });
 
-        // Render the official button invisibly over our custom button
         if (googleBtnRef.current) {
           (window as any).google.accounts.id.renderButton(googleBtnRef.current, {
             theme: "outline",
@@ -100,7 +97,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] flex overflow-hidden">
-      {/* LEFT SIDE: Form & Branding */}
+      <SEO 
+        title="Login" 
+        description="Securely log in to Codevo to access your dashboard, practice arena, and live events."
+        url="https://codevo.co.in/auth"
+      />
       <div className="w-full lg:w-1/2 flex flex-col p-8 md:p-12 lg:p-20 relative z-10 bg-[#09090b]">
         <Button 
           variant="ghost" 
@@ -118,13 +119,11 @@ const Auth = () => {
           </div>
 
           <div className="grid gap-4 relative group">
-            {/* The REAL invisible Google button frame */}
             <div 
               ref={googleBtnRef} 
               className="absolute inset-0 opacity-0 z-20 cursor-pointer pointer-events-auto" 
             />
             
-            {/* Your visual UI button */}
             <Button 
               variant="outline" 
               className={cn(
@@ -170,7 +169,6 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* RIGHT SIDE: Video Background (Preserved from your original code) */}
       <div className="hidden lg:block lg:w-1/2 bg-[#09090b] relative h-screen">
         <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
            <video 
