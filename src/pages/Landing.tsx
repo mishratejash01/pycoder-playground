@@ -134,7 +134,6 @@ const Landing = () => {
     }
   };
 
-  // UPDATED: Now scrolls to the Features section
   const handleTryNowClick = () => {
     const element = document.getElementById('features-section');
     if (element) {
@@ -184,7 +183,7 @@ const Landing = () => {
       <main className="flex-1 w-full bg-black">
         
         {/* --- SECTION 1: HERO --- */}
-        <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
+        <div className="relative w-full min-h-[100dvh] bg-black flex flex-col justify-center items-center shadow-2xl py-20 md:py-32"> 
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
             
             {/* Wider container for Zoomed In Feel */}
@@ -192,7 +191,7 @@ const Landing = () => {
               
               {/* Main Heading: Large & Bold */}
               <h1 
-                className="text-[48px] md:text-[88px] tracking-tight leading-[1] text-white mb-[24px] text-center" 
+                className="text-[42px] leading-[1.1] md:text-[88px] tracking-tight md:leading-[1] text-white mb-[24px] text-center" 
                 style={{ 
                   fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500 
@@ -204,18 +203,18 @@ const Landing = () => {
 
               {/* Description: Larger Text */}
               <p 
-                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
+                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[90%] md:max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
               {/* Buttons: Large & Prominent */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-[16px] mb-12 relative z-30">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-[16px] mb-12 relative z-30 w-full md:w-auto">
                 <Button 
                   onClick={handleJoinClick}
                   size="lg"
-                  className="h-auto px-[42px] py-[20px] bg-white text-black hover:bg-zinc-200 transition-all text-[17px] font-semibold rounded-full min-w-[240px]"
+                  className="w-full sm:w-auto h-auto px-[42px] py-[16px] md:py-[20px] bg-white text-black hover:bg-zinc-200 transition-all text-[16px] md:text-[17px] font-semibold rounded-full min-w-[200px] md:min-w-[240px]"
                 >
                   Join 1M+ Developers
                 </Button>
@@ -224,7 +223,7 @@ const Landing = () => {
                   onClick={handleTryNowClick}
                   variant="outline"
                   size="lg"
-                  className="h-auto px-[42px] py-[20px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[17px] font-semibold rounded-full"
+                  className="w-full sm:w-auto h-auto px-[42px] py-[16px] md:py-[20px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[16px] md:text-[17px] font-semibold rounded-full"
                 >
                   Try Now
                 </Button>
@@ -256,7 +255,7 @@ const Landing = () => {
           </div>
 
           {/* Scroll Indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
+          <div className="hidden md:block absolute bottom-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
             <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-center bg-transparent">
               <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 text-white/40" /></div>
             </div>
@@ -268,13 +267,13 @@ const Landing = () => {
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
               
-              <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left">
+              <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left w-full">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase">
                     <Activity className="w-3 h-3 animate-pulse" />
                     System::Online
                   </div>
-                  <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
+                  <h2 className="text-4xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
                     EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
                   </h2>
                   <p className="font-mono text-xs md:text-base text-gray-400 w-full max-w-[90vw] md:max-w-lg mx-auto lg:mx-0 leading-relaxed">
@@ -283,8 +282,8 @@ const Landing = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-col items-center lg:items-start gap-8">
-                  <Button onClick={handlePracticeClick} className="group h-12 md:h-14 px-8 md:px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-base md:text-lg font-bold">
+                <div className="flex flex-col items-center lg:items-start gap-8 w-full">
+                  <Button onClick={handlePracticeClick} className="group h-12 md:h-14 px-8 md:px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-base md:text-lg font-bold w-full md:w-auto">
                     Start Coding
                   </Button>
                   
@@ -304,7 +303,7 @@ const Landing = () => {
 
               {/* --- MACBOOK PRO VIEWPORT --- */}
               <div className="flex-1 w-full max-w-full lg:max-w-none perspective-2000">
-                <div className="relative group w-full max-w-[650px] mx-auto transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
+                <div className="relative group w-full max-w-[95vw] md:max-w-[650px] mx-auto transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
                   
                   {/* Top Case / Lid (Reduced padding from p-2.5 to p-1.5 to thin out the bezel) */}
                   <div className="relative bg-[#0d0d0d] rounded-[14px] md:rounded-[22px] p-1 md:p-1.5 shadow-2xl border border-[#222]">
@@ -347,11 +346,11 @@ const Landing = () => {
                                   <div className="h-[32px] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
                                       <div className="flex items-center gap-2">
                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" className="w-3 h-3 opacity-80" alt="py" />
-                                         <div className="bg-transparent border border-white/10 text-[8px] text-gray-300 px-1.5 py-0.5 rounded-sm uppercase flex items-center gap-1">
+                                         <div className="bg-transparent border border-white/10 text-[6px] md:text-[8px] text-gray-300 px-1.5 py-0.5 rounded-sm uppercase flex items-center gap-1">
                                            Python <span className="text-[6px] text-[#666]">▼</span>
                                          </div>
                                          <div className="w-[1px] h-3 bg-white/10 mx-1" />
-                                         <span className="text-[8px] font-mono text-[#666]">0.00s</span>
+                                         <span className="text-[6px] md:text-[8px] font-mono text-[#666]">0.00s</span>
                                       </div>
                                       <div className="flex items-center gap-1.5 text-[#666]">
                                           <div className="flex border border-white/10 rounded overflow-hidden">
@@ -363,7 +362,7 @@ const Landing = () => {
                                       </div>
                                   </div>
                                   {/* Editor Area */}
-                                  <div className="flex-1 p-3 font-mono text-[8px] md:text-[10px] text-gray-300 leading-relaxed overflow-hidden">
+                                  <div className="flex-1 p-3 font-mono text-[6px] md:text-[10px] text-gray-300 leading-relaxed overflow-hidden">
                                       <div><span className="text-blue-400">def</span> <span className="text-yellow-200">optimize_route</span>(nodes):</div>
                                       <div className="pl-3 text-[#6a9955]"># Initialize DP table</div>
                                       <div className="pl-3">dp = [<span className="text-blue-400">float</span>(<span className="text-green-400">'inf'</span>)] * <span className="text-blue-400">len</span>(nodes)</div>
@@ -378,19 +377,19 @@ const Landing = () => {
                               <div className="flex-1 flex flex-col bg-[#050505]">
                                   {/* Right Toolbar */}
                                   <div className="h-[32px] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
-                                      <span className="text-[7px] md:text-[8px] font-semibold uppercase tracking-widest text-[#666] flex items-center gap-1">
+                                      <span className="text-[5px] md:text-[8px] font-semibold uppercase tracking-widest text-[#666] flex items-center gap-1">
                                         <Terminal className="w-2.5 h-2.5" /> Console
                                       </span>
                                       <div className="flex items-center gap-1.5">
                                          <Download className="w-2.5 h-2.5 text-[#666]" />
                                          <div className="bg-white text-black px-2 py-0.5 rounded-[1px] flex items-center gap-0.5">
                                             <Play className="w-2 h-2 fill-current" />
-                                            <span className="text-[7px] font-bold uppercase tracking-wider">Run</span>
+                                            <span className="text-[5px] md:text-[7px] font-bold uppercase tracking-wider">Run</span>
                                          </div>
                                       </div>
                                   </div>
                                   {/* Terminal Area */}
-                                  <div className="flex-1 bg-[#010409] p-3 font-mono text-[8px] md:text-[10px] text-green-400/90 leading-relaxed">
+                                  <div className="flex-1 bg-[#010409] p-3 font-mono text-[6px] md:text-[10px] text-green-400/90 leading-relaxed">
                                       <div>&gt;&gt; SYSTEM READY</div>
                                       <div className="text-gray-500">&gt;&gt; Initializing Kernel...</div>
                                       <div className="mt-1">&gt;&gt; <span className="animate-pulse">_</span></div>
@@ -399,7 +398,7 @@ const Landing = () => {
                           </div>
 
                           {/* 3. FOOTER */}
-                          <div className="h-[24px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-3 text-[8px] text-[#666] uppercase tracking-widest">
+                          <div className="h-[24px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-3 text-[6px] md:text-[8px] text-[#666] uppercase tracking-widest">
                              <div className="flex items-center gap-1.5">
                                <div className="w-1.5 h-1.5 rounded-full bg-[#3fb950] shadow-[0_0_4px_#3fb950]" />
                                <span>Connected / encrypted_v2</span>
@@ -430,7 +429,6 @@ const Landing = () => {
         </section>
 
         {/* --- NEW SECTION: FEATURES CAROUSEL --- */}
-        {/* ADDED ID FOR SCROLL TARGET */}
         <div id="features-section">
           <FeaturesInfiniteCarousel />
         </div>
