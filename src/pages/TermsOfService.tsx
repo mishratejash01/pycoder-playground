@@ -3,7 +3,6 @@ import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 
 const SECTIONS = [
@@ -54,7 +53,7 @@ const TermsOfService = () => {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white/20">
-      <Header session={session} onLogout={() => {}} />
+      <Header session={session} onLogout={() => { supabase.auth.signOut(); setSession(null); }} />
 
       <main className="pt-32 pb-24 relative">
         <div className="container mx-auto px-6 max-w-7xl">
@@ -83,10 +82,10 @@ const TermsOfService = () => {
                       key={section.id}
                       onClick={() => scrollToSection(section.id)}
                       className={cn(
-                        "text-left px-4 py-3 text-sm transition-all duration-200 border-l-[2px]",
+                        "text-left px-4 py-2 text-sm transition-colors duration-200 block w-full rounded-md",
                         activeSection === section.id
-                          ? "border-white text-white font-medium bg-white/5"
-                          : "border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-700"
+                          ? "text-white font-medium bg-white/5" // Clean active state
+                          : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
                       )}
                     >
                       {section.title}
