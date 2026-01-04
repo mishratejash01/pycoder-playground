@@ -134,29 +134,30 @@ export function Header({ session, onLogout }: HeaderProps) {
               
               {activeDropdown === 'products' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  {/* UPDATED: Increased Blur (3xl) and reduced opacity (bg-black/60) for frosted glass effect */}
                   <div className="bg-black/60 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
-                    <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Our Solutions</div>
-                    <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Ecosystem</div>
+                    {/* UPDATED: text-[13px] for Headers */}
+                    <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Our Solutions</div>
+                    <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Ecosystem</div>
                     
+                    {/* UPDATED: text-[17px] for Links */}
                     <div className="grid grid-cols-2 col-span-2 gap-y-7">
                       <Link to="/compiler" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
                         <div className="shrink-0 transition-transform group-hover/item:scale-110">
                            <CompilerIcon />
                         </div>
-                        <span className="text-[15px] font-medium font-sans">Compiler</span>
+                        <span className="text-[17px] font-medium font-sans">Compiler</span>
                       </Link>
                       <Link to="/practice-arena" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
                         <div className="shrink-0 transition-transform group-hover/item:scale-110">
                            <PracticeIcon />
                         </div>
-                        <span className="text-[15px] font-medium font-sans">Practice Arena</span>
+                        <span className="text-[17px] font-medium font-sans">Practice Arena</span>
                       </Link>
                       <Link to="/profile" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
                         <div className="shrink-0 transition-transform group-hover/item:scale-110">
                            <ProfileIcon />
                         </div>
-                        <span className="text-[15px] font-medium font-sans">Profile Card</span>
+                        <span className="text-[17px] font-medium font-sans">Profile Card</span>
                       </Link>
                     </div>
 
@@ -165,6 +166,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                          <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-lg opacity-20" />
                       </div>
                       <div className="flex flex-col">
+                          {/* Maintained text sizes for blog/product previews as requested */}
                           <p className="text-white/40 text-[14px] font-medium blur-[2.5px] leading-tight font-sans">Neural IDE v3</p>
                           <p className="text-[11px] text-[#666] font-bold uppercase tracking-widest mt-2 font-sans">Coming Soon</p>
                       </div>
@@ -187,18 +189,19 @@ export function Header({ session, onLogout }: HeaderProps) {
 
               {activeDropdown === 'resources' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  {/* UPDATED: Increased Blur (3xl) and reduced opacity (bg-black/60) for frosted glass effect */}
                   <div className="bg-black/60 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
-                    <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">CODéVO</div>
-                    <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Featured Blog Posts</div>
+                    {/* UPDATED: text-[13px] for Headers */}
+                    <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">CODéVO</div>
+                    <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Featured Blog Posts</div>
 
+                    {/* UPDATED: text-[17px] for Links */}
                     <div className="grid grid-cols-2 col-span-2 gap-y-7">
-                      <Link to="/contact" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px] font-medium font-sans">Contact Us</span></Link>
-                      <Link to="/security" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px] font-medium font-sans">Security</span></Link>
-                      <Link to="/terms" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><FileText className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px] font-medium font-sans">Terms & Conditions</span></Link>
-                      <Link to="/cookies" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Cookie className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px] font-medium font-sans">Cookies</span></Link>
-                      <Link to="/privacy" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Lock className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px] font-medium font-sans">Privacy Policy</span></Link>
-                      <Link to="/blog" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><BookOpen className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px] font-medium font-sans">Blog</span></Link>
+                      <Link to="/contact" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Contact Us</span></Link>
+                      <Link to="/security" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Security</span></Link>
+                      <Link to="/terms" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><FileText className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Terms & Conditions</span></Link>
+                      <Link to="/cookies" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Cookie className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Cookies</span></Link>
+                      <Link to="/privacy" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Lock className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Privacy Policy</span></Link>
+                      <Link to="/blog" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><BookOpen className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Blog</span></Link>
                     </div>
 
                     <div className="border-l border-white/10 pl-10 flex flex-col gap-10">
@@ -211,6 +214,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                             <img src={blog.img} className="w-full h-full object-cover blur-md opacity-20" />
                           </div>
                           <div className="flex flex-col">
+                            {/* Maintained text sizes for blog previews as requested */}
                             <p className="text-[14px] text-white/30 blur-[2px] font-medium leading-tight font-sans">{blog.title}</p>
                             <p className="text-[10px] text-[#666] font-bold uppercase tracking-widest mt-2 font-sans">Coming Soon</p>
                           </div>
