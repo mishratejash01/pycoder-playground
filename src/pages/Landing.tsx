@@ -73,9 +73,8 @@ const Landing = () => {
     return () => clearInterval(timer);
   }, []);
   
-  // Terminal Animation Logic (ENABLED FOR MOBILE NOW)
+  // Terminal Animation Logic (ENABLED FOR MOBILE)
   useEffect(() => {
-    // Removed the "if (isMobile) return" block so typing works on mobile
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
     const animate = () => {
@@ -101,7 +100,7 @@ const Landing = () => {
     };
     animate();
     return () => clearTimeout(timeoutId);
-  }, []); // Removed [isMobile] dependency as logic is universal now
+  }, []); 
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -227,14 +226,14 @@ const Landing = () => {
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
               <div className="w-full relative z-20 -mt-8">
-                {/* Changed aspect ratio for mobile to 4/3 to prevent squashing */}
-                <div className="relative w-full aspect-[4/3] md:aspect-[21/9] overflow-hidden rounded-t-lg shadow-2xl">
+                {/* Fixed: Used aspect-video and object-contain to ensure image fits horizontally without cutting sides */}
+                <div className="relative w-full aspect-video md:aspect-[21/9] overflow-hidden rounded-t-lg shadow-2xl bg-black">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
                       key={currentImageIndex}
                       src={HERO_IMAGES[currentImageIndex]}
                       alt="Platform Preview" 
-                      className="absolute inset-0 w-full h-full object-cover object-bottom"
+                      className="absolute inset-0 w-full h-full object-contain md:object-cover object-bottom"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
