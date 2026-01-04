@@ -107,7 +107,7 @@ export function Header({ session, onLogout }: HeaderProps) {
       <div className={cn(
         "transition-all duration-700 w-full",
         isScrolled 
-          ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" 
+          ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-3xl shadow-2xl p-4 px-10" 
           : "p-0 border border-transparent"
       )}>
         <nav className="flex items-center justify-between w-full">
@@ -134,7 +134,8 @@ export function Header({ session, onLogout }: HeaderProps) {
               
               {activeDropdown === 'products' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="bg-black/80 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl">
+                  {/* UPDATED: Increased Blur (3xl) and reduced opacity (bg-black/60) for frosted glass effect */}
+                  <div className="bg-black/60 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
                     <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Our Solutions</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Ecosystem</div>
                     
@@ -186,7 +187,8 @@ export function Header({ session, onLogout }: HeaderProps) {
 
               {activeDropdown === 'resources' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="bg-black/80 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl">
+                  {/* UPDATED: Increased Blur (3xl) and reduced opacity (bg-black/60) for frosted glass effect */}
+                  <div className="bg-black/60 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
                     <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">CODéVO</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Featured Blog Posts</div>
 
