@@ -102,18 +102,18 @@ export function Header({ session, onLogout }: HeaderProps) {
   return (
     <header className={cn(
       "fixed z-50 left-0 right-0 mx-auto transition-all duration-700 font-sans",
-      isScrolled ? "top-6 max-w-7xl px-4 md:px-0" : "top-0 w-full max-w-full px-10 py-6"
+      isScrolled ? "top-4 md:top-6 max-w-7xl px-4 md:px-0" : "top-0 w-full max-w-full px-4 md:px-10 py-6"
     )}>
       <div className={cn(
         "transition-all duration-700 w-full",
         isScrolled 
-          ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-3xl shadow-2xl p-4 px-10" 
+          ? "rounded-2xl border border-white/10 bg-black/40 backdrop-blur-[50px] shadow-2xl p-3 md:p-4 md:px-10" 
           : "p-0 border border-transparent"
       )}>
         <nav className="flex items-center justify-between w-full">
           {/* Logo Section */}
           <Link to="/" className="flex items-center gap-3 group shrink-0">
-            <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">
+            <span className="font-neuropol text-lg md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">
               COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
             </span>
           </Link>
@@ -134,12 +134,11 @@ export function Header({ session, onLogout }: HeaderProps) {
               
               {activeDropdown === 'products' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="bg-black/60 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
-                    {/* UPDATED: text-[13px] for Headers */}
+                  {/* UPDATE: Increased Blur to 80px and Opacity to 40% for stronger glass effect */}
+                  <div className="bg-black/40 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-[80px]">
                     <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Our Solutions</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Ecosystem</div>
                     
-                    {/* UPDATED: text-[17px] for Links */}
                     <div className="grid grid-cols-2 col-span-2 gap-y-7">
                       <Link to="/compiler" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
                         <div className="shrink-0 transition-transform group-hover/item:scale-110">
@@ -166,7 +165,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                          <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-lg opacity-20" />
                       </div>
                       <div className="flex flex-col">
-                          {/* Maintained text sizes for blog/product previews as requested */}
                           <p className="text-white/40 text-[14px] font-medium blur-[2.5px] leading-tight font-sans">Neural IDE v3</p>
                           <p className="text-[11px] text-[#666] font-bold uppercase tracking-widest mt-2 font-sans">Coming Soon</p>
                       </div>
@@ -189,12 +187,10 @@ export function Header({ session, onLogout }: HeaderProps) {
 
               {activeDropdown === 'resources' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="bg-black/60 border border-white/10 rounded-none p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
-                    {/* UPDATED: text-[13px] for Headers */}
+                  <div className="bg-black/40 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-[80px]">
                     <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">CODéVO</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Featured Blog Posts</div>
 
-                    {/* UPDATED: text-[17px] for Links */}
                     <div className="grid grid-cols-2 col-span-2 gap-y-7">
                       <Link to="/contact" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Contact Us</span></Link>
                       <Link to="/security" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Security</span></Link>
@@ -214,7 +210,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                             <img src={blog.img} className="w-full h-full object-cover blur-md opacity-20" />
                           </div>
                           <div className="flex flex-col">
-                            {/* Maintained text sizes for blog previews as requested */}
                             <p className="text-[14px] text-white/30 blur-[2px] font-medium leading-tight font-sans">{blog.title}</p>
                             <p className="text-[10px] text-[#666] font-bold uppercase tracking-widest mt-2 font-sans">Coming Soon</p>
                           </div>
