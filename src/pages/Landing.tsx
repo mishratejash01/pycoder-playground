@@ -193,7 +193,7 @@ const Landing = () => {
                   fontWeight: 500 
                 }}
               >
-                <span className="block">The Coding Platform built</span>
+                <span className="block">The Best Coding Platform built</span>
                 for global developers
               </h1>
 
