@@ -8,7 +8,7 @@ import {
 import { ArrowUpRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
-// --- Custom SVG Graphics (Same as before) ---
+// --- Custom SVG Graphics ---
 
 const LeaderboardIcon = () => (
   <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]">
@@ -66,49 +66,55 @@ const ProfileIcon = () => (
 export function FeaturesInfiniteCarousel() {
   const navigate = useNavigate();
   
-  // Configure Autoplay: Delay 3s, but don't stop permanently on interaction
+  // Configure Autoplay with pause on interaction
   const plugin = React.useRef(
     Autoplay({ delay: 3000, stopOnInteraction: false })
   );
 
   const features = [
     {
-      title: "SEAL Leaderboards: Expert Evaluations",
+      title: "SEAL Leaderboards",
+      subtitle: "Expert Evaluations",
       label: "Leaderboards",
       icon: LeaderboardIcon,
       status: "active",
       path: "/leaderboard"
     },
     {
-      title: "Maintain Streak: Keep Your Code Alive",
+      title: "Maintain Streak",
+      subtitle: "Keep Code Alive",
       label: "Consistency",
       icon: StreakIcon,
       status: "active",
       path: "/practice"
     },
     {
-      title: "Online Compiler: Instant Execution",
+      title: "Online Compiler",
+      subtitle: "Instant Execution",
       label: "IDE",
       icon: CompilerIcon,
       status: "active",
       path: "/compiler"
     },
     {
-      title: "Competitions: Win Rewards & Honor",
+      title: "Competitions",
+      subtitle: "Win Rewards",
       label: "Challenges",
       icon: CompetitionsIcon,
       status: "active",
       path: "/events"
     },
     {
-      title: "Tech Blog: Community Tutorials",
+      title: "Tech Blog",
+      subtitle: "Community Tutorials",
       label: "Insights",
       icon: BlogIcon,
       status: "coming_soon",
       path: "#"
     },
     {
-      title: "Profile Card: Showcase Stats",
+      title: "Profile Card",
+      subtitle: "Showcase Stats",
       label: "Identity",
       icon: ProfileIcon,
       status: "active",
@@ -123,15 +129,15 @@ export function FeaturesInfiniteCarousel() {
   };
 
   return (
-    <div className="w-full py-16 bg-[radial-gradient(circle_at_center,_#111_0%,_#000_100%)] border-t border-white/5 relative overflow-hidden">
+    <div className="w-full py-16 bg-black border-t border-white/5 relative overflow-hidden">
       
-      {/* Container to prevent full-width blowout on large screens */}
-      <div className="container mx-auto px-4 max-w-[1400px]">
+      {/* Container restricted to max-7xl to align with other sections */}
+      <div className="container mx-auto px-4 max-w-7xl">
         <Carousel
           opts={{
             align: "start",
             loop: true,
-            dragFree: true, // Allows smooth manual scrolling
+            dragFree: true, // Enables smooth manual scrolling
           }}
           plugins={[plugin.current]}
           className="w-full"
@@ -143,43 +149,42 @@ export function FeaturesInfiniteCarousel() {
                   onClick={() => handleCardClick(feature.path, feature.status)}
                   className={`
                     group relative 
-                    w-[85vw] md:w-[550px] h-[260px] md:h-[280px] 
-                    bg-[#0d0d0e] rounded-[32px] border border-[#1f1f21] 
-                    flex items-center px-6 md:px-[40px] 
-                    cursor-pointer transition-all duration-300 
-                    hover:border-[#333] hover:-translate-y-1 hover:shadow-2xl
+                    w-[300px] md:w-[380px] h-[200px] 
+                    bg-[#0d0d0e] rounded-[24px] border border-[#1f1f21] 
+                    flex items-center px-6 
+                    cursor-pointer transition-colors duration-300 
+                    hover:border-[#333]
                     ${feature.status === 'coming_soon' ? 'opacity-80' : ''}
                   `}
                 >
-                  {/* Icon Box */}
-                  <div className="w-[100px] h-[100px] md:w-[140px] md:h-[140px] shrink-0 flex justify-center items-center relative">
+                  {/* Icon Box - Reduced size */}
+                  <div className="w-[80px] h-[80px] md:w-[100px] md:h-[100px] shrink-0 flex justify-center items-center relative">
                     <feature.icon />
                   </div>
 
                   {/* Content */}
-                  <div className="ml-4 md:ml-[30px] flex flex-col gap-2 z-10 flex-1">
-                    <span className="text-[#d1a5ff] text-sm md:text-[18px] font-medium capitalize">
+                  <div className="ml-5 flex flex-col gap-1 z-10 flex-1">
+                    <span className="text-[#d1a5ff] text-xs md:text-sm font-medium capitalize">
                       {feature.label}
                     </span>
                     
-                    <h3 className="text-white text-xl md:text-[32px] font-semibold leading-[1.1] m-0">
-                      {feature.title.split(': ')[0]} 
-                      <span className="hidden md:inline"><br/></span>
-                      <span className="block md:inline text-[0.8em] opacity-80 font-normal text-gray-400 mt-1 md:mt-0">
-                         {feature.title.split(': ')[1]}
+                    <h3 className="text-white text-lg md:text-2xl font-semibold leading-tight m-0">
+                      {feature.title}
+                      <span className="block text-xs md:text-sm font-normal text-gray-500 mt-1">
+                         {feature.subtitle}
                       </span>
                     </h3>
 
                     {feature.status === "coming_soon" && (
-                      <div className="mt-[10px] w-fit px-3 py-1 rounded-[20px] border border-white/10 bg-white/5 text-[#88888e] text-[10px] md:text-[12px]">
+                      <div className="mt-2 w-fit px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-[#88888e] text-[10px]">
                         Coming Soon
                       </div>
                     )}
                   </div>
 
-                  {/* Action Button */}
-                  <div className="absolute bottom-[20px] right-[20px] md:bottom-[30px] md:right-[30px] w-[40px] h-[40px] md:w-[50px] md:h-[50px] bg-[#2a2a2c] rounded-full flex justify-center items-center transition-colors duration-300 group-hover:bg-white z-20 shadow-lg">
-                    <ArrowUpRight className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[#888] stroke-[2.5] transition-colors duration-300 group-hover:text-black" />
+                  {/* Action Button - Only this zooms on hover */}
+                  <div className="absolute bottom-[16px] right-[16px] w-[36px] h-[36px] bg-[#2a2a2c] rounded-full flex justify-center items-center transition-all duration-300 group-hover:bg-white group-hover:scale-110 z-20 shadow-lg">
+                    <ArrowUpRight className="w-[18px] h-[18px] text-[#888] stroke-[2.5] transition-colors duration-300 group-hover:text-black" />
                   </div>
                 </div>
               </CarouselItem>
