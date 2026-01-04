@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
-  ChevronLeft, 
+  ChevronUp, 
   X, 
   Github, 
   Linkedin, 
@@ -238,8 +238,8 @@ export function HitMeUpWidget({ defaultUsername = "mishratejash01" }) {
                 transition={{ duration: 0.3 }}
                 className="absolute inset-0 flex items-center justify-center"
             >
-                {/* Scaled up the icon slightly since there's no background */}
-                <ChevronLeft className="w-8 h-8 drop-shadow-md" /> 
+                {/* UP Arrow by default */}
+                <ChevronUp className="w-8 h-8 drop-shadow-md" /> 
             </motion.div>
             <motion.div
                 initial={false}
