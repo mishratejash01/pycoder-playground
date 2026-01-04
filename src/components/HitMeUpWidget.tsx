@@ -21,7 +21,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
-// Interface from Profile.tsx
+// --- Types ---
 interface ProfileData {
   id: string;
   username: string;
@@ -64,7 +64,6 @@ export function HitMeUpWidget({ defaultUsername = "mishratejash01" }) {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      // Logic adapted from Profile.tsx
       let query = supabase.from("profiles").select("*");
       if (session?.user?.id) query = query.eq("id", session.user.id);
       else query = query.eq("username", defaultUsername);
@@ -124,7 +123,7 @@ export function HitMeUpWidget({ defaultUsername = "mishratejash01" }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="mb-4 w-[340px] sm:w-[380px] bg-[#0c0c0e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col relative"
+            className="mb-2 w-[340px] sm:w-[380px] bg-[#0c0c0e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col relative"
           >
              {/* --- Profile Card Header (Cover) --- */}
              <div className="relative h-32 bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }}>
@@ -229,17 +228,18 @@ export function HitMeUpWidget({ defaultUsername = "mishratejash01" }) {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-white text-black rounded-full shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:bg-zinc-200 transition-all duration-300 flex items-center justify-center group z-50 overflow-hidden relative"
+        className="w-14 h-14 bg-transparent text-white hover:bg-white/5 rounded-full transition-all duration-300 flex items-center justify-center group z-50 overflow-hidden relative"
         aria-label="Toggle widget"
       >
-        <div className="relative w-6 h-6">
+        <div className="relative w-8 h-8">
             <motion.div
                 initial={false}
                 animate={{ rotate: isOpen ? 180 : 0, opacity: isOpen ? 0 : 1 }}
                 transition={{ duration: 0.3 }}
                 className="absolute inset-0 flex items-center justify-center"
             >
-                <ChevronLeft className="w-6 h-6 mr-0.5" /> 
+                {/* Scaled up the icon slightly since there's no background */}
+                <ChevronLeft className="w-8 h-8 drop-shadow-md" /> 
             </motion.div>
             <motion.div
                 initial={false}
@@ -247,7 +247,7 @@ export function HitMeUpWidget({ defaultUsername = "mishratejash01" }) {
                 transition={{ duration: 0.3 }}
                 className="absolute inset-0 flex items-center justify-center"
             >
-                <X className="w-6 h-6" />
+                <X className="w-8 h-8 drop-shadow-md" />
             </motion.div>
         </div>
       </button>
