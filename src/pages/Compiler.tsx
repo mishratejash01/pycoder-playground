@@ -18,9 +18,9 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
-// --- CONFIGURATION (PRESERVED) ---
+// --- CONFIGURATION ---
 
 const LANGUAGES_CONFIG = [
   { id: 'python', name: 'Python', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg' },
@@ -34,7 +34,7 @@ const LANGUAGES_CONFIG = [
 
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
-    case 'java': return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(">> JAVA RUNTIME ACTIVE");\n    }\n}`;
+    case 'java': return `public class Main {\n    public static void main(String[] args) {\n        System.out.println(">> JAVA RUNTIME ACTIVE");\n    }\n}`;
     case 'cpp': return `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << ">> SYSTEM INITIALIZED." << endl;\n    return 0;\n}`;
     case 'c': return `#include <stdio.h>\n\nint main() {\n    printf(">> C KERNEL LOADED.\\n");\n    return 0;\n}`;
     case 'javascript': return `console.log(">> V8 ENGINE ONLINE");`;
@@ -403,7 +403,8 @@ const Compiler = () => {
 
   // --- RENDER ---
   return (
-    <div className="h-screen w-full bg-[#050505] text-[#e0e0e0] font-sans flex flex-col overflow-hidden selection:bg-white/20">
+    // CHANGED: h-screen to h-[100dvh] to fix mobile browser bottom bar issues
+    <div className="h-[100dvh] w-full bg-[#050505] text-[#e0e0e0] font-sans flex flex-col overflow-hidden selection:bg-white/20">
       
       {/* HEADER */}
       <header className="h-[60px] flex items-center justify-between px-4 md:px-6 border-b border-white/10 bg-[#050505] z-50 relative shrink-0">
@@ -443,15 +444,17 @@ const Compiler = () => {
                 initial={false}
                 animate={{ height: isConsoleOpen ? '60%' : '60px' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute bottom-0 left-0 right-0 bg-[#080808] border-t border-white/10 z-20 flex flex-col shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
+                // CHANGED: z-50 to ensure it's on top of everything
+                className="absolute bottom-0 left-0 right-0 bg-[#080808] border-t border-white/10 z-50 flex flex-col shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
              >
                 {/* Panel Handle / Toolbar */}
                 <div 
+                   // CHANGED: Added pb-safe to respect iPhone home bar if needed
                    className="h-[60px] px-4 flex items-center justify-between bg-[#121212] shrink-0 cursor-pointer"
-                   onClick={() => setIsConsoleOpen(!isConsoleOpen)} // Clicking the bar toggles it
+                   onClick={() => setIsConsoleOpen(!isConsoleOpen)}
                 >
                    <div className="flex items-center gap-2 w-full">
-                       {/* EXECUTE BUTTON - Stops Propagation to prevent toggling when clicked */}
+                       {/* EXECUTE BUTTON */}
                        {isExecuting ? (
                           <Button 
                              onClick={(e) => { e.stopPropagation(); handleStop(); }} 
