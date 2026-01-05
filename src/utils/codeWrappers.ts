@@ -3,7 +3,7 @@
  * Automatically handles driver code injection for Python, JavaScript, TypeScript, Java, and C++
  */
 
-import { parseInputForLanguage } from './inputParser';
+import { parseInputForLanguage, parseRawInputWithTypes } from './inputParser';
 
 export type Language = 'python' | 'java' | 'cpp';
 
@@ -35,18 +35,101 @@ export const wrapCodeForExecution = (
 };
 
 /**
+ * Parse method signature from code to detect parameter types
+ */
+const parseMethodParams = (code: string, language: Language): { name: string; type: string }[] => {
+  const params: { name: string; type: string }[] = [];
+  
+  if (language === 'java') {
+    // Match Java method: public ReturnType methodName(Type1 param1, Type2 param2)
+    const match = code.match(/public\s+(?:static\s+)?[\w<>\[\]]+\s+\w+\s*\(([^)]*)\)/);
+    if (match && match[1]) {
+      const paramStr = match[1].trim();
+      if (paramStr) {
+        const paramParts = paramStr.split(/,\s*/);
+        for (const part of paramParts) {
+          const paramMatch = part.trim().match(/([\w<>\[\]\*]+)\s+(\w+)/);
+          if (paramMatch) {
+            params.push({ type: paramMatch[1], name: paramMatch[2] });
+          }
+        }
+      }
+    }
+  } else if (language === 'cpp') {
+    // Match C++ method - handles complex types like vector<int>&, ListNode*, etc.
+    const methodPatterns = [
+      /(?:const\s+)?(?:static\s+)?[\w<>:*&\s]+\s+(\w+)\s*\(([^)]*)\)\s*(?:const)?\s*\{/,
+      /(?:const\s+)?(?:static\s+)?[\w<>:*&\s]+\s+(\w+)\s*\(([^)]*)\)/
+    ];
+    
+    for (const pattern of methodPatterns) {
+      const match = code.match(pattern);
+      if (match && match[2]) {
+        const paramStr = match[2].trim();
+        if (paramStr) {
+          // Split by comma, but be careful of template commas
+          let depth = 0;
+          let current = '';
+          const paramParts: string[] = [];
+          
+          for (const char of paramStr) {
+            if (char === '<') depth++;
+            else if (char === '>') depth--;
+            else if (char === ',' && depth === 0) {
+              paramParts.push(current.trim());
+              current = '';
+              continue;
+            }
+            current += char;
+          }
+          if (current.trim()) paramParts.push(current.trim());
+          
+          for (const part of paramParts) {
+            // Handle patterns like: vector<int>& nums, ListNode* l1, int target
+            const paramMatch = part.trim().match(/(.*?)\s+(\w+)\s*$/);
+            if (paramMatch) {
+              params.push({ type: paramMatch[1].trim(), name: paramMatch[2] });
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+  
+  return params;
+};
+
+/**
  * Python driver code - handles Solution class and function calls
+ * FIXED: Type definitions and imports come BEFORE user code
  */
 const wrapPythonCode = (
   userCode: string,
   rawInput: string,
   methodSignature?: MethodSignature
 ): string => {
-  const parsedArgs = parseInputForLanguage('python', rawInput);
+  // Get parsed parameters with type info to detect ListNode/TreeNode usage
+  const parsedParams = parseRawInputWithTypes(rawInput);
   
-  return `${userCode}
+  // Build arguments, converting linkedlist/tree types to builders
+  const args = parsedParams.map(param => {
+    if (param.type === 'linkedlist') {
+      return `_build_list(${param.value})`;
+    }
+    if (param.type === 'tree') {
+      return `_build_tree(${param.value})`;
+    }
+    if (param.type === 'null') return 'None';
+    if (param.type === 'boolean') {
+      return param.value.toLowerCase() === 'true' ? 'True' : 'False';
+    }
+    return param.value;
+  }).join(', ');
 
-# --- Auto-generated Driver Code ---
+  // IMPORTANT: Imports and class definitions MUST come BEFORE user code
+  // so that type hints like Optional[ListNode] are valid when parsed
+  return `# --- Auto-generated imports and type definitions ---
 import sys
 import json
 from typing import List, Optional, Dict, Tuple, Any, Set
@@ -128,6 +211,10 @@ def _serialize_output(result):
         return f'"{result}"'
     return str(result)
 
+# --- User's Solution Code ---
+${userCode}
+
+# --- Auto-generated Driver Code ---
 try:
     # Try Solution class first (LeetCode style)
     if 'Solution' in dir():
@@ -136,7 +223,7 @@ try:
         methods = [m for m in dir(sol) if not m.startswith('_') and callable(getattr(sol, m))]
         if methods:
             method = getattr(sol, methods[0])
-            result = method(${parsedArgs})
+            result = method(${args})
             print(_serialize_output(result))
     else:
         # Try standalone function
@@ -147,7 +234,7 @@ try:
                  and name != '_serialize_output']
         if funcs:
             func = locals()[funcs[-1]]
-            result = func(${parsedArgs})
+            result = func(${args})
             print(_serialize_output(result))
 except Exception as e:
     import traceback
@@ -157,280 +244,17 @@ except Exception as e:
 };
 
 /**
- * JavaScript driver code - handles both function and class style
- */
-const wrapJavaScriptCode = (
-  userCode: string,
-  rawInput: string,
-  methodSignature?: MethodSignature
-): string => {
-  const parsedArgs = parseInputForLanguage('python', rawInput); // Use python parsing as fallback
-  
-  return `${userCode}
-
-// --- Auto-generated Driver Code ---
-
-// ListNode and TreeNode helpers
-function ListNode(val, next) {
-  this.val = (val===undefined ? 0 : val);
-  this.next = (next===undefined ? null : next);
-}
-
-function TreeNode(val, left, right) {
-  this.val = (val===undefined ? 0 : val);
-  this.left = (left===undefined ? null : left);
-  this.right = (right===undefined ? null : right);
-}
-
-function _buildList(arr) {
-  if (!arr || arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let curr = head;
-  for (let i = 1; i < arr.length; i++) {
-    curr.next = new ListNode(arr[i]);
-    curr = curr.next;
-  }
-  return head;
-}
-
-function _buildTree(arr) {
-  if (!arr || arr.length === 0 || arr[0] === null) return null;
-  const root = new TreeNode(arr[0]);
-  const queue = [root];
-  let i = 1;
-  while (queue.length > 0 && i < arr.length) {
-    const node = queue.shift();
-    if (i < arr.length && arr[i] !== null) {
-      node.left = new TreeNode(arr[i]);
-      queue.push(node.left);
-    }
-    i++;
-    if (i < arr.length && arr[i] !== null) {
-      node.right = new TreeNode(arr[i]);
-      queue.push(node.right);
-    }
-    i++;
-  }
-  return root;
-}
-
-function _listToArr(head) {
-  const result = [];
-  while (head) {
-    result.push(head.val);
-    head = head.next;
-  }
-  return result;
-}
-
-function _treeToArr(root) {
-  if (!root) return [];
-  const result = [];
-  const queue = [root];
-  while (queue.length > 0) {
-    const node = queue.shift();
-    if (node) {
-      result.push(node.val);
-      queue.push(node.left);
-      queue.push(node.right);
-    } else {
-      result.push(null);
-    }
-  }
-  while (result.length > 0 && result[result.length - 1] === null) {
-    result.pop();
-  }
-  return result;
-}
-
-function _serializeOutput(result) {
-  if (result === null || result === undefined) return "null";
-  if (typeof result === "boolean") return result ? "true" : "false";
-  if (result instanceof ListNode) return JSON.stringify(_listToArr(result));
-  if (result instanceof TreeNode) return JSON.stringify(_treeToArr(result));
-  if (Array.isArray(result)) return JSON.stringify(result);
-  if (typeof result === "object") return JSON.stringify(result);
-  if (typeof result === "string") return '"' + result + '"';
-  return String(result);
-}
-
-try {
-  let result;
-  // Try Solution class first (LeetCode style)
-  if (typeof Solution !== 'undefined') {
-    const sol = new Solution();
-    const methodNames = Object.getOwnPropertyNames(Object.getPrototypeOf(sol))
-      .filter(m => m !== 'constructor' && typeof sol[m] === 'function');
-    if (methodNames.length > 0) {
-      result = sol[methodNames[0]](${parsedArgs});
-    }
-  } else {
-    // Find standalone functions (exclude our helpers)
-    const funcNames = Object.keys(this || globalThis).filter(key => {
-      try {
-        return typeof eval(key) === 'function' && 
-               !key.startsWith('_') && 
-               !['require', 'console', 'process', 'Buffer', 'ListNode', 'TreeNode'].includes(key);
-      } catch { return false; }
-    });
-    
-    // Try common LeetCode function patterns
-    const commonPatterns = ['twoSum', 'threeSum', 'maxProfit', 'lengthOfLongestSubstring', 'reverse', 'isPalindrome'];
-    let funcName = funcNames.find(f => commonPatterns.some(p => f.toLowerCase().includes(p.toLowerCase())));
-    
-    if (!funcName && funcNames.length > 0) {
-      funcName = funcNames[funcNames.length - 1];
-    }
-    
-    if (funcName) {
-      result = eval(funcName + '(${parsedArgs})');
-    }
-  }
-  
-  console.log(_serializeOutput(result));
-} catch (e) {
-  console.error("Runtime Error:", e.name + ":", e.message);
-}
-`;
-};
-
-/**
- * TypeScript driver code - similar to JavaScript but uses TypeScript syntax
- */
-const wrapTypeScriptCode = (
-  userCode: string,
-  rawInput: string,
-  methodSignature?: MethodSignature
-): string => {
-  const parsedArgs = parseInputForLanguage('python', rawInput); // Use python parsing as fallback
-  
-  return `${userCode}
-
-// --- Auto-generated Driver Code ---
-
-class ListNode {
-  val: number;
-  next: ListNode | null;
-  constructor(val?: number, next?: ListNode | null) {
-    this.val = (val===undefined ? 0 : val);
-    this.next = (next===undefined ? null : next);
-  }
-}
-
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-  constructor(val?: number, left?: TreeNode | null, right?: TreeNode | null) {
-    this.val = (val===undefined ? 0 : val);
-    this.left = (left===undefined ? null : left);
-    this.right = (right===undefined ? null : right);
-  }
-}
-
-function _buildList(arr: number[]): ListNode | null {
-  if (!arr || arr.length === 0) return null;
-  const head = new ListNode(arr[0]);
-  let curr = head;
-  for (let i = 1; i < arr.length; i++) {
-    curr.next = new ListNode(arr[i]);
-    curr = curr.next;
-  }
-  return head;
-}
-
-function _buildTree(arr: (number | null)[]): TreeNode | null {
-  if (!arr || arr.length === 0 || arr[0] === null) return null;
-  const root = new TreeNode(arr[0]);
-  const queue: TreeNode[] = [root];
-  let i = 1;
-  while (queue.length > 0 && i < arr.length) {
-    const node = queue.shift()!;
-    if (i < arr.length && arr[i] !== null) {
-      node.left = new TreeNode(arr[i] as number);
-      queue.push(node.left);
-    }
-    i++;
-    if (i < arr.length && arr[i] !== null) {
-      node.right = new TreeNode(arr[i] as number);
-      queue.push(node.right);
-    }
-    i++;
-  }
-  return root;
-}
-
-function _listToArr(head: ListNode | null): number[] {
-  const result: number[] = [];
-  while (head) {
-    result.push(head.val);
-    head = head.next;
-  }
-  return result;
-}
-
-function _treeToArr(root: TreeNode | null): (number | null)[] {
-  if (!root) return [];
-  const result: (number | null)[] = [];
-  const queue: (TreeNode | null)[] = [root];
-  while (queue.length > 0) {
-    const node = queue.shift();
-    if (node) {
-      result.push(node.val);
-      queue.push(node.left);
-      queue.push(node.right);
-    } else {
-      result.push(null);
-    }
-  }
-  while (result.length > 0 && result[result.length - 1] === null) {
-    result.pop();
-  }
-  return result;
-}
-
-function _serializeOutput(result: any): string {
-  if (result === null || result === undefined) return "null";
-  if (typeof result === "boolean") return result ? "true" : "false";
-  if (result instanceof ListNode) return JSON.stringify(_listToArr(result));
-  if (result instanceof TreeNode) return JSON.stringify(_treeToArr(result));
-  if (Array.isArray(result)) return JSON.stringify(result);
-  if (typeof result === "object") return JSON.stringify(result);
-  if (typeof result === "string") return '"' + result + '"';
-  return String(result);
-}
-
-try {
-  let result: any;
-  // Try Solution class first (LeetCode style)
-  if (typeof Solution !== 'undefined') {
-    const sol = new Solution();
-    const methodNames = Object.getOwnPropertyNames(Object.getPrototypeOf(sol))
-      .filter(m => m !== 'constructor' && typeof (sol as any)[m] === 'function');
-    if (methodNames.length > 0) {
-      result = (sol as any)[methodNames[0]](${parsedArgs});
-    }
-  }
-  
-  console.log(_serializeOutput(result));
-} catch (e: any) {
-  console.error("Runtime Error:", e.name + ":", e.message);
-}
-`;
-};
-
-/**
  * Java driver code - wraps Solution class with Main method
- * Fixed: Better handling of array parameters via explicit method finding and invocation
+ * FIXED: Better handling of ListNode parameters - detect from method signature
  */
 const wrapJavaCode = (
   userCode: string,
   rawInput: string,
   methodSignature?: MethodSignature
 ): string => {
-  // For Java, we need to generate direct method calls instead of using reflection
-  // Parse the raw input to extract values
-  const parsedArgs = parseInputForLanguage('java', rawInput);
+  // Parse the method parameters to detect ListNode/TreeNode types
+  const methodParams = parseMethodParams(userCode, 'java');
+  const parsedParams = parseRawInputWithTypes(rawInput);
   
   // Common imports needed for LeetCode problems
   const imports = `import java.util.*;
@@ -446,7 +270,6 @@ import java.util.stream.*;
   const hasImports = userCode.includes('import java');
   
   // Detect the method name and signature from user code
-  // Match patterns like: public int[] twoSum(int[] nums, int target)
   const methodPatterns = [
     /public\s+(?:static\s+)?(\w+(?:<[^>]+>)?(?:\[\])?)\s+(\w+)\s*\(([^)]*)\)/,
     /(\w+(?:<[^>]+>)?(?:\[\])?)\s+(\w+)\s*\(([^)]*)\)\s*\{/
@@ -468,8 +291,80 @@ import java.util.stream.*;
     }
   }
   
+  // Build call arguments, checking if method expects ListNode/TreeNode
+  const buildCallArgs = () => {
+    const callArgs: string[] = [];
+    
+    for (let i = 0; i < parsedParams.length; i++) {
+      const param = parsedParams[i];
+      const methodParam = methodParams[i];
+      
+      // Check if the method parameter type is ListNode
+      if (methodParam && methodParam.type.includes('ListNode')) {
+        // Convert array to ListNode
+        if (param.type === 'array' || param.type === 'linkedlist') {
+          try {
+            const arr = JSON.parse(param.value);
+            callArgs.push(`buildList(new int[]{${arr.join(', ')}})`);
+          } catch {
+            callArgs.push(`buildList(new int[]{})`);
+          }
+        } else {
+          callArgs.push('null');
+        }
+      } else if (methodParam && methodParam.type.includes('TreeNode')) {
+        // TreeNode handling (placeholder for now)
+        callArgs.push('null');
+      } else if (param.type === 'linkedlist') {
+        // Detected as linkedlist by name
+        try {
+          const arr = JSON.parse(param.value);
+          callArgs.push(`buildList(new int[]{${arr.join(', ')}})`);
+        } catch {
+          callArgs.push(`buildList(new int[]{})`);
+        }
+      } else if (param.type === 'array') {
+        try {
+          const arr = JSON.parse(param.value);
+          if (arr.length === 0) {
+            callArgs.push('new int[]{}');
+          } else if (typeof arr[0] === 'number') {
+            callArgs.push(`new int[]{${arr.join(', ')}}`);
+          } else if (typeof arr[0] === 'string') {
+            callArgs.push(`new String[]{${arr.map((s: string) => `"${s}"`).join(', ')}}`);
+          } else {
+            callArgs.push(`new int[]{${arr.join(', ')}}`);
+          }
+        } catch {
+          callArgs.push(param.value);
+        }
+      } else if (param.type === 'array2d') {
+        try {
+          const arr = JSON.parse(param.value);
+          const inner = arr.map((row: any[]) => `{${row.join(', ')}}`).join(', ');
+          callArgs.push(`new int[][]{${inner}}`);
+        } catch {
+          callArgs.push(param.value);
+        }
+      } else if (param.type === 'string') {
+        const unquoted = param.value.replace(/^['"]|['"]$/g, '');
+        callArgs.push(`"${unquoted}"`);
+      } else if (param.type === 'boolean') {
+        callArgs.push(param.value.toLowerCase());
+      } else if (param.type === 'null') {
+        callArgs.push('null');
+      } else {
+        callArgs.push(param.value);
+      }
+    }
+    
+    return callArgs.join(', ');
+  };
+  
   // Wrap with main class if user only has Solution class
   if (userCode.includes('class Solution') && !userCode.includes('class Main')) {
+    const callArgs = buildCallArgs();
+    
     return `${imports}
 
 // ListNode and TreeNode for common problems
@@ -501,8 +396,8 @@ class Main {
         try {
             Solution sol = new Solution();
             
-            // Direct method call with parsed arguments
-            ${returnType} result = sol.${detectedMethod}(${parsedArgs});
+            // Direct method call with properly typed arguments
+            ${returnType} result = sol.${detectedMethod}(${callArgs});
             System.out.println(serializeOutput(result));
             
         } catch (Exception e) {
@@ -590,14 +485,16 @@ class Main {
 
 /**
  * C++ driver code - includes common headers and wraps Solution class
- * Fixed: Better method name detection for complex return types
+ * FIXED: Better handling of ListNode* parameters - detect from method signature
  */
 const wrapCppCode = (
   userCode: string,
   rawInput: string,
   methodSignature?: MethodSignature
 ): string => {
-  const parsedArgs = parseInputForLanguage('cpp', rawInput);
+  // Parse the method parameters to detect ListNode*/TreeNode* types
+  const methodParams = parseMethodParams(userCode, 'cpp');
+  const parsedParams = parseRawInputWithTypes(rawInput);
   
   // Common includes needed for LeetCode problems
   const includes = `#include <iostream>
@@ -725,25 +622,18 @@ void printResult(ListNode* r) { cout << listToString(r); }
 `;
 
   // Detect method name from Solution class using improved regex
-  // This regex handles complex return types like vector<vector<int>>, ListNode*, pair<int,int>, etc.
   const methodPatterns = [
-    // Match method with complex template return types: vector<vector<int>> methodName(
     /(?:const\s+)?(?:static\s+)?(?:(?:vector|list|set|map|unordered_map|unordered_set|pair|tuple|optional|queue|stack|deque|priority_queue)\s*<[^>]*(?:<[^>]*>)?[^>]*>\s*\*?\s*&?\s*)(\w+)\s*\(/,
-    // Match method with pointer/reference return types: ListNode* methodName(, TreeNode* methodName(
     /(?:const\s+)?(?:static\s+)?(?:ListNode|TreeNode|Node)\s*\*\s*(\w+)\s*\(/,
-    // Match method with simple return types: int methodName(, bool methodName(, string methodName(
     /(?:const\s+)?(?:static\s+)?(?:int|long\s+long|double|float|bool|char|string|void|size_t|unsigned)\s+(\w+)\s*\(/,
-    // Fallback: any function-like pattern after common keywords
     /(?:public|private|protected)?\s*(?:const\s+)?(?:static\s+)?[\w:<>,\s*&]+\s+(\w+)\s*\([^)]*\)\s*(?:const)?\s*\{/
   ];
 
   let detectedMethod = methodSignature?.name || 'solve';
   
-  // Try each pattern until we find a match
   for (const pattern of methodPatterns) {
     const match = userCode.match(pattern);
     if (match && match[1]) {
-      // Skip constructor (same name as class) and common non-method patterns
       const methodName = match[1];
       if (methodName !== 'Solution' && methodName !== 'main' && !methodName.startsWith('_')) {
         detectedMethod = methodName;
@@ -752,26 +642,73 @@ void printResult(ListNode* r) { cout << listToString(r); }
     }
   }
 
-  // Parse args to generate proper variable declarations for reference parameters
-  // This handles cases like vector<int>& nums which need to be declared before use
+  // Generate main with proper variable declarations, handling ListNode* params
   const generateCppMainWithDeclarations = () => {
-    // For C++, we need to declare variables properly for reference parameters
-    // Parse the parsedArgs and create variable declarations
-    const args = parsedArgs.split(/,\s*(?![^{}]*\})/).map(a => a.trim()).filter(a => a);
-    
     let declarations = '';
     let callArgs: string[] = [];
     
-    args.forEach((arg, i) => {
-      // Check if it's a vector
-      if (arg.startsWith('vector<')) {
-        const varName = `arg${i}`;
-        declarations += `    auto ${varName} = ${arg};\n`;
+    for (let i = 0; i < parsedParams.length; i++) {
+      const param = parsedParams[i];
+      const methodParam = methodParams[i];
+      const varName = `arg${i}`;
+      
+      // Check if method expects ListNode*
+      if (methodParam && (methodParam.type.includes('ListNode*') || methodParam.type.includes('ListNode *'))) {
+        // Convert array to ListNode*
+        if (param.type === 'array' || param.type === 'linkedlist') {
+          try {
+            const arr = JSON.parse(param.value);
+            declarations += `    vector<int> ${varName}_arr = {${arr.join(', ')}};\n`;
+            declarations += `    ListNode* ${varName} = buildList(${varName}_arr);\n`;
+            callArgs.push(varName);
+          } catch {
+            declarations += `    ListNode* ${varName} = nullptr;\n`;
+            callArgs.push(varName);
+          }
+        } else {
+          declarations += `    ListNode* ${varName} = nullptr;\n`;
+          callArgs.push(varName);
+        }
+      } else if (param.type === 'linkedlist') {
+        // Detected as linkedlist by name
+        try {
+          const arr = JSON.parse(param.value);
+          declarations += `    vector<int> ${varName}_arr = {${arr.join(', ')}};\n`;
+          declarations += `    ListNode* ${varName} = buildList(${varName}_arr);\n`;
+          callArgs.push(varName);
+        } catch {
+          declarations += `    ListNode* ${varName} = nullptr;\n`;
+          callArgs.push(varName);
+        }
+      } else if (param.type === 'array' || param.type === 'array2d') {
+        try {
+          const arr = JSON.parse(param.value);
+          if (Array.isArray(arr[0])) {
+            // 2D array
+            const inner = arr.map((row: any[]) => `{${row.join(', ')}}`).join(', ');
+            declarations += `    vector<vector<int>> ${varName} = {${inner}};\n`;
+          } else if (typeof arr[0] === 'string') {
+            declarations += `    vector<string> ${varName} = {${arr.map((s: string) => `"${s}"`).join(', ')}};\n`;
+          } else {
+            declarations += `    vector<int> ${varName} = {${arr.join(', ')}};\n`;
+          }
+          callArgs.push(varName);
+        } catch {
+          declarations += `    auto ${varName} = ${param.value};\n`;
+          callArgs.push(varName);
+        }
+      } else if (param.type === 'string') {
+        const unquoted = param.value.replace(/^['"]|['"]$/g, '');
+        declarations += `    string ${varName} = "${unquoted}";\n`;
+        callArgs.push(varName);
+      } else if (param.type === 'null') {
+        declarations += `    auto ${varName} = nullptr;\n`;
         callArgs.push(varName);
       } else {
-        callArgs.push(arg);
+        // Number, boolean, or other primitive
+        callArgs.push(param.value);
       }
-    });
+    }
     
     return `
 int main() {
