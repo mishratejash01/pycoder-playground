@@ -549,10 +549,10 @@ export default function PracticeSolver() {
                   </div>
 
                   {/* Console Content */}
-                  <div className="flex-1 overflow-auto p-4 bg-[#08080a] font-mono text-sm relative">
+                  <div className="flex-1 overflow-auto bg-[#08080a] font-mono text-sm relative">
                     <div className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5" />
                     
-                    <TabsContent value="testcase" className="mt-0 h-full flex flex-col relative z-10">
+                    <TabsContent value="testcase" className="mt-0 h-full flex flex-col relative z-10 p-4">
                       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10">
                         {testCases.filter(t => t.is_public).map((_, i) => (
                           <button 
@@ -591,7 +591,8 @@ export default function PracticeSolver() {
                       </div>
                     </TabsContent>
                     
-                    <TabsContent value="custom" className="mt-0 h-full relative z-10">
+                    {/* CUSTOM TEST: No padding (p-0) so it fits full width/height */}
+                    <TabsContent value="custom" className="mt-0 h-full relative z-10 p-0">
                       <CustomTestSandbox
                         defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
                         onRunCustomTest={handleRunCustomTest}
@@ -599,7 +600,7 @@ export default function PracticeSolver() {
                       />
                     </TabsContent>
                     
-                    <TabsContent value="result" className="mt-0 h-full relative z-10">
+                    <TabsContent value="result" className="mt-0 h-full relative z-10 p-4">
                       {isJudging ? (
                         <div className="h-full flex flex-col items-center justify-center">
                            <JudgingLoader phase={judgingPhase} elapsedMs={elapsedMs} />
