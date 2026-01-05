@@ -10,12 +10,12 @@ interface JudgingLoaderProps {
 }
 
 const encouragingMessages = [
-  "The system is meticulously analyzing your approach.",
-  "Verifying logic against established protocols.",
-  "Performance metrics are being calculated.",
-  "Executing operational sequences.",
-  "Please remain on standby for final verification.",
-  "Optimizing evaluation parameters..."
+  "System analyzing approach...",
+  "Verifying logic protocols...",
+  "Calculating performance metrics...",
+  "Executing operational sequences...",
+  "Standby for verification...",
+  "Optimizing parameters..."
 ];
 
 export const JudgingLoader = ({ phase, elapsedMs }: JudgingLoaderProps) => {
@@ -60,17 +60,21 @@ export const JudgingLoader = ({ phase, elapsedMs }: JudgingLoaderProps) => {
 
   const getPhaseDetail = () => {
     if (phase.status === 'running') {
-      return `Running Procedure ${phase.currentTest} of ${phase.totalTests}`;
+      return `Procedure ${phase.currentTest} of ${phase.totalTests}`;
     }
     return phase.message || 'Processing...';
   };
 
   return (
-    <div className="flex items-center justify-center h-full w-full bg-[#0c0c0c] p-4 font-sans">
-      <div className="w-full max-w-[450px] bg-[#141414] border border-white/[0.08] rounded-[4px] py-12 px-8 flex flex-col items-center text-center shadow-2xl shadow-black/80">
+    <div className="w-full h-full flex items-center justify-center p-4 font-sans bg-[#0c0c0c]">
+      {/* Responsive Card Container: Fits parent space but caps at max-md (approx 450px) */}
+      <div className="w-full max-w-md bg-[#141414] border border-white/[0.08] rounded-lg p-8 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
         
+        {/* Subtle Ambient Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/10 blur-[20px]" />
+
         {/* Visual Loader Ring */}
-        <div className="relative w-20 h-20 mb-10">
+        <div className="relative w-16 h-16 mb-8 shrink-0">
           {/* Spinner Ring */}
           <motion.div 
             className="absolute inset-0 border border-white/[0.08] border-t-white rounded-full"
@@ -90,17 +94,17 @@ export const JudgingLoader = ({ phase, elapsedMs }: JudgingLoaderProps) => {
         </div>
 
         {/* Current Status */}
-        <div className="mb-8">
-          <h2 className="font-serif italic text-xl text-[#f8fafc] mb-2">
+        <div className="mb-6 space-y-2">
+          <h2 className="font-serif italic text-lg text-[#f8fafc]">
             {getPhaseTitle()}
           </h2>
-          <p className="text-xs uppercase tracking-[0.15em] text-[#94a3b8]">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#94a3b8] font-medium">
             {getPhaseDetail()}
           </p>
         </div>
 
         {/* Minimal Progress Line */}
-        <div className="w-[200px] mb-8">
+        <div className="w-full max-w-[200px] mb-6">
           <div className="w-full h-[1px] bg-white/[0.08] relative overflow-hidden">
             {phase.status === 'running' ? (
               <motion.div 
@@ -117,15 +121,15 @@ export const JudgingLoader = ({ phase, elapsedMs }: JudgingLoaderProps) => {
               />
             )}
           </div>
-          <p className="mt-3 text-[10px] uppercase tracking-[0.1em] text-[#475569]">
+          <p className="mt-2 text-[9px] uppercase tracking-[0.1em] text-[#475569]">
             Active Testing
           </p>
         </div>
 
         {/* Chronometer */}
-        <div className="mb-10">
-          <span className="block text-[9px] uppercase text-[#475569] mb-1">Time Elapsed</span>
-          <div className="inline-block px-3 py-1 border border-white/[0.08] rounded-[2px] bg-white/[0.02] font-mono text-[13px] text-[#94a3b8]">
+        <div className="mb-6">
+          <span className="block text-[8px] uppercase text-[#475569] mb-1 tracking-widest">Elapsed</span>
+          <div className="inline-block px-3 py-1 border border-white/[0.08] rounded-[2px] bg-white/[0.02] font-mono text-xs text-[#94a3b8]">
             {formatTime(elapsedMs)}
           </div>
         </div>
@@ -137,7 +141,7 @@ export const JudgingLoader = ({ phase, elapsedMs }: JudgingLoaderProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="font-serif italic text-[13px] text-[#475569] max-w-[280px] leading-relaxed"
+            className="font-serif italic text-xs text-[#475569] max-w-[260px] leading-relaxed min-h-[1.5em]"
           >
             {encouragement}
           </motion.p>
