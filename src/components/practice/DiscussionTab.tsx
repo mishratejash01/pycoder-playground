@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, ChevronUp, MessageSquare, Send, CornerDownRight } from 'lucide-react';
+import { Loader2, ChevronUp, MessageSquare } from 'lucide-react'; // Removing standard Send icon
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -12,9 +12,20 @@ interface DiscussionTabProps {
   userId: string | undefined;
 }
 
+// Custom "Atelier" Send Icon based on your geometry
+const SendIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 100 100" 
+    className={className} 
+    fill="currentColor"
+  >
+    <path d="M 10 20 L 90 50 L 10 45 Z" />
+    <path d="M 10 55 L 90 50 L 10 80 Z" />
+  </svg>
+);
+
 /**
  * INDIVIDUAL CARD COMPONENT
- * Handles Upvoting, Expanding Thread, and Posting Replies
  */
 function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -22,7 +33,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // 1. Check if User Upvoted
+  // Check if User Upvoted
   const { data: hasUpvoted } = useQuery({
     queryKey: ['has_upvoted', disc.id, userId],
     queryFn: async () => {
@@ -38,7 +49,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     enabled: !!userId
   });
 
-  // 2. Fetch Replies (Only if expanded)
+  // Fetch Replies
   const { data: replies = [] } = useQuery({
     queryKey: ['discussion_replies', disc.id],
     queryFn: async () => {
@@ -52,11 +63,10 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     enabled: isExpanded
   });
 
-  // 3. Upvote Action
+  // Upvote Action
   const upvoteMutation = useMutation({
     mutationFn: async () => {
       if (!userId) return;
-      // Toggles upvote via RPC or manual logic
       const { error } = await supabase.rpc('toggle_discussion_upvote', {
         target_discussion_id: disc.id,
         target_user_id: userId
@@ -69,7 +79,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     }
   });
 
-  // 4. Reply Action
+  // Reply Action
   const replyMutation = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('Login required');
@@ -92,7 +102,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
   return (
     <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-6 flex gap-5 transition-all duration-300 hover:border-white/[0.15] group">
       
-      {/* LEFT COLUMN: Endorse/Upvote */}
+      {/* LEFT: Upvote */}
       <div className="flex flex-col items-center gap-1 text-[#475569]">
         <button 
           onClick={(e) => { e.stopPropagation(); upvoteMutation.mutate(); }}
@@ -106,16 +116,13 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
         <span className="text-[10px] font-bold font-mono mt-1">{disc.upvotes || 0}</span>
       </div>
 
-      {/* RIGHT COLUMN: Content */}
+      {/* RIGHT: Content */}
       <div className="flex-1 min-w-0">
-        
-        {/* Meta Header */}
         <div className="flex justify-between text-[10px] uppercase tracking-[0.1em] text-[#475569] mb-2">
           <span>{disc.profiles?.full_name || 'Anonymous'}</span>
           <span>{formatDistanceToNow(new Date(disc.created_at), { addSuffix: true })}</span>
         </div>
 
-        {/* Title & Text */}
         <h3 className="font-serif text-lg italic text-[#f8fafc] mb-2 leading-tight">
           {disc.title}
         </h3>
@@ -123,7 +130,6 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
           {disc.content}
         </p>
 
-        {/* Footer */}
         <div className="flex justify-end border-t border-white/[0.08] pt-3">
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
@@ -134,15 +140,14 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
           </button>
         </div>
 
-        {/* THREADED REPLIES SECTION */}
+        {/* REPLIES */}
         {isExpanded && (
           <div className="mt-4 pl-4 border-l border-white/[0.08] flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
             
-            {/* List Replies */}
             {replies.map((reply: any) => (
               <div key={reply.id} className="bg-[#0a0a0a] p-3 border border-white/[0.08] rounded-[2px]">
                 <div className="text-[9px] text-[#475569] uppercase mb-1 flex justify-between">
-                  <span className="flex items-center gap-1"><CornerDownRight className="w-2.5 h-2.5" /> {reply.profiles?.full_name || 'Unknown'}</span>
+                  <span>{reply.profiles?.full_name || 'Unknown'}</span>
                   <span>{formatDistanceToNow(new Date(reply.created_at))} ago</span>
                 </div>
                 <p className="text-[12px] leading-[1.5] text-[#94a3b8]">
@@ -151,7 +156,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
               </div>
             ))}
 
-            {/* Reply Composer */}
+            {/* Reply Input */}
             <div className="mt-2 flex gap-3">
               <input 
                 type="text" 
@@ -164,14 +169,13 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
               <button 
                 onClick={() => replyMutation.mutate()}
                 disabled={!replyContent.trim() || replyMutation.isPending}
-                className="bg-[#f8fafc] text-[#080808] px-3 py-2 rounded-[2px] hover:bg-[#94a3b8] transition-colors flex items-center justify-center"
+                className="bg-[#141414] border border-white/[0.08] text-[#94a3b8] w-8 h-8 flex items-center justify-center rounded-[2px] hover:text-white hover:border-white/[0.2] transition-all disabled:opacity-50"
               >
-                <Send className="w-3.5 h-3.5" />
+                <SendIcon className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
@@ -186,7 +190,6 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
-  // Fetch Root Discussions (Sorted by Newest First)
   const { data: discussions = [], isLoading } = useQuery({
     queryKey: ['problem_discussions', problemId],
     queryFn: async () => {
@@ -195,7 +198,7 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
         .select(`*, profiles:user_id (full_name, avatar_url)`)
         .eq('problem_id', problemId)
         .is('parent_id', null)
-        .order('created_at', { ascending: false }) // FIX: Show newest first
+        .order('created_at', { ascending: false }) // Newest first
         .limit(50);
       
       if (error) throw error;
@@ -265,7 +268,7 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
               placeholder="Share your technical analysis or inquiry..."
               className="w-full bg-transparent border-none text-[13px] text-[#94a3b8] placeholder:text-[#475569] focus:outline-none resize-none min-h-[60px] leading-[1.6]"
             />
-            {/* Action Bar */}
+            
             <div className="flex justify-end mt-4 pt-2 border-t border-white/[0.05]">
               <button 
                 onClick={() => createMutation.mutate()}
@@ -274,7 +277,7 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
               >
                 {createMutation.isPending ? 'Broadcasting...' : (
                   <>
-                    <Send className="w-3.5 h-3.5" /> Publish
+                    <SendIcon className="w-4 h-4" /> Publish
                   </>
                 )}
               </button>
