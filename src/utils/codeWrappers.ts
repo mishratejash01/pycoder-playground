@@ -5,7 +5,7 @@
 
 import { parseInputForLanguage } from './inputParser';
 
-export type Language = 'python' | 'javascript' | 'typescript' | 'java' | 'cpp';
+export type Language = 'python' | 'java' | 'cpp';
 
 export interface MethodSignature {
   name: string;
@@ -25,10 +25,6 @@ export const wrapCodeForExecution = (
   switch (language) {
     case 'python':
       return wrapPythonCode(userCode, rawInput, methodSignature);
-    case 'javascript':
-      return wrapJavaScriptCode(userCode, rawInput, methodSignature);
-    case 'typescript':
-      return wrapTypeScriptCode(userCode, rawInput, methodSignature);
     case 'java':
       return wrapJavaCode(userCode, rawInput, methodSignature);
     case 'cpp':
@@ -167,7 +163,7 @@ const wrapJavaScriptCode = (
   rawInput: string,
   methodSignature?: MethodSignature
 ): string => {
-  const parsedArgs = parseInputForLanguage('javascript', rawInput);
+  const parsedArgs = parseInputForLanguage('python', rawInput); // Use python parsing as fallback
   
   return `${userCode}
 
@@ -305,7 +301,7 @@ const wrapTypeScriptCode = (
   rawInput: string,
   methodSignature?: MethodSignature
 ): string => {
-  const parsedArgs = parseInputForLanguage('javascript', rawInput);
+  const parsedArgs = parseInputForLanguage('python', rawInput); // Use python parsing as fallback
   
   return `${userCode}
 

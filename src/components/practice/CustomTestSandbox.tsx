@@ -118,7 +118,11 @@ export function CustomTestSandbox({ defaultInput, onRunCustomTest, isRunning }: 
                 : "bg-[#0D0D0F] border-[#1A1A1C] text-[#CCC]"
             )}>
               {result ? (
-                result.errorDetails || result.output
+                result.errorDetails 
+                  ? (typeof result.errorDetails === 'object' 
+                      ? `${result.errorDetails.type}: ${result.errorDetails.rawError}` 
+                      : result.errorDetails)
+                  : result.output
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-[#333] select-none">
                   <span className="text-xl opacity-20 mb-2">⌘</span>

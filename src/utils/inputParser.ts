@@ -160,9 +160,6 @@ export const parseInputForLanguage = (language: Language, rawInput: string): str
     switch (language) {
       case 'python':
         return convertToPython(param);
-      case 'javascript':
-      case 'typescript':
-        return convertToJavaScript(param);
       case 'java':
         return convertToJava(param);
       case 'cpp':

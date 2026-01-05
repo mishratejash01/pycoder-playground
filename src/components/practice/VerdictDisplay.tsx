@@ -9,7 +9,7 @@ interface VerdictDisplayProps {
   feedbackSuggestion?: string;
   failedTestIndex?: number;
   testResults?: TestResult[];
-  errorDetails?: string;
+  errorDetails?: string | { type: string; rawError: string };
   runtime_ms?: number;
   memory_kb?: number;
 }
@@ -55,7 +55,7 @@ export function VerdictDisplay({
   };
 
   const failedTest = failedTestIndex !== -1 ? testResults[failedTestIndex] : null;
-  const passedCount = testResults.filter(t => t.status === 'passed').length;
+  const passedCount = testResults.filter(t => t.passed).length;
   const totalCount = testResults.length;
 
   return (
@@ -85,7 +85,7 @@ export function VerdictDisplay({
       {/* 2. Feedback Advisory */}
       <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-5">
         <p className="text-sm leading-relaxed text-[#94a3b8] mb-4">
-          {feedbackMessage || errorDetails || "The solution did not meet the required specifications for all scenarios."}
+          {feedbackMessage || (typeof errorDetails === 'object' ? `${errorDetails.type}: ${errorDetails.rawError}` : errorDetails) || "The solution did not meet the required specifications for all scenarios."}
         </p>
         
         {feedbackSuggestion && (
@@ -123,7 +123,7 @@ export function VerdictDisplay({
                   Your Output
                 </div>
                 <div className="px-4 py-3 font-mono text-[12px] text-[#fca5a5]/90 bg-[#0a0a0a] whitespace-pre-wrap break-all">
-                  {String(failedTest.actualOutput)}
+                  {String(failedTest.actual)}
                 </div>
               </div>
 
@@ -133,7 +133,7 @@ export function VerdictDisplay({
                   Expected Result
                 </div>
                 <div className="px-4 py-3 font-mono text-[12px] text-[#86efac]/80 bg-[#0a0a0a] whitespace-pre-wrap break-all">
-                  {String(failedTest.expectedOutput)}
+                  {String(failedTest.expected)}
                 </div>
               </div>
             </div>
@@ -146,7 +146,7 @@ export function VerdictDisplay({
               </div>
               <ScrollArea className="h-[200px] w-full bg-[#0a0a0a]">
                 <div className="px-4 py-4 font-mono text-[12px] text-[#fca5a5] whitespace-pre-wrap">
-                  {errorDetails || "Unknown system error occurred."}
+                  {typeof errorDetails === 'object' ? `${errorDetails.type}: ${errorDetails.rawError}` : (errorDetails || "Unknown system error occurred.")}
                 </div>
               </ScrollArea>
             </div>
