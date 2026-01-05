@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { CodeEditor } from '@/components/CodeEditor';
 import { Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
@@ -13,7 +12,8 @@ import { useInteractiveRunner } from '@/hooks/useInteractiveRunner';
 import { TerminalView } from '@/components/TerminalView';
 import { 
   Loader2, Play, RefreshCw, Terminal as TerminalIcon, 
-  Download, Lock, Square, Clock, Plus, Minus, Maximize2, Minimize2, Code2
+  Download, Square, Clock, Plus, Minus, Maximize2, Minimize2, 
+  ChevronUp, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -27,50 +27,36 @@ const LANGUAGES_CONFIG = [
     id: 'python', 
     name: 'Python', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
-    color: 'text-blue-400',
-    gradient: 'from-blue-400/20 to-yellow-400/20'
   },
   { 
     id: 'javascript', 
     name: 'JavaScript', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
-    color: 'text-yellow-300',
-    gradient: 'from-yellow-300/20 to-orange-500/20'
   },
   { 
     id: 'java', 
     name: 'Java', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
-    color: 'text-red-400',
-    gradient: 'from-red-400/20 to-orange-500/20'
   },
   { 
     id: 'cpp', 
     name: 'C++', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
-    color: 'text-blue-500',
-    gradient: 'from-blue-500/20 to-cyan-500/20'
   },
   { 
     id: 'c', 
     name: 'C', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
-    color: 'text-blue-400',
-    gradient: 'from-blue-400/20 to-indigo-500/20'
   },
   { 
     id: 'sql', 
     name: 'SQL', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
-    color: 'text-purple-400',
-    gradient: 'from-purple-400/20 to-pink-500/20'
   },
   { 
     id: 'bash', 
     name: 'Bash', 
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
-    color: 'text-zinc-300',
-    gradient: 'from-zinc-500/20 to-zinc-300/20'
   },
 ] as const;
 
@@ -79,144 +65,19 @@ const LANGUAGES_CONFIG = [
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
     case 'java': 
-      return `import java.util.*;
-import java.io.*;
-
-public class Main {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        
-        // --- MISSION START ---
-        System.out.println(">> JAVA RUNTIME ENVIRONMENT ACTIVE");
-        System.out.print(">> Enter Agent Name: ");
-        
-        String name = sc.nextLine();
-        
-        System.out.println(">> Authenticating " + name + "...");
-        System.out.println(">> Access Granted.");
-        
-        // Your logic here
-        
-        sc.close();
-    }
-}`;
+      return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(">> JAVA RUNTIME ACTIVE");\n    }\n}`;
     case 'cpp': 
-      return `#include <iostream>
-#include <string>
-#include <vector>
-#include <algorithm>
-
-using namespace std;
-
-int main() {
-    // --- C++ OPTIMIZED CORE ---
-    string input_data;
-    
-    cout << ">> SYSTEM INITIALIZED." << endl;
-    cout << ">> Awaiting Input Command: ";
-    
-    getline(cin, input_data);
-    
-    cout << ">> Processing: " << input_data << endl;
-    cout << ">> Execution Complete." << endl;
-    
-    return 0;
-}`;
+      return `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << ">> SYSTEM INITIALIZED." << endl;\n    return 0;\n}`;
     case 'c': 
-      return `#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-int main() {
-    char buffer[100];
-    
-    printf(">> C KERNEL LOADED.\\n");
-    printf(">> Enter command sequence: ");
-    
-    fgets(buffer, 100, stdin);
-    // Remove newline
-    buffer[strcspn(buffer, "\\n")] = 0; 
-    
-    printf(">> Received: %s\\n", buffer);
-    printf(">> Memory cleared.\\n");
-    
-    return 0;
-}`;
+      return `#include <stdio.h>\n\nint main() {\n    printf(">> C KERNEL LOADED.\\n");\n    return 0;\n}`;
     case 'javascript': 
-      return `// --- JAVASCRIPT ASYNC RUNTIME ---
-
-console.log(">> V8 ENGINE ONLINE");
-
-// Interactive Input Wrapper
-const userInput = await prompt(">> Enter system parameters: ");
-
-console.log(\`>> Analyzing \${userInput}...\`);
-
-const metrics = [
-  { id: 1, status: 'OK' },
-  { id: 2, status: 'OPTIMIZED' }
-];
-
-console.table(metrics);
-console.log(">> Process terminated.");`;
+      return `console.log(">> V8 ENGINE ONLINE");`;
     case 'sql': 
-      return `-- --- SQL DATA MATRIX ---
-
--- 1. Initialize Schema
-CREATE TABLE missions (
-    id INTEGER PRIMARY KEY,
-    codename TEXT NOT NULL,
-    status TEXT DEFAULT 'PENDING',
-    priority INTEGER
-);
-
--- 2. Inject Data
-INSERT INTO missions (codename, status, priority) VALUES 
-    ('PROJECT_GENESIS', 'ACTIVE', 1),
-    ('OPERATION_NIGHTFALL', 'COMPLETED', 2),
-    ('PROTOCOL_OMEGA', 'CLASSIFIED', 5);
-
--- 3. Query Matrix
-SELECT * FROM missions 
-WHERE priority <= 2
-ORDER BY priority ASC;`;
+      return `SELECT 'SQL MATRIX ACTIVE' as status;`;
     case 'bash': 
-      return `#!/bin/bash
-
-echo ">> BASH SHELL ACCESS GRANTED"
-echo ">> Current User: $USER"
-
-read -p ">> Enter target directory: " target
-
-if [ -z "$target" ]; then
-    echo ">> No target specified. Defaulting to root."
-else
-    echo ">> Navigating to $target..."
-fi
-
-echo ">> Script execution finished."`;
+      return `echo ">> BASH SHELL ACTIVE"`;
     default: 
-      return `# --- PYTHON 3 NEURAL INTERFACE ---
-import time
-import sys
-
-def boot_system():
-    print(">> LOADING KERNEL MODULES...")
-    time.sleep(0.5)
-    print(">> READY.")
-
-boot_system()
-
-# Interactive Input
-user_cmd = input(">> Enter Python Expression: ")
-
-try:
-    result = eval(user_cmd)
-    print(f">> Result: {result}")
-except Exception as e:
-    print(f">> Error: {e}")
-
-print(">> Session Closed.")`;
+      return `print(">> PYTHON NEURAL INTERFACE READY")\n\n# Try writing code here`;
   }
 };
 
@@ -262,8 +123,10 @@ const Compiler = () => {
   const [fontSizeRight, setFontSizeRight] = useState(14);
   const [isReady, setIsReady] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'editor' | 'terminal'>('editor');
-
+  
+  // Drawer State
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -298,16 +161,14 @@ const Compiler = () => {
   const isLoading = runnerState.isRunning || (isPython && !pythonReady);
   const isExecuting = runnerState.isRunning;
 
-  // Auto-switch to terminal on run
+  // Auto-open drawer on execute for mobile
   useEffect(() => {
-    if (isExecuting && isMobile) {
-      setActiveTab('terminal');
+    if (isExecuting && isMobile && !isDrawerOpen) {
+      setIsDrawerOpen(true);
     }
   }, [isExecuting, isMobile]);
 
   // --- EFFECTS ---
-  
-  // Design Ready Effect
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 800);
     return () => clearTimeout(timer);
@@ -396,7 +257,6 @@ const Compiler = () => {
     else writeInteractiveInput(char);
   }, [isPython, isJavaScript, writePythonInput, writeJSInput, writeInteractiveInput]);
 
-  // Zoom Handler
   const handleZoom = (side: 'left' | 'right', delta: number) => {
     if (side === 'left') {
       setFontSizeLeft(prev => Math.max(10, Math.min(32, prev + delta)));
@@ -428,7 +288,7 @@ const Compiler = () => {
               <select 
                 value={activeLanguage}
                 onChange={(e) => handleLanguageChange(e.target.value)}
-                className="bg-transparent border border-white/10 text-[10px] text-[#e0e0e0] font-mono py-1 px-2 pr-6 appearance-none cursor-pointer hover:border-white/20 focus:outline-none transition-colors uppercase tracking-wider rounded-sm max-w-[100px] sm:max-w-none"
+                className="bg-transparent border border-white/10 text-[10px] text-[#e0e0e0] font-mono py-1 px-2 pr-6 appearance-none cursor-pointer hover:border-white/20 focus:outline-none transition-colors uppercase tracking-wider rounded-sm max-w-[120px] sm:max-w-none"
               >
                 {LANGUAGES_CONFIG.map(lang => (
                   <option key={lang.id} value={lang.id} disabled={lockedLanguages[lang.id]} className="bg-[#080808] text-gray-300">
@@ -495,14 +355,14 @@ const Compiler = () => {
 
   const TerminalComponent = (
     <div className="flex-1 flex flex-col h-full bg-[#050505]">
-       {/* Toolbar */}
-       <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
-          <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
-            <TerminalIcon className="w-3 h-3" /> {!isMobile && "Display Console"}
-          </span>
+       {/* Toolbar (Only for Desktop) */}
+       {!isMobile && (
+         <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
+              <TerminalIcon className="w-3 h-3" /> Display Console
+            </span>
 
-          <div className="flex items-center gap-3">
-            {!isMobile && (
+            <div className="flex items-center gap-3">
               <div className="flex items-center border border-white/10 rounded overflow-hidden">
                 <button onClick={() => handleZoom('right', -1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
                   <Minus className="w-3 h-3" />
@@ -512,38 +372,38 @@ const Compiler = () => {
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
-            )}
 
-            <button 
-              onClick={handleDownload}
-              className="p-1.5 text-[#666] hover:text-white hover:bg-white/5 rounded transition-all" 
-              title="Download Source"
-            >
-              <Download className="w-3.5 h-3.5" />
-            </button>
-
-            {isExecuting ? (
-              <Button 
-                onClick={handleStop}
-                className="h-7 rounded-none bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-[10px] uppercase tracking-widest px-4"
+              <button 
+                onClick={handleDownload}
+                className="p-1.5 text-[#666] hover:text-white hover:bg-white/5 rounded transition-all" 
+                title="Download Source"
               >
-                <Square className="w-3 h-3 mr-2 fill-current" /> Terminate
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleRun}
-                disabled={isLoading}
-                className="h-7 rounded-none bg-white text-black hover:bg-gray-200 border-none font-bold text-[10px] uppercase tracking-widest px-4"
-              >
-                {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Play className="w-3 h-3 mr-2 fill-current" />}
-                Execute
-              </Button>
-            )}
-          </div>
-        </div>
+                <Download className="w-3.5 h-3.5" />
+              </button>
 
-        {/* Terminal Area */}
-        <div className="flex-1 bg-[#010409] relative overflow-hidden flex flex-col">
+              {isExecuting ? (
+                <Button 
+                  onClick={handleStop}
+                  className="h-7 rounded-none bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-[10px] uppercase tracking-widest px-4"
+                >
+                  <Square className="w-3 h-3 mr-2 fill-current" /> Terminate
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleRun}
+                  disabled={isLoading}
+                  className="h-7 rounded-none bg-white text-black hover:bg-gray-200 border-none font-bold text-[10px] uppercase tracking-widest px-4"
+                >
+                  {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Play className="w-3 h-3 mr-2 fill-current" />}
+                  Execute
+                </Button>
+              )}
+            </div>
+         </div>
+       )}
+
+       {/* Terminal Area */}
+       <div className="flex-1 bg-[#010409] relative overflow-hidden flex flex-col">
           {isPython && pythonInitError ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4 p-6">
               <div className="text-red-400 text-center">
@@ -574,11 +434,11 @@ const Compiler = () => {
               fontSize={fontSizeRight}
             />
           )}
-        </div>
+       </div>
     </div>
   );
 
-  // --- RENDER (Nexus Design with Codevo branding) ---
+  // --- RENDER ---
   return (
     <div className="h-screen w-full bg-[#050505] text-[#e0e0e0] font-sans flex flex-col overflow-hidden selection:bg-white/20">
       
@@ -608,30 +468,61 @@ const Compiler = () => {
       {/* WORKSPACE */}
       <div className="flex-1 flex relative bg-[#0a0a0a] overflow-hidden">
         {isMobile ? (
-          // Mobile Layout with Tabs
+          // MOBILE VIEW with DRAWER
           <div className="w-full h-full flex flex-col">
-             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'editor' | 'terminal')} className="flex-1 flex flex-col">
-                <div className="flex-1 relative overflow-hidden">
-                   <TabsContent value="editor" className="h-full m-0 data-[state=inactive]:hidden">
-                      {EditorComponent}
-                   </TabsContent>
-                   <TabsContent value="terminal" className="h-full m-0 data-[state=inactive]:hidden">
-                      {TerminalComponent}
-                   </TabsContent>
-                </div>
-                <TabsList className="bg-[#080808] border-t border-white/10 h-12 rounded-none grid grid-cols-2 p-1 gap-1">
-                   <TabsTrigger value="editor" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-[#666] text-xs font-mono uppercase tracking-widest rounded-sm">
-                      <Code2 className="w-4 h-4 mr-2" /> Editor
-                   </TabsTrigger>
-                   <TabsTrigger value="terminal" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-[#666] text-xs font-mono uppercase tracking-widest rounded-sm relative">
-                      <TerminalIcon className="w-4 h-4 mr-2" /> Terminal
-                      {isExecuting && <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
-                   </TabsTrigger>
-                </TabsList>
-             </Tabs>
+             <div className="flex-1 relative overflow-hidden">
+                {EditorComponent}
+                
+                {/* Floating Drawer Trigger */}
+                <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                    <DrawerTrigger asChild>
+                      <div className="absolute bottom-6 right-6 z-40">
+                         <Button className="h-14 w-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] bg-white text-black hover:bg-gray-200 border border-white/20 p-0 flex flex-col items-center justify-center gap-0.5">
+                            <TerminalIcon className="w-6 h-6" />
+                            {isExecuting && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-yellow-500 rounded-full animate-pulse border-2 border-[#1e1e1e]" />}
+                         </Button>
+                      </div>
+                    </DrawerTrigger>
+                    
+                    <DrawerContent className="bg-[#0c0c0e] border-t border-white/10 h-[80vh] flex flex-col">
+                       <div className="p-4 flex flex-col h-full gap-4">
+                          <div className="flex justify-center -mt-2 mb-2">
+                             <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                          </div>
+                          
+                          {/* Mobile Controls */}
+                          <div className="flex items-center justify-between gap-3 shrink-0">
+                             <div className="flex items-center gap-2 flex-1">
+                                {isExecuting ? (
+                                  <Button onClick={handleStop} className="flex-1 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20">
+                                     <Square className="w-4 h-4 mr-2 fill-current" /> Stop
+                                  </Button>
+                                ) : (
+                                  <Button onClick={handleRun} disabled={isLoading} className="flex-1 bg-white text-black hover:bg-gray-200">
+                                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2 fill-current" />} 
+                                     Execute
+                                  </Button>
+                                )}
+                                <Button onClick={handleDownload} variant="outline" size="icon" className="border-white/10 bg-white/5">
+                                   <Download className="w-4 h-4" />
+                                </Button>
+                             </div>
+                             <DrawerClose asChild>
+                                <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></Button>
+                             </DrawerClose>
+                          </div>
+                          
+                          {/* Terminal in Drawer */}
+                          <div className="flex-1 bg-[#010409] rounded-lg border border-white/5 overflow-hidden relative">
+                             {TerminalComponent}
+                          </div>
+                       </div>
+                    </DrawerContent>
+                </Drawer>
+             </div>
           </div>
         ) : (
-          // Desktop Layout with Resizable Panels
+          // DESKTOP VIEW
           <ResizablePanelGroup direction="horizontal" className="w-full h-full">
             <ResizablePanel defaultSize={60} minSize={30} className="bg-[#050505] flex flex-col">
               {EditorComponent}
@@ -646,7 +537,7 @@ const Compiler = () => {
         )}
       </div>
 
-      {/* FOOTER - Hide on mobile if Tabs take space, or keep slim */}
+      {/* FOOTER */}
       {!isMobile && (
         <footer className="h-[32px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-6 text-[9px] text-[#666] uppercase tracking-widest shrink-0">
           <div className="flex items-center gap-2">
