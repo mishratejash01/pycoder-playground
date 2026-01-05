@@ -58,13 +58,9 @@ const AppContent = () => {
   const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile', '/verify'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
+  // IITM BS removed from dockItems
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
-    { 
-      icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
-      label: 'IITM BS', 
-      onClick: () => navigate('/degree') 
-    },
     { icon: <Code2 size={20} />, label: 'Practice', onClick: () => navigate('/practice-arena') },
     { icon: <Calendar size={20} />, label: 'Events', onClick: () => navigate('/events') }, 
     { icon: <User size={20} />, label: 'Profile', onClick: () => navigate('/profile') },
