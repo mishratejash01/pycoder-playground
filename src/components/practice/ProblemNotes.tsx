@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useRef } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SquarePen, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,9 +12,12 @@ interface ProblemNotesProps {
 
 export function ProblemNotes({ problemId, userId }: ProblemNotesProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [content, setContent] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
+  // Fetch existing note
   const { data: note } = useQuery({
     queryKey: ['problem_note', problemId, userId],
     queryFn: async () => {
@@ -32,11 +35,13 @@ export function ProblemNotes({ problemId, userId }: ProblemNotesProps) {
     enabled: !!userId && !!problemId
   });
 
+  // Initialize content once when data is loaded
   useEffect(() => {
-    if (note?.content) {
+    if (note?.content && !isInitialized) {
       setContent(note.content);
+      setIsInitialized(true);
     }
-  }, [note]);
+  }, [note, isInitialized]);
 
   const saveMutation = useMutation({
     mutationFn: async (newContent: string) => {
@@ -57,7 +62,12 @@ export function ProblemNotes({ problemId, userId }: ProblemNotesProps) {
     },
     onSuccess: () => {
       setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
+      // Quietly invalidate to keep data fresh without overwriting local state
+      queryClient.invalidateQueries({ queryKey: ['problem_note', problemId, userId] });
+      
+      setTimeout(() => {
+        setSaveStatus((prev) => prev === 'saved' ? 'idle' : prev);
+      }, 2000);
     },
     onError: () => {
       toast({ title: 'Error', description: 'Failed to save note', variant: 'destructive' });
@@ -67,15 +77,21 @@ export function ProblemNotes({ problemId, userId }: ProblemNotesProps) {
 
   // Debounced auto-save
   useEffect(() => {
-    if (!userId || content === (note?.content || '')) return;
+    // Skip if not logged in or content hasn't changed from server version (and we are initialized)
+    if (!userId || (isInitialized && content === note?.content)) return;
     
+    // Don't trigger save for empty content if it was already empty
+    if (!content && !note?.content) return;
+
     setSaveStatus('saving');
+    
     const timeout = setTimeout(() => {
       saveMutation.mutate(content);
     }, 1000);
 
     return () => clearTimeout(timeout);
-  }, [content, userId, note?.content, saveMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, userId]); // Removed 'saveMutation' and 'note' to prevent infinite loops
 
   if (!userId) {
     return (
@@ -112,8 +128,8 @@ export function ProblemNotes({ problemId, userId }: ProblemNotesProps) {
           )}
           {saveStatus === 'saved' && (
             <>
-              <Check className="w-2.5 h-2.5 text-white" />
-              <span className="text-white font-medium">Archived</span>
+              <Check className="w-2.5 h-2.5 text-emerald-500" />
+              <span className="text-emerald-500 font-medium">Archived</span>
             </>
           )}
         </div>
