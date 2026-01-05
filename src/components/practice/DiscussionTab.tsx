@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Loader2, Send } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 interface DiscussionTabProps {
   problemId: string;
@@ -30,8 +29,8 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
         `)
         .eq('problem_id', problemId)
         .is('parent_id', null)
-        // CHANGED: Sort by created_at descending so new posts appear at the top
-        .order('created_at', { ascending: false })
+        // FIXED: Sort by created_at descending so new posts appear first
+        .order('created_at', { ascending: false }) 
         .limit(50);
       
       if (error) throw error;
@@ -66,7 +65,6 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
   if (!userId) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-[#808080] py-12 bg-[#0a0a0a]">
-        <MessageSquare className="w-8 h-8 mb-3 opacity-20" />
         <p className="font-serif italic text-sm">Login to participate in the hub.</p>
       </div>
     );
@@ -112,15 +110,9 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
                   <button 
                     onClick={() => createMutation.mutate()}
                     disabled={!title.trim() || !content.trim() || createMutation.isPending}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-white text-black border border-white rounded-[2px] text-[11px] font-semibold uppercase tracking-[0.5px] hover:bg-transparent hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-black cursor-pointer"
+                    className="px-6 py-2.5 bg-white text-black border border-white rounded-[2px] text-[11px] font-semibold uppercase tracking-[0.5px] hover:bg-transparent hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-black cursor-pointer"
                   >
-                    {createMutation.isPending ? (
-                      'Posting...' 
-                    ) : (
-                      <>
-                        <Send className="w-3 h-3" /> Post Discussion
-                      </>
-                    )}
+                    {createMutation.isPending ? 'Posting...' : 'Post Discussion'}
                   </button>
                 </div>
               </div>
