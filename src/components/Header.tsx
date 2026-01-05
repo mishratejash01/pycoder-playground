@@ -74,7 +74,7 @@ const FilledDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
     fill="white" 
     xmlns="http://www.w3.org/2000/svg"
     className={cn(
-      "transition-transform duration-300 ml-2 shrink-0", 
+      "transition-transform duration-300 ml-2 shrink-0 hidden md:block", // Arrow hidden on mobile
       isOpen && "rotate-180"
     )}
   >
@@ -249,13 +249,20 @@ export function Header({ session, onLogout }: HeaderProps) {
 
           {/* --- AUTH & MOBILE MENU SECTION --- */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Desktop Auth - Removed hidden md:block to show on mobile too */}
+            {/* Auth Section - Handles Both Mobile (Icon Only) and Desktop (Pill) */}
             <div>
               {session ? (
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
-                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all outline-none">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_15px_rgba(34,197,94,0.6)] font-sans">
+                    <div className={cn(
+                      "flex items-center cursor-pointer transition-all outline-none",
+                      // Mobile Styles: Simple click target, no background/border
+                      "p-0 bg-transparent border-0 gap-0",
+                      // Desktop Styles: Pill shape, background, border, padding
+                      "md:gap-3 md:px-4 md:py-2 md:rounded-xl md:bg-white/5 md:border md:border-white/10 md:hover:bg-white/10"
+                    )}>
+                      {/* Avatar: Removed the green glow shadow */}
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20">
                         {userName.charAt(0).toUpperCase()}
                       </div>
                       <span className="hidden md:inline text-sm font-semibold text-white font-sans">{userName}</span>
@@ -284,12 +291,10 @@ export function Header({ session, onLogout }: HeaderProps) {
             <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  {/* INCREASED HAMBURGER ICON SIZE */}
                   <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 w-10 h-10">
                     <Menu className="h-8 w-8" />
                   </Button>
                 </SheetTrigger>
-                {/* REMOVED CUSTOM CLOSE BUTTON TO FIX DOUBLE CROSS ISSUE */}
                 <SheetContent side="top" className="w-full rounded-b-[2.5rem] bg-black/90 backdrop-blur-xl border-b border-white/10 text-white p-0 overflow-hidden shadow-2xl">
                   <div className="p-6 md:p-8 flex flex-col h-auto max-h-[85vh] overflow-y-auto">
                     
@@ -339,24 +344,11 @@ export function Header({ session, onLogout }: HeaderProps) {
 
                     <Link to="/events" className="text-lg font-semibold text-white hover:text-zinc-300 transition-colors mb-8 block">Events</Link>
 
-                    {/* Auth & CTAs inside Menu - ALSO VISIBLE HERE */}
+                    {/* Mobile Menu Footer */}
                     <div className="mt-auto space-y-4">
-                       {session ? (
-                         <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                                {userName.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-white font-bold">{userName}</span>
-                                <span className="text-xs text-zinc-400">Logged In</span>
-                              </div>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={onLogout} className="text-zinc-400 hover:text-white hover:bg-white/10">
-                              <LogOut className="w-5 h-5" />
-                            </Button>
-                         </div>
-                       ) : (
+                       {/* REMOVED: Redundant Logged-In User Block */}
+                       {/* Kept: Sign In button if NOT logged in (as fallback if they miss the top one) */}
+                       {!session && (
                          <Button 
                            size="lg" 
                            className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/10 h-12 text-base font-semibold" 
