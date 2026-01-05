@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CodeEditor } from '@/components/CodeEditor';
 import { Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
@@ -12,7 +13,7 @@ import { useInteractiveRunner } from '@/hooks/useInteractiveRunner';
 import { TerminalView } from '@/components/TerminalView';
 import { 
   Loader2, Play, RefreshCw, Terminal as TerminalIcon, 
-  Download, Lock, Square, Clock, Plus, Minus, Maximize2, Minimize2
+  Download, Lock, Square, Clock, Plus, Minus, Maximize2, Minimize2, Code2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -261,7 +262,8 @@ const Compiler = () => {
   const [fontSizeRight, setFontSizeRight] = useState(14);
   const [isReady, setIsReady] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  
+  const [activeTab, setActiveTab] = useState<'editor' | 'terminal'>('editor');
+
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -295,6 +297,13 @@ const Compiler = () => {
   const runnerState = getCurrentRunnerState();
   const isLoading = runnerState.isRunning || (isPython && !pythonReady);
   const isExecuting = runnerState.isRunning;
+
+  // Auto-switch to terminal on run
+  useEffect(() => {
+    if (isExecuting && isMobile) {
+      setActiveTab('terminal');
+    }
+  }, [isExecuting, isMobile]);
 
   // --- EFFECTS ---
   
@@ -387,12 +396,6 @@ const Compiler = () => {
     else writeInteractiveInput(char);
   }, [isPython, isJavaScript, writePythonInput, writeJSInput, writeInteractiveInput]);
 
-  const handleClearTerminal = () => {
-    if (!isExecuting) {
-      if (isPython) runPython(''); else if (isJavaScript) runJS(''); else runInteractive('');
-    }
-  };
-
   // Zoom Handler
   const handleZoom = (side: 'left' | 'right', delta: number) => {
     if (side === 'left') {
@@ -414,24 +417,183 @@ const Compiler = () => {
 
   const activeLangConfig = LANGUAGES_CONFIG.find(l => l.id === activeLanguage) || LANGUAGES_CONFIG[0];
 
+  const EditorComponent = (
+    <div className="flex-1 flex flex-col h-full bg-[#050505]">
+       {/* Toolbar */}
+       <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
+          <div className="flex items-center gap-3">
+            <img src={activeLangConfig.logo} alt={activeLangConfig.name} className="w-4 h-4 opacity-80" />
+            
+            <div className="relative group">
+              <select 
+                value={activeLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="bg-transparent border border-white/10 text-[10px] text-[#e0e0e0] font-mono py-1 px-2 pr-6 appearance-none cursor-pointer hover:border-white/20 focus:outline-none transition-colors uppercase tracking-wider rounded-sm max-w-[100px] sm:max-w-none"
+              >
+                {LANGUAGES_CONFIG.map(lang => (
+                  <option key={lang.id} value={lang.id} disabled={lockedLanguages[lang.id]} className="bg-[#080808] text-gray-300">
+                    {lang.name} {lockedLanguages[lang.id] ? '(LOCKED)' : ''}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                <span className="text-[8px] text-[#666]">▼</span>
+              </div>
+            </div>
+
+            {!isMobile && (
+              <>
+                <div className="h-4 w-[1px] bg-white/10 mx-1" />
+                <span className="font-mono text-[10px] text-[#666666] flex items-center gap-2">
+                  {isExecuting ? (
+                    <>
+                      <Clock className="w-3 h-3 text-yellow-500 animate-spin" />
+                      <span className="text-yellow-500">{formatTime(executionTime || 0)}</span>
+                    </>
+                  ) : (
+                    <span>{executionTime ? formatTime(executionTime) : '0.00s'}</span>
+                  )}
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {!isMobile && (
+              <div className="flex items-center border border-white/10 rounded overflow-hidden mr-2">
+                <button onClick={() => handleZoom('left', -1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
+                  <Minus className="w-3 h-3" />
+                </button>
+                <div className="w-[1px] h-3 bg-white/10" />
+                <button onClick={() => handleZoom('left', 1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            <button 
+              onClick={handleReset}
+              className="p-1.5 text-[#666] hover:text-white hover:bg-white/5 rounded transition-all" 
+              title="Reset Code"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Editor Area */}
+        <div className="flex-1 overflow-hidden relative">
+          <CodeEditor 
+            value={code}
+            onChange={setCode}
+            language={activeLanguage}
+            fontSize={fontSizeLeft}
+          />
+        </div>
+    </div>
+  );
+
+  const TerminalComponent = (
+    <div className="flex-1 flex flex-col h-full bg-[#050505]">
+       {/* Toolbar */}
+       <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
+          <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
+            <TerminalIcon className="w-3 h-3" /> {!isMobile && "Display Console"}
+          </span>
+
+          <div className="flex items-center gap-3">
+            {!isMobile && (
+              <div className="flex items-center border border-white/10 rounded overflow-hidden">
+                <button onClick={() => handleZoom('right', -1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
+                  <Minus className="w-3 h-3" />
+                </button>
+                <div className="w-[1px] h-3 bg-white/10" />
+                <button onClick={() => handleZoom('right', 1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            <button 
+              onClick={handleDownload}
+              className="p-1.5 text-[#666] hover:text-white hover:bg-white/5 rounded transition-all" 
+              title="Download Source"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+
+            {isExecuting ? (
+              <Button 
+                onClick={handleStop}
+                className="h-7 rounded-none bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-[10px] uppercase tracking-widest px-4"
+              >
+                <Square className="w-3 h-3 mr-2 fill-current" /> Terminate
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleRun}
+                disabled={isLoading}
+                className="h-7 rounded-none bg-white text-black hover:bg-gray-200 border-none font-bold text-[10px] uppercase tracking-widest px-4"
+              >
+                {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Play className="w-3 h-3 mr-2 fill-current" />}
+                Execute
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Terminal Area */}
+        <div className="flex-1 bg-[#010409] relative overflow-hidden flex flex-col">
+          {isPython && pythonInitError ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4 p-6">
+              <div className="text-red-400 text-center">
+                <span className="text-2xl mb-2 block">⚠️</span>
+                <span className="text-[11px] uppercase tracking-widest block mb-4">Kernel Error</span>
+                <p className="text-[10px] text-[#888] mb-4 max-w-xs">{pythonInitError}</p>
+              </div>
+              <Button 
+                onClick={retryPythonInit}
+                className="h-8 bg-white/10 text-white hover:bg-white/20 text-[10px] uppercase tracking-wider"
+              >
+                <RefreshCw className="w-3 h-3 mr-2" /> Retry Kernel
+              </Button>
+            </div>
+          ) : isPython && !pythonReady ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4">
+              <Loader2 className="w-6 h-6 animate-spin text-white/20" />
+              <span className="text-[10px] uppercase tracking-widest">Initializing Python...</span>
+              <span className="text-[9px] text-[#555]">This may take a few seconds</span>
+            </div>
+          ) : (
+            <TerminalView 
+              output={runnerState.output} 
+              onInput={handleTerminalInput}
+              isWaitingForInput={runnerState.isWaitingForInput}
+              language={activeLanguage}
+              isRunning={runnerState.isRunning}
+              fontSize={fontSizeRight}
+            />
+          )}
+        </div>
+    </div>
+  );
+
   // --- RENDER (Nexus Design with Codevo branding) ---
   return (
     <div className="h-screen w-full bg-[#050505] text-[#e0e0e0] font-sans flex flex-col overflow-hidden selection:bg-white/20">
       
       {/* HEADER */}
-      <header className="h-[60px] flex items-center justify-between px-6 border-b border-white/10 bg-[#050505] z-50 relative shrink-0">
+      <header className="h-[60px] flex items-center justify-between px-4 md:px-6 border-b border-white/10 bg-[#050505] z-50 relative shrink-0">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-[#666666] hover:text-white transition-colors duration-300">
-            {/* USER REQUESTED HOME ICON */}
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
             </svg>
           </Link>
         </div>
         
-        {/* BRANDING: "Codevo" (e is small, no uppercase) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <span className="font-neuropol text-2xl tracking-[0.2em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+          <span className="font-neuropol text-xl md:text-2xl tracking-[0.2em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
             CODéVO
           </span>
         </div>
@@ -445,175 +607,55 @@ const Compiler = () => {
 
       {/* WORKSPACE */}
       <div className="flex-1 flex relative bg-[#0a0a0a] overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="w-full h-full">
-          
-          {/* EDITOR COLUMN */}
-          <ResizablePanel defaultSize={60} minSize={30} className="bg-[#050505] flex flex-col">
-            
-            {/* Toolbar */}
-            <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
-              <div className="flex items-center gap-3">
-                <img src={activeLangConfig.logo} alt={activeLangConfig.name} className="w-4 h-4 opacity-80" />
-                
-                <div className="relative group">
-                  <select 
-                    value={activeLanguage}
-                    onChange={(e) => handleLanguageChange(e.target.value)}
-                    className="bg-transparent border border-white/10 text-[10px] text-[#e0e0e0] font-mono py-1 px-2 pr-6 appearance-none cursor-pointer hover:border-white/20 focus:outline-none transition-colors uppercase tracking-wider rounded-sm"
-                  >
-                    {LANGUAGES_CONFIG.map(lang => (
-                      <option key={lang.id} value={lang.id} disabled={lockedLanguages[lang.id]} className="bg-[#080808] text-gray-300">
-                        {lang.name} {lockedLanguages[lang.id] ? '(LOCKED)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-                    <span className="text-[8px] text-[#666]">▼</span>
-                  </div>
+        {isMobile ? (
+          // Mobile Layout with Tabs
+          <div className="w-full h-full flex flex-col">
+             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'editor' | 'terminal')} className="flex-1 flex flex-col">
+                <div className="flex-1 relative overflow-hidden">
+                   <TabsContent value="editor" className="h-full m-0 data-[state=inactive]:hidden">
+                      {EditorComponent}
+                   </TabsContent>
+                   <TabsContent value="terminal" className="h-full m-0 data-[state=inactive]:hidden">
+                      {TerminalComponent}
+                   </TabsContent>
                 </div>
+                <TabsList className="bg-[#080808] border-t border-white/10 h-12 rounded-none grid grid-cols-2 p-1 gap-1">
+                   <TabsTrigger value="editor" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-[#666] text-xs font-mono uppercase tracking-widest rounded-sm">
+                      <Code2 className="w-4 h-4 mr-2" /> Editor
+                   </TabsTrigger>
+                   <TabsTrigger value="terminal" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-[#666] text-xs font-mono uppercase tracking-widest rounded-sm relative">
+                      <TerminalIcon className="w-4 h-4 mr-2" /> Terminal
+                      {isExecuting && <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
+                   </TabsTrigger>
+                </TabsList>
+             </Tabs>
+          </div>
+        ) : (
+          // Desktop Layout with Resizable Panels
+          <ResizablePanelGroup direction="horizontal" className="w-full h-full">
+            <ResizablePanel defaultSize={60} minSize={30} className="bg-[#050505] flex flex-col">
+              {EditorComponent}
+            </ResizablePanel>
 
-                <div className="h-4 w-[1px] bg-white/10 mx-1" />
-                <span className="font-mono text-[10px] text-[#666666] flex items-center gap-2">
-                  {isExecuting ? (
-                    <>
-                      <Clock className="w-3 h-3 text-yellow-500 animate-spin" />
-                      <span className="text-yellow-500">{formatTime(executionTime || 0)}</span>
-                    </>
-                  ) : (
-                    <span>{executionTime ? formatTime(executionTime) : '0.00s'}</span>
-                  )}
-                </span>
-              </div>
+            <ResizableHandle className="w-1 bg-[#050505] border-x border-white/5 hover:bg-white/10 transition-colors" />
 
-              <div className="flex items-center gap-2">
-                <div className="flex items-center border border-white/10 rounded overflow-hidden mr-2">
-                  <button onClick={() => handleZoom('left', -1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <div className="w-[1px] h-3 bg-white/10" />
-                  <button onClick={() => handleZoom('left', 1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
-
-                <button 
-                  onClick={handleReset}
-                  className="p-1.5 text-[#666] hover:text-white hover:bg-white/5 rounded transition-all" 
-                  title="Reset Code"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Editor Area */}
-            <div className="flex-1 overflow-hidden relative">
-              <CodeEditor 
-                value={code}
-                onChange={setCode}
-                language={activeLanguage}
-                fontSize={fontSizeLeft}
-              />
-            </div>
-          </ResizablePanel>
-
-          <ResizableHandle className="w-1 bg-[#050505] border-x border-white/5 hover:bg-white/10 transition-colors" />
-
-          {/* TERMINAL COLUMN */}
-          <ResizablePanel defaultSize={40} minSize={20} className="bg-[#050505] flex flex-col">
-            
-            {/* Toolbar */}
-            <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
-                <TerminalIcon className="w-3 h-3" /> Display Console
-              </span>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center border border-white/10 rounded overflow-hidden">
-                  <button onClick={() => handleZoom('right', -1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <div className="w-[1px] h-3 bg-white/10" />
-                  <button onClick={() => handleZoom('right', 1)} className="w-6 h-6 flex items-center justify-center text-[#666] hover:text-white hover:bg-white/5 transition-colors">
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
-
-                <button 
-                  onClick={handleDownload}
-                  className="p-1.5 text-[#666] hover:text-white hover:bg-white/5 rounded transition-all" 
-                  title="Download Source"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </button>
-
-                {isExecuting ? (
-                  <Button 
-                    onClick={handleStop}
-                    className="h-7 rounded-none bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-[10px] uppercase tracking-widest px-4"
-                  >
-                    <Square className="w-3 h-3 mr-2 fill-current" /> Terminate
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleRun}
-                    disabled={isLoading}
-                    className="h-7 rounded-none bg-white text-black hover:bg-gray-200 border-none font-bold text-[10px] uppercase tracking-widest px-4"
-                  >
-                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Play className="w-3 h-3 mr-2 fill-current" />}
-                    Execute
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Terminal Area */}
-            <div className="flex-1 bg-[#010409] relative overflow-hidden flex flex-col">
-              {isPython && pythonInitError ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4 p-6">
-                  <div className="text-red-400 text-center">
-                    <span className="text-2xl mb-2 block">⚠️</span>
-                    <span className="text-[11px] uppercase tracking-widest block mb-4">Kernel Error</span>
-                    <p className="text-[10px] text-[#888] mb-4 max-w-xs">{pythonInitError}</p>
-                  </div>
-                  <Button 
-                    onClick={retryPythonInit}
-                    className="h-8 bg-white/10 text-white hover:bg-white/20 text-[10px] uppercase tracking-wider"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-2" /> Retry Kernel
-                  </Button>
-                </div>
-              ) : isPython && !pythonReady ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-white/20" />
-                  <span className="text-[10px] uppercase tracking-widest">Initializing Python...</span>
-                  <span className="text-[9px] text-[#555]">This may take a few seconds</span>
-                </div>
-              ) : (
-                <TerminalView 
-                  output={runnerState.output} 
-                  onInput={handleTerminalInput}
-                  isWaitingForInput={runnerState.isWaitingForInput}
-                  language={activeLanguage}
-                  isRunning={runnerState.isRunning}
-                  fontSize={fontSizeRight}
-                />
-              )}
-            </div>
-
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            <ResizablePanel defaultSize={40} minSize={20} className="bg-[#050505] flex flex-col">
+              {TerminalComponent}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
 
-      {/* FOOTER */}
-      <footer className="h-[32px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-6 text-[9px] text-[#666] uppercase tracking-widest shrink-0">
-        <div className="flex items-center gap-2">
-          <div className={cn("w-1 h-1 rounded-full shadow-[0_0_6px]", isReady ? "bg-[#3fb950] shadow-[#3fb950]" : "bg-yellow-500 shadow-yellow-500")} />
-          <span>{isReady ? "Connected / encrypted_v2" : "Initializing..."}</span>
-        </div>
-        <div>Codevo 2025</div>
-      </footer>
-
+      {/* FOOTER - Hide on mobile if Tabs take space, or keep slim */}
+      {!isMobile && (
+        <footer className="h-[32px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-6 text-[9px] text-[#666] uppercase tracking-widest shrink-0">
+          <div className="flex items-center gap-2">
+            <div className={cn("w-1 h-1 rounded-full shadow-[0_0_6px]", isReady ? "bg-[#3fb950] shadow-[#3fb950]" : "bg-yellow-500 shadow-yellow-500")} />
+            <span>{isReady ? "Connected / encrypted_v2" : "Initializing..."}</span>
+          </div>
+          <div>Codevo 2025</div>
+        </footer>
+      )}
     </div>
   );
 };
