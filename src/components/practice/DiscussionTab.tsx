@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, ChevronUp, MessageSquare } from 'lucide-react'; // Removing standard Send icon
+import { Loader2, ChevronUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -12,28 +12,24 @@ interface DiscussionTabProps {
   userId: string | undefined;
 }
 
-// Custom "Atelier" Send Icon based on your geometry
+// Custom Paper Plane Icon (Your specific geometry)
 const SendIcon = ({ className }: { className?: string }) => (
-  <svg 
-    viewBox="0 0 100 100" 
-    className={className} 
-    fill="currentColor"
-  >
+  <svg viewBox="0 0 100 100" className={className} fill="currentColor">
     <path d="M 10 20 L 90 50 L 10 45 Z" />
     <path d="M 10 55 L 90 50 L 10 80 Z" />
   </svg>
 );
 
 /**
- * INDIVIDUAL CARD COMPONENT
+ * INDIVIDUAL DISCUSSION CARD
  */
 function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [replyContent, setReplyContent] = useState('');
-  const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  // Check if User Upvoted
+  // Check Upvote Status
   const { data: hasUpvoted } = useQuery({
     queryKey: ['has_upvoted', disc.id, userId],
     queryFn: async () => {
@@ -49,7 +45,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     enabled: !!userId
   });
 
-  // Fetch Replies
+  // Fetch Replies (Only if expanded)
   const { data: replies = [] } = useQuery({
     queryKey: ['discussion_replies', disc.id],
     queryFn: async () => {
@@ -63,7 +59,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     enabled: isExpanded
   });
 
-  // Upvote Action
+  // Toggle Upvote
   const upvoteMutation = useMutation({
     mutationFn: async () => {
       if (!userId) return;
@@ -79,7 +75,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     }
   });
 
-  // Reply Action
+  // Post Reply
   const replyMutation = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('Login required');
@@ -95,14 +91,14 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     onSuccess: () => {
       setReplyContent('');
       queryClient.invalidateQueries({ queryKey: ['discussion_replies', disc.id] });
-      toast({ title: 'Reply Sent', description: 'Your correspondence has been added.' });
+      toast({ title: 'Success', description: 'Reply posted.' });
     }
   });
 
   return (
-    <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-6 flex gap-5 transition-all duration-300 hover:border-white/[0.15] group">
+    <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-8 flex gap-7 transition-all duration-300 hover:border-white/[0.15] group">
       
-      {/* LEFT: Upvote */}
+      {/* Endorse Column */}
       <div className="flex flex-col items-center gap-1 text-[#475569]">
         <button 
           onClick={(e) => { e.stopPropagation(); upvoteMutation.mutate(); }}
@@ -113,44 +109,54 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
         >
           <ChevronUp className="w-3 h-3 stroke-[3px]" />
         </button>
-        <span className="text-[10px] font-bold font-mono mt-1">{disc.upvotes || 0}</span>
+        <span className="text-[12px] font-semibold font-sans mt-1">{disc.upvotes || 0}</span>
       </div>
 
-      {/* RIGHT: Content */}
+      {/* Content Area */}
       <div className="flex-1 min-w-0">
-        <div className="flex justify-between text-[10px] uppercase tracking-[0.1em] text-[#475569] mb-2">
-          <span>{disc.profiles?.full_name || 'Anonymous'}</span>
+        
+        {/* Meta */}
+        <div className="flex justify-between text-[10px] uppercase tracking-[0.1em] text-[#475569] mb-3">
+          <span>Category: <span className="text-[#94a3b8]">General</span></span>
           <span>{formatDistanceToNow(new Date(disc.created_at), { addSuffix: true })}</span>
         </div>
 
-        <h3 className="font-serif text-lg italic text-[#f8fafc] mb-2 leading-tight">
+        {/* Title & Text */}
+        <h3 className="font-serif text-xl italic text-[#f8fafc] mb-3 leading-[1.3]">
           {disc.title}
         </h3>
-        <p className="text-[13px] leading-[1.6] text-[#94a3b8] mb-4 whitespace-pre-wrap">
+        <p className="text-[15px] leading-[1.7] text-[#94a3b8] mb-6 whitespace-pre-wrap">
           {disc.content}
         </p>
 
-        <div className="flex justify-end border-t border-white/[0.08] pt-3">
+        {/* Footer */}
+        <div className="flex justify-between items-center border-t border-white/[0.08] pt-4">
+          <div className="flex items-center gap-2.5 text-[11px] font-semibold text-[#94a3b8]">
+            <div className="w-5 h-5 border border-white/[0.08] flex items-center justify-center text-[9px] text-[#475569] bg-[#0c0c0c]">
+              {disc.profiles?.full_name?.[0] || 'U'}
+            </div>
+            {disc.profiles?.full_name || 'Executive Member'}
+          </div>
+          
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-[10px] uppercase tracking-[1px] text-[#475569] hover:text-[#f8fafc] transition-colors flex items-center gap-2"
+            className="text-[10px] uppercase tracking-[1px] text-[#475569] hover:text-[#f8fafc] transition-colors cursor-pointer"
           >
-            <MessageSquare className="w-3 h-3" />
-            {isExpanded ? 'Collapse Thread' : `View ${replies.length > 0 ? `(${replies.length}) ` : ''}Replies`}
+            {isExpanded ? 'Collapse Thread' : `View Replies (${replies.length > 0 ? replies.length : '0'})`}
           </button>
         </div>
 
-        {/* REPLIES */}
+        {/* REPLIES SECTION */}
         {isExpanded && (
-          <div className="mt-4 pl-4 border-l border-white/[0.08] flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
+          <div className="mt-6 pl-6 border-l border-white/[0.08] flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
             
             {replies.map((reply: any) => (
-              <div key={reply.id} className="bg-[#0a0a0a] p-3 border border-white/[0.08] rounded-[2px]">
-                <div className="text-[9px] text-[#475569] uppercase mb-1 flex justify-between">
+              <div key={reply.id} className="bg-[#0a0a0a] p-4 border border-white/[0.08] rounded-[2px]">
+                <div className="text-[9px] text-[#475569] uppercase mb-2 flex justify-between">
                   <span>{reply.profiles?.full_name || 'Unknown'}</span>
                   <span>{formatDistanceToNow(new Date(reply.created_at))} ago</span>
                 </div>
-                <p className="text-[12px] leading-[1.5] text-[#94a3b8]">
+                <p className="text-[13px] leading-[1.5] text-[#94a3b8]">
                   {reply.content}
                 </p>
               </div>
@@ -163,19 +169,20 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 placeholder="Draft a response..."
-                className="flex-1 bg-[#0c0c0c] border border-white/[0.08] rounded-[2px] px-3 py-2 text-[12px] text-[#f8fafc] focus:outline-none focus:border-white/[0.2] placeholder:text-[#475569]"
+                className="flex-1 bg-[#0c0c0c] border border-white/[0.08] rounded-[2px] px-3 py-2 text-[13px] text-[#f8fafc] focus:outline-none focus:border-white/[0.2] placeholder:text-[#475569]"
                 onKeyDown={(e) => e.key === 'Enter' && replyMutation.mutate()}
               />
               <button 
                 onClick={() => replyMutation.mutate()}
                 disabled={!replyContent.trim() || replyMutation.isPending}
-                className="bg-[#141414] border border-white/[0.08] text-[#94a3b8] w-8 h-8 flex items-center justify-center rounded-[2px] hover:text-white hover:border-white/[0.2] transition-all disabled:opacity-50"
+                className="bg-[#f8fafc] text-[#080808] px-3 py-2 rounded-[2px] hover:bg-[#94a3b8] transition-colors flex items-center justify-center disabled:opacity-50"
               >
                 <SendIcon className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
@@ -190,6 +197,7 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
+  // Fetch Root Discussions (Sorted Newest First)
   const { data: discussions = [], isLoading } = useQuery({
     queryKey: ['problem_discussions', problemId],
     queryFn: async () => {
@@ -198,7 +206,7 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
         .select(`*, profiles:user_id (full_name, avatar_url)`)
         .eq('problem_id', problemId)
         .is('parent_id', null)
-        .order('created_at', { ascending: false }) // Newest first
+        .order('created_at', { ascending: false }) // Sort by Newest
         .limit(50);
       
       if (error) throw error;
@@ -207,6 +215,7 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
     enabled: !!problemId
   });
 
+  // Create New Thread
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('Not logged in');
@@ -222,18 +231,17 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
       queryClient.invalidateQueries({ queryKey: ['problem_discussions', problemId] });
       setTitle('');
       setContent('');
-      toast({ title: 'Published', description: 'Your correspondence has been broadcasted.' });
+      toast({ title: 'Posted', description: 'Topic initiated successfully.' });
     },
     onError: () => {
-      toast({ title: 'Error', description: 'Failed to transmit message.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to create discussion.', variant: 'destructive' });
     }
   });
 
   if (!userId) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-[#475569] py-12 bg-[#080808]">
-        <MessageSquare className="w-8 h-8 mb-3 opacity-20" />
-        <p className="font-serif italic text-sm">Authentication required for channel access.</p>
+        <p className="font-serif italic text-sm">Authentication required for conversations.</p>
       </div>
     );
   }
@@ -249,42 +257,40 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
   return (
     <div className="flex flex-col h-full bg-[#080808] text-[#f8fafc] font-sans">
       <ScrollArea className="flex-1">
-        <div className="p-8 max-w-[650px] mx-auto w-full flex flex-col gap-8">
+        <div className="p-8 max-w-[650px] mx-auto w-full flex flex-col gap-6">
           
           {/* COMPOSER BOX */}
-          <div className="bg-[#0c0c0c] border border-white/[0.08] rounded-[4px] p-6 transition-colors hover:border-white/[0.15] group/composer">
+          <div className="bg-[#0c0c0c] border border-white/[0.08] rounded-[4px] p-8 transition-colors hover:border-white/[0.15]">
             <div className="border-b border-white/[0.08] pb-3 mb-4">
               <input 
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Subject Line..."
-                className="w-full bg-transparent border-none text-lg font-serif italic text-[#f8fafc] placeholder:text-[#475569] focus:outline-none"
+                placeholder="Share your thoughts..."
+                className="w-full bg-transparent border-none text-xl font-serif italic text-[#f8fafc] placeholder:text-[#475569] focus:outline-none"
               />
             </div>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Share your technical analysis or inquiry..."
-              className="w-full bg-transparent border-none text-[13px] text-[#94a3b8] placeholder:text-[#475569] focus:outline-none resize-none min-h-[60px] leading-[1.6]"
+              placeholder="Write your suggestions or questions here for the group."
+              className="w-full bg-transparent border-none text-[14px] text-[#94a3b8] placeholder:text-[#475569] focus:outline-none resize-none min-h-[60px] leading-[1.6]"
             />
             
-            <div className="flex justify-end mt-4 pt-2 border-t border-white/[0.05]">
-              <button 
-                onClick={() => createMutation.mutate()}
-                disabled={!title.trim() || !content.trim() || createMutation.isPending}
-                className="flex items-center gap-2 text-[10px] uppercase tracking-[1px] bg-[#f8fafc] text-[#080808] px-5 py-2 rounded-[2px] hover:bg-[#94a3b8] transition-colors font-semibold disabled:opacity-50"
-              >
-                {createMutation.isPending ? 'Broadcasting...' : (
-                  <>
-                    <SendIcon className="w-4 h-4" /> Publish
-                  </>
-                )}
-              </button>
-            </div>
+            {(title || content) && (
+              <div className="flex justify-end mt-4 pt-4 border-t border-white/[0.05] animate-in fade-in">
+                <button 
+                  onClick={() => createMutation.mutate()}
+                  disabled={createMutation.isPending}
+                  className="text-[10px] uppercase tracking-[1px] bg-[#f8fafc] text-[#080808] px-5 py-2 rounded-[2px] hover:bg-[#94a3b8] transition-colors font-semibold disabled:opacity-50"
+                >
+                  {createMutation.isPending ? 'Publishing...' : 'Publish'}
+                </button>
+              </div>
+            )}
           </div>
 
-          <h2 className="text-[10px] uppercase tracking-[3px] text-[#475569] pl-1">Recent Topics</h2>
+          <h2 className="text-[10px] uppercase tracking-[3px] text-[#475569] mt-4 pl-1">Latest Topics</h2>
 
           {/* DISCUSSION LIST */}
           <div className="flex flex-col gap-4 pb-12">
