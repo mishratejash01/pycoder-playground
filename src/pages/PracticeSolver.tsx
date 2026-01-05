@@ -9,7 +9,8 @@ import { useEnhancedCodeRunner, Language, EnhancedExecutionResult } from '@/hook
 import { CodeEditor } from '@/components/CodeEditor';
 import { 
   Play, Send, ChevronLeft, Loader2, Bug, Terminal, BookOpen, 
-  CheckCircle2, Sparkles, Maximize2, Minimize2, Settings, History, MessageSquare, FileCode2
+  CheckCircle2, Sparkles, Maximize2, Minimize2, Settings, History, 
+  MessageSquare, FileCode2, Timer // Added Timer back here
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -571,8 +572,8 @@ export default function PracticeSolver() {
                     </div>
                   )}
 
-                  {/* FIXED: Added 'h-full flex flex-col' so the sandbox takes full height */}
-                  <div className={cn("h-full flex flex-col", consoleTab === 'custom' ? 'block' : 'hidden')}>
+                  {/* FIXED: Using flex-col and 'flex' explicitly to ensure full height visibility */}
+                  <div className={cn("h-full flex-col", consoleTab === 'custom' ? 'flex' : 'hidden')}>
                     <CustomTestSandbox
                       defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
                       onRunCustomTest={handleRunCustomTest}
