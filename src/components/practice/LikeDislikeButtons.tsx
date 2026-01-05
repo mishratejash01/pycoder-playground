@@ -6,13 +6,14 @@ import { cn } from '@/lib/utils';
 interface LikeDislikeButtonsProps {
   problemId: string;
   userId: string | undefined;
-  likes: number;
-  dislikes: number;
+  likes: number;     // Keeping these for initial fallback
+  dislikes: number;  // Keeping these for initial fallback
 }
 
-export function LikeDislikeButtons({ problemId, userId, likes, dislikes }: LikeDislikeButtonsProps) {
+export function LikeDislikeButtons({ problemId, userId, likes: initialLikes, dislikes: initialDislikes }: LikeDislikeButtonsProps) {
   const queryClient = useQueryClient();
 
+  // 1. Fetch User's Current Reaction
   const { data: userReaction } = useQuery({
     queryKey: ['reaction', problemId, userId],
     queryFn: async () => {
@@ -30,12 +31,40 @@ export function LikeDislikeButtons({ problemId, userId, likes, dislikes }: LikeD
     enabled: !!userId && !!problemId
   });
 
+  // 2. Fetch Live Counts Directly from the Reactions Table
+  // This bypasses the potentially stale 'practice_problems' columns
+  const { data: reactionCounts } = useQuery({
+    queryKey: ['reaction_counts', problemId],
+    queryFn: async () => {
+      const [likesResponse, dislikesResponse] = await Promise.all([
+        supabase
+          .from('practice_reactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('problem_id', problemId)
+          .eq('reaction_type', 'like'),
+        supabase
+          .from('practice_reactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('problem_id', problemId)
+          .eq('reaction_type', 'dislike')
+      ]);
+      
+      return {
+        likes: likesResponse.count || 0,
+        dislikes: dislikesResponse.count || 0
+      };
+    },
+    // Use the props as initial data while loading to prevent layout shift
+    initialData: { likes: initialLikes, dislikes: initialDislikes },
+    enabled: !!problemId
+  });
+
   const reactMutation = useMutation({
     mutationFn: async (reactionType: 'like' | 'dislike') => {
       if (!userId) throw new Error('Not logged in');
       
+      // If clicking the same reaction again, remove it (toggle off)
       if (userReaction === reactionType) {
-        // Remove reaction
         const { error } = await supabase
           .from('practice_reactions')
           .delete()
@@ -43,7 +72,7 @@ export function LikeDislikeButtons({ problemId, userId, likes, dislikes }: LikeD
           .eq('user_id', userId);
         if (error) throw error;
       } else {
-        // Upsert reaction
+        // Otherwise insert/update the reaction
         const { error } = await supabase
           .from('practice_reactions')
           .upsert({
@@ -56,11 +85,48 @@ export function LikeDislikeButtons({ problemId, userId, likes, dislikes }: LikeD
         if (error) throw error;
       }
     },
+    onMutate: async (reactionType) => {
+      // Optimistic Update for instant UI feedback
+      await queryClient.cancelQueries({ queryKey: ['reaction', problemId, userId] });
+      await queryClient.cancelQueries({ queryKey: ['reaction_counts', problemId] });
+
+      const previousReaction = userReaction;
+      
+      // Update User Reaction State
+      queryClient.setQueryData(['reaction', problemId, userId], (old: any) => 
+        old === reactionType ? null : reactionType
+      );
+
+      // Update Counts State
+      queryClient.setQueryData(['reaction_counts', problemId], (old: any) => {
+        let newLikes = old?.likes || 0;
+        let newDislikes = old?.dislikes || 0;
+
+        // Remove old reaction from count
+        if (previousReaction === 'like') newLikes--;
+        if (previousReaction === 'dislike') newDislikes--;
+
+        // Add new reaction to count (if not toggling off)
+        if (previousReaction !== reactionType) {
+          if (reactionType === 'like') newLikes++;
+          if (reactionType === 'dislike') newDislikes++;
+        }
+
+        return { likes: newLikes, dislikes: newDislikes };
+      });
+
+      return { previousReaction };
+    },
     onSuccess: () => {
-      // Invalidate specific user reaction
       queryClient.invalidateQueries({ queryKey: ['reaction', problemId, userId] });
-      // Invalidate ALL practice problem queries to ensure the parent (fetching by slug) updates the counts
+      queryClient.invalidateQueries({ queryKey: ['reaction_counts', problemId] });
+      // Also refresh the parent problem query to keep everything in sync
       queryClient.invalidateQueries({ queryKey: ['practice_problem'] });
+    },
+    onError: (err, newTodo, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['reaction', problemId, userId], context?.previousReaction);
+      queryClient.invalidateQueries({ queryKey: ['reaction_counts', problemId] });
     }
   });
 
@@ -84,7 +150,7 @@ export function LikeDislikeButtons({ problemId, userId, likes, dislikes }: LikeD
             userReaction === 'like' && "fill-white/10"
           )} 
         />
-        <span className="tabular-nums">{likes || 0}</span>
+        <span className="tabular-nums">{reactionCounts?.likes || 0}</span>
       </button>
 
       {/* Divider */}
@@ -107,7 +173,7 @@ export function LikeDislikeButtons({ problemId, userId, likes, dislikes }: LikeD
             userReaction === 'dislike' && "fill-white/10"
           )} 
         />
-        <span className="tabular-nums">{dislikes || 0}</span>
+        <span className="tabular-nums">{reactionCounts?.dislikes || 0}</span>
       </button>
 
     </div>
