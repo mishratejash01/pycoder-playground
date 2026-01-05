@@ -2,14 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MessageSquare, Send, ChevronUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { MessageSquare, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface DiscussionTabProps {
   problemId: string;
@@ -34,8 +30,7 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
         `)
         .eq('problem_id', problemId)
         .is('parent_id', null)
-        // FIXED: Sort by created_at descending so new posts appear at the top
-        .order('created_at', { ascending: false }) 
+        .order('created_at', { ascending: false }) // Ensure newest posts are shown first
         .limit(50);
       
       if (error) throw error;
@@ -69,115 +64,118 @@ export function DiscussionTab({ problemId, userId }: DiscussionTabProps) {
 
   if (!userId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
-        <MessageSquare className="w-8 h-8 mb-2 opacity-50" />
-        <p className="text-sm">Login to view and participate in discussions</p>
+      <div className="flex flex-col items-center justify-center h-full text-[#808080] py-12 bg-[#0a0a0a]">
+        <MessageSquare className="w-8 h-8 mb-3 opacity-20" />
+        <p className="font-serif italic text-sm">Login to participate in the hub.</p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="space-y-3 p-4">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="h-20 bg-white/5 rounded-lg animate-pulse" />
-        ))}
+      <div className="flex items-center justify-center h-full bg-[#0a0a0a]">
+        <Loader2 className="w-6 h-6 text-[#808080] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* New Discussion Form */}
-      <div className="p-3 border-b border-white/5">
-        {showForm ? (
-          <div className="space-y-3">
-            <Input
-              placeholder="Discussion title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="bg-[#151515] border-white/10 text-sm"
-            />
-            <Textarea
-              placeholder="Share your approach or ask a question..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="bg-[#151515] border-white/10 text-sm min-h-[80px]"
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => createMutation.mutate()}
-                disabled={!title.trim() || !content.trim() || createMutation.isPending}
-                className="h-8 text-xs"
-              >
-                <Send className="w-3 h-3 mr-1" /> Post
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowForm(false)}
-                className="h-8 text-xs"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowForm(true)}
-            className="w-full h-8 text-xs border-white/10 bg-white/5"
-          >
-            <MessageSquare className="w-3 h-3 mr-2" /> Start a Discussion
-          </Button>
-        )}
-      </div>
-
-      {/* Discussions List */}
+    <div className="flex flex-col h-full bg-[#0a0a0a] text-[#f2f2f2] font-sans">
       <ScrollArea className="flex-1">
-        <div className="space-y-2 p-3">
-          {discussions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              No discussions yet. Be the first to share your approach!
-            </div>
-          ) : (
-            discussions.map((disc: any) => (
-              <div
-                key={disc.id}
-                className="p-3 rounded-lg bg-[#151515] border border-white/5 hover:border-white/10 transition-colors"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                    <button className="p-1 hover:bg-white/10 rounded">
-                      <ChevronUp className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs font-medium">{disc.upvotes || 0}</span>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-white mb-1 truncate">
-                      {disc.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                      {disc.content}
-                    </p>
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <Avatar className="w-4 h-4">
-                        <AvatarFallback className="text-[8px] bg-primary/20">
-                          {disc.profiles?.full_name?.[0] || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{disc.profiles?.full_name || 'Anonymous'}</span>
-                      <span>·</span>
-                      <span>{formatDistanceToNow(new Date(disc.created_at), { addSuffix: true })}</span>
-                    </div>
-                  </div>
+        <div className="p-6 max-w-[580px] mx-auto w-full flex flex-col gap-6">
+          
+          {/* Post Creator (Composer) */}
+          <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-6 transition-colors hover:border-white/[0.1]">
+            {showForm ? (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <input 
+                  type="text" 
+                  placeholder="Give your post a title..." 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-transparent border-none border-b border-white/[0.08] text-xl font-serif text-[#f2f2f2] placeholder:text-[#808080] pb-3 mb-4 focus:outline-none focus:border-white/[0.2] transition-colors"
+                />
+                <textarea 
+                  placeholder="Share your thoughts with the community..." 
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full bg-transparent border-none resize-none min-h-[80px] text-[15px] text-[#f2f2f2] placeholder:text-[#808080] focus:outline-none p-0 leading-relaxed custom-scrollbar"
+                />
+                <div className="flex justify-end gap-4 mt-4 pt-2">
+                  <button 
+                    onClick={() => setShowForm(false)}
+                    className="text-[11px] font-semibold uppercase tracking-[0.5px] text-[#808080] hover:text-[#f2f2f2] transition-colors bg-transparent border-none cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => createMutation.mutate()}
+                    disabled={!title.trim() || !content.trim() || createMutation.isPending}
+                    className="px-6 py-2.5 bg-white text-black border border-white rounded-[2px] text-[11px] font-semibold uppercase tracking-[0.5px] hover:bg-transparent hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-black cursor-pointer"
+                  >
+                    {createMutation.isPending ? 'Posting...' : 'Post Discussion'}
+                  </button>
                 </div>
               </div>
-            ))
-          )}
+            ) : (
+              <div 
+                onClick={() => setShowForm(true)}
+                className="cursor-pointer"
+              >
+                <div className="border-b border-white/[0.08] pb-3 mb-4">
+                  <span className="text-xl font-serif text-[#808080]">Start a new discussion...</span>
+                </div>
+                <div className="text-[15px] text-[#808080]/50">
+                  Share your insights regarding this problem.
+                </div>
+              </div>
+            )}
+          </div>
+
+          <h2 className="text-[11px] text-[#808080] uppercase tracking-[2px] mt-4 ml-1">Latest Conversations</h2>
+
+          {/* Discussion List */}
+          <div className="flex flex-col gap-3 pb-8">
+            {discussions.length === 0 ? (
+              <div className="text-center py-12 text-[#808080] font-serif italic">
+                No conversations yet. Be the first to start one.
+              </div>
+            ) : (
+              discussions.map((disc: any) => (
+                <div
+                  key={disc.id}
+                  className="group bg-[#1c1c1c] border border-white/[0.08] p-6 rounded-[4px] cursor-pointer transition-all duration-200 hover:-translate-y-[2px] hover:border-white/[0.2]"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-[#808080]">
+                      <div className="w-[5px] h-[5px] bg-[#444] rounded-full" />
+                      <span className="text-[#808080] group-hover:text-[#f2f2f2] transition-colors">
+                        {disc.profiles?.full_name || 'Anonymous'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[#f2f2f2] font-semibold text-[11px]">
+                      <span>▲</span> {disc.upvotes || 0}
+                    </div>
+                  </div>
+
+                  <h3 className="font-serif text-[19px] text-[#f2f2f2] mb-2 leading-tight">
+                    {disc.title}
+                  </h3>
+                  
+                  <p className="text-[14px] text-[#808080] leading-[1.6] line-clamp-2">
+                    {disc.content}
+                  </p>
+
+                  <div className="mt-4 flex gap-5 text-[11px] text-[#808080]">
+                    <span>View Thread</span>
+                    <span>•</span>
+                    <span>{formatDistanceToNow(new Date(disc.created_at), { addSuffix: true })}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
         </div>
       </ScrollArea>
     </div>
