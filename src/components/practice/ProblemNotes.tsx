@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Textarea } from '@/components/ui/textarea';
-import { StickyNote, Check, Loader2 } from 'lucide-react';
+import { SquarePen, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,7 +12,6 @@ interface ProblemNotesProps {
 
 export function ProblemNotes({ problemId, userId }: ProblemNotesProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -77,47 +75,71 @@ export function ProblemNotes({ problemId, userId }: ProblemNotesProps) {
     }, 1000);
 
     return () => clearTimeout(timeout);
-  }, [content, userId]);
+  }, [content, userId, note?.content, saveMutation]);
 
   if (!userId) {
     return (
-      <div className="p-4 text-center text-muted-foreground text-sm">
-        Login to save personal notes
+      <div className="w-full bg-[#141414] border border-white/[0.08] rounded-[4px] p-8 text-center">
+        <p className="font-serif italic text-[#94a3b8] text-sm">Please identify yourself to access private observations.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <StickyNote className="w-3.5 h-3.5" />
-          <span>Personal Notes</span>
+    <div className="w-full bg-[#141414] border border-white/[0.08] rounded-[4px] p-6 shadow-2xl font-sans">
+      
+      {/* Header */}
+      <header className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2.5 text-[#94a3b8]">
+          <SquarePen className="w-3.5 h-3.5 opacity-80" />
+          <span className="font-serif italic text-sm tracking-wide text-[#94a3b8]">Private Observations</span>
         </div>
+
+        {/* Status Indicator */}
         <div className={cn(
-          "flex items-center gap-1 text-[10px] transition-opacity",
+          "flex items-center gap-2 text-[10px] uppercase tracking-widest transition-opacity duration-500",
           saveStatus === 'idle' ? "opacity-0" : "opacity-100"
         )}>
           {saveStatus === 'saving' && (
             <>
-              <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-              <span className="text-muted-foreground">Saving...</span>
+              <div className="flex gap-[3px]">
+                <div className="w-[2px] h-[2px] bg-current rounded-full animate-pulse text-[#475569]" />
+                <div className="w-[2px] h-[2px] bg-current rounded-full animate-pulse delay-75 text-[#475569]" />
+                <div className="w-[2px] h-[2px] bg-current rounded-full animate-pulse delay-150 text-[#475569]" />
+              </div>
+              <span className="text-[#475569] font-medium">Syncing</span>
             </>
           )}
           {saveStatus === 'saved' && (
             <>
-              <Check className="w-3 h-3 text-green-400" />
-              <span className="text-green-400">Saved</span>
+              <Check className="w-2.5 h-2.5 text-white" />
+              <span className="text-white font-medium">Archived</span>
             </>
           )}
         </div>
+      </header>
+
+      {/* Note Input Wrapper */}
+      <div className="relative bg-[#0e0e0e] border border-white/[0.08] rounded-[2px] transition-all duration-300 focus-within:border-white/20 focus-within:shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        
+        {/* Lined Paper Effect Overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-10 mt-[1.5em]" 
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
+            backgroundSize: '100% 1.7em'
+          }} 
+        />
+        
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Transcribe your approach, insights, or structural logic here..."
+          className="w-full min-h-[180px] bg-transparent border-none p-5 text-[#94a3b8] font-sans text-sm leading-[1.7] resize-none outline-none placeholder:text-[#475569] placeholder:italic placeholder:font-serif scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+          spellCheck={false}
+        />
       </div>
-      <Textarea
-        placeholder="Write your notes, approach, or key insights here..."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        className="bg-[#151515] border-white/10 text-sm min-h-[120px] resize-none"
-      />
+
     </div>
   );
 }
