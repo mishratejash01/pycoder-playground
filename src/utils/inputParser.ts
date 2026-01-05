@@ -5,7 +5,7 @@
 
 import { Language } from './codeWrappers';
 
-interface ParsedParam {
+export interface ParsedParam {
   name: string;
   value: string;
   type: 'array' | 'string' | 'number' | 'boolean' | 'array2d' | 'null' | 'linkedlist' | 'tree';
@@ -108,6 +108,10 @@ const parseUnnamedInput = (input: string): ParsedParam[] => {
 /**
  * Detect the type of a value string
  * Enhanced to detect ListNode and TreeNode patterns
+ * 
+ * EXPANDED: Added more common parameter names for LinkedList and Tree problems:
+ * - LinkedList: l1, l2, l3, node, node1, node2, head, list, etc.
+ * - Tree: root, tree, t1, t2, p, q, etc.
  */
 const detectValueType = (value: string, name?: string): ParsedParam['type'] => {
   const trimmed = value.trim();
@@ -122,17 +126,56 @@ const detectValueType = (value: string, name?: string): ParsedParam['type'] => {
     return 'array2d';
   }
   
-  // Check for LinkedList pattern based on parameter name
-  if (name && (name.toLowerCase().includes('head') || name.toLowerCase().includes('list'))) {
-    if (trimmed.startsWith('[') && !trimmed.startsWith('[[')) {
-      return 'linkedlist';
+  // Expanded LinkedList detection patterns
+  // Common names: l1, l2, l3, head, list, node, head1, head2, etc.
+  const linkedListPatterns = [
+    'l1', 'l2', 'l3', 'l4',  // Add Two Numbers, Merge Lists, etc.
+    'head', 'head1', 'head2',
+    'list', 'list1', 'list2',
+    'node', 'node1', 'node2',
+    'linkedlist',
+    'headA', 'headB'  // Intersection of Two Lists
+  ];
+  
+  if (name) {
+    const lowerName = name.toLowerCase();
+    // Check exact matches first
+    if (linkedListPatterns.includes(lowerName)) {
+      if (trimmed.startsWith('[') && !trimmed.startsWith('[[')) {
+        return 'linkedlist';
+      }
+    }
+    // Check partial matches (e.g., name contains 'head' or 'list')
+    if (lowerName.includes('head') || lowerName.includes('list') || lowerName.includes('node')) {
+      if (trimmed.startsWith('[') && !trimmed.startsWith('[[')) {
+        return 'linkedlist';
+      }
     }
   }
   
-  // Check for Tree pattern based on parameter name
-  if (name && (name.toLowerCase().includes('root') || name.toLowerCase().includes('tree'))) {
-    if (trimmed.startsWith('[')) {
-      return 'tree';
+  // Expanded Tree detection patterns
+  // Common names: root, tree, t1, t2, p, q, etc.
+  const treePatterns = [
+    'root', 'root1', 'root2',
+    'tree', 'tree1', 'tree2',
+    't1', 't2',
+    'p', 'q',  // Common for Lowest Common Ancestor problems
+    'subroot', 'subtree'
+  ];
+  
+  if (name) {
+    const lowerName = name.toLowerCase();
+    // Check exact matches first
+    if (treePatterns.includes(lowerName)) {
+      if (trimmed.startsWith('[')) {
+        return 'tree';
+      }
+    }
+    // Check partial matches
+    if (lowerName.includes('root') || lowerName.includes('tree')) {
+      if (trimmed.startsWith('[')) {
+        return 'tree';
+      }
     }
   }
   
@@ -147,6 +190,11 @@ const detectValueType = (value: string, name?: string): ParsedParam['type'] => {
   }
   return 'string';
 };
+
+/**
+ * Export parseRawInput with types for use by codeWrappers
+ */
+export const parseRawInputWithTypes = parseRawInput;
 
 /**
  * Convert parsed parameters to language-specific format
