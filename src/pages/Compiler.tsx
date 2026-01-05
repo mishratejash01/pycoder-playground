@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
+import { SEO } from '@/components/SEO'; // <--- ADDED SEO IMPORT
 
 // --- CONFIGURATION ---
 
@@ -406,6 +407,14 @@ const Compiler = () => {
     // CHANGED: h-screen to h-[100dvh] to fix mobile browser bottom bar issues
     <div className="h-[100dvh] w-full bg-[#050505] text-[#e0e0e0] font-sans flex flex-col overflow-hidden selection:bg-white/20">
       
+      {/* --- ADDED SEO COMPONENT --- */}
+      <SEO 
+        title="Online Compiler & IDE" 
+        description="Run and compile code in Python, C++, Java, JavaScript, and more instantly. Features a powerful online IDE with terminal support."
+        url="https://codevo.co.in/compiler"
+      />
+      {/* --------------------------- */}
+
       {/* HEADER */}
       <header className="h-[60px] flex items-center justify-between px-4 md:px-6 border-b border-white/10 bg-[#050505] z-50 relative shrink-0">
         <div className="flex items-center gap-4">
