@@ -10,13 +10,27 @@ import {
   Mail,
   Lock,
   Cookie,
-  BookOpen
+  BookOpen,
+  Menu // Imported Menu icon
 } from 'lucide-react'; 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
@@ -120,7 +134,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Navigation Menu */}
+          {/* --- DESKTOP NAVIGATION --- */}
           <div className="hidden md:flex flex-1 justify-end items-center gap-9 mr-8">
             
             {/* PRODUCTS DROPDOWN */}
@@ -136,7 +150,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               
               {activeDropdown === 'products' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="bg-black/50 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-3xl">
+                  <div className="bg-black/80 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl">
                     <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Our Solutions</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Ecosystem</div>
                     
@@ -169,7 +183,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               )}
             </div>
 
-            {/* RESOURCES DROPDOWN (Contains Legal Links) */}
+            {/* RESOURCES DROPDOWN */}
             <div 
               className="relative group" 
               onMouseEnter={() => setActiveDropdown('resources')} 
@@ -182,12 +196,11 @@ export function Header({ session, onLogout }: HeaderProps) {
 
               {activeDropdown === 'resources' && (
                 <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="bg-black/50 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-3xl">
+                  <div className="bg-black/80 border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl">
                     <div className="col-span-2 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">CODéVO</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[13px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2 font-sans">Featured Blog Posts</div>
 
                     <div className="grid grid-cols-2 col-span-2 gap-y-7">
-                      {/* CONNECTING PATHS HERE */}
                       <Link to="/contact" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Contact Us</span></Link>
                       <Link to="/security" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Security</span></Link>
                       <Link to="/terms" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><FileText className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[17px] font-medium font-sans">Terms & Conditions</span></Link>
@@ -233,8 +246,9 @@ export function Header({ session, onLogout }: HeaderProps) {
             </Button>
           </div>
 
-          {/* Auth Section */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* --- AUTH & MOBILE MENU SECTION --- */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Auth Buttons (Visible on Mobile) */}
             {session ? (
               <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
@@ -242,11 +256,11 @@ export function Header({ session, onLogout }: HeaderProps) {
                     <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_15px_rgba(34,197,94,0.6)] font-sans">
                       {userName.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm font-semibold text-white font-sans">{userName}</span>
+                    <span className="hidden md:inline text-sm font-semibold text-white font-sans">{userName}</span>
                     <FilledDropdownArrow isOpen={popoverOpen} />
                   </div>
                 </PopoverTrigger>
-                <PopoverContent sideOffset={16} align="end" className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none rounded-none">
+                <PopoverContent sideOffset={16} align="end" className="w-[320px] p-8 bg-black/80 backdrop-blur-xl border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none rounded-none">
                   <div className="text-center">
                     <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8 font-sans">Public Profile</p>
                     <div className="bg-white p-4 inline-block mb-6 rounded-sm">
@@ -260,8 +274,75 @@ export function Header({ session, onLogout }: HeaderProps) {
                 </PopoverContent>
               </Popover>
             ) : (
-              <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white rounded-full px-7 font-semibold h-10 transition-all border border-white/10 backdrop-blur-md text-[14px] font-sans" onClick={() => navigate('/auth')}>Sign in</Button>
+              <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white rounded-full px-5 md:px-7 font-semibold h-9 md:h-10 transition-all border border-white/10 backdrop-blur-md text-[13px] md:text-[14px] font-sans" onClick={() => navigate('/auth')}>Sign in</Button>
             )}
+
+            {/* Mobile Hamburger Menu */}
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px] bg-black/90 backdrop-blur-xl border-l border-white/10 text-white p-0">
+                  <SheetHeader className="p-6 border-b border-white/10 text-left">
+                    <SheetTitle className="font-neuropol text-xl font-bold tracking-wider text-white">
+                      COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col h-[calc(100vh-80px)] overflow-y-auto p-6">
+                    <Accordion type="single" collapsible className="w-full space-y-2">
+                      <AccordionItem value="products" className="border-b border-white/10">
+                        <AccordionTrigger className="text-sm font-semibold text-white hover:no-underline hover:text-zinc-300">Products</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="flex flex-col gap-4 pl-4 pt-2 pb-4">
+                             <Link to="/compiler" className="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors" onClick={() => document.getElementById('close-sheet')?.click()}>
+                               <CompilerIcon /> <span className="text-sm">Compiler</span>
+                             </Link>
+                             <Link to="/practice-arena" className="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors">
+                               <PracticeIcon /> <span className="text-sm">Practice</span>
+                             </Link>
+                             <Link to="/profile" className="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors">
+                               <ProfileIcon /> <span className="text-sm">Profile Card</span>
+                             </Link>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                      
+                      <AccordionItem value="resources" className="border-b border-white/10">
+                        <AccordionTrigger className="text-sm font-semibold text-white hover:no-underline hover:text-zinc-300">Resources</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="flex flex-col gap-4 pl-4 pt-2 pb-4">
+                             <Link to="/contact" className="flex items-center gap-3 text-zinc-400 hover:text-white"><Mail className="w-4 h-4" /> <span className="text-sm">Contact Us</span></Link>
+                             <Link to="/security" className="flex items-center gap-3 text-zinc-400 hover:text-white"><ShieldCheck className="w-4 h-4" /> <span className="text-sm">Security</span></Link>
+                             <Link to="/terms" className="flex items-center gap-3 text-zinc-400 hover:text-white"><FileText className="w-4 h-4" /> <span className="text-sm">Terms</span></Link>
+                             <Link to="/cookies" className="flex items-center gap-3 text-zinc-400 hover:text-white"><Cookie className="w-4 h-4" /> <span className="text-sm">Cookies</span></Link>
+                             <Link to="/privacy" className="flex items-center gap-3 text-zinc-400 hover:text-white"><Lock className="w-4 h-4" /> <span className="text-sm">Privacy</span></Link>
+                             <Link to="/blog" className="flex items-center gap-3 text-zinc-400 hover:text-white"><BookOpen className="w-4 h-4" /> <span className="text-sm">Blog</span></Link>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+
+                    <Link to="/events" className="py-4 text-sm font-semibold text-white border-b border-white/10 hover:text-zinc-300 transition-colors">Events</Link>
+
+                    <div className="mt-8">
+                       <Button 
+                        onClick={() => {
+                          const element = document.getElementById('features-section');
+                          if (element) element.scrollIntoView({ behavior: 'smooth' });
+                          else navigate('/practice-arena');
+                        }}
+                        className="w-full bg-white text-black hover:bg-zinc-200 rounded-full font-bold"
+                      >
+                        Try CODéVO Play
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </nav>
       </div>
