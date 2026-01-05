@@ -296,12 +296,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="top" className="w-full rounded-b-[2.5rem] bg-black/90 backdrop-blur-xl border-b border-white/10 text-white p-0 overflow-hidden shadow-2xl">
-                  {/* Manually added Close Button since default was removed from sheet.tsx */}
-                  <SheetClose className="absolute right-6 top-6 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/20">
-                    <X className="w-6 h-6" />
-                    <span className="sr-only">Close</span>
-                  </SheetClose>
-
                   <div className="p-6 md:p-8 flex flex-col h-auto max-h-[85vh] overflow-y-auto">
                     
                     {/* Sheet Header */}
@@ -352,6 +346,8 @@ export function Header({ session, onLogout }: HeaderProps) {
 
                     {/* Mobile Menu Footer */}
                     <div className="mt-auto space-y-4">
+                       {/* REMOVED: Redundant Logged-In User Block */}
+                       {/* Kept: Sign In button if NOT logged in (as fallback if they miss the top one) */}
                        {!session && (
                          <Button 
                            size="lg" 
