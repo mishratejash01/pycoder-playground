@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -235,8 +234,6 @@ const TermsOfService = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
