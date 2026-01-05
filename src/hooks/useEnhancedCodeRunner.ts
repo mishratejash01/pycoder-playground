@@ -6,7 +6,7 @@ const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
-export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'typescript' | 'sql' | 'bash';
+export type Language = 'python' | 'java' | 'cpp';
 export type Verdict = 'AC' | 'WA' | 'TLE' | 'MLE' | 'RE' | 'CE' | 'PENDING';
 
 export type JudgingPhase = 
@@ -46,8 +46,6 @@ export interface EnhancedExecutionResult {
 const JUDGING_MESSAGES = {
   compiling: {
     python: ["Initializing Python interpreter...", "Parsing your logic...", "Setting up the environment..."],
-    javascript: ["Starting Node.js runtime...", "Parsing your JavaScript...", "Building AST..."],
-    typescript: ["Compiling TypeScript...", "Type-checking your code...", "Transpiling to JavaScript..."],
     java: ["Compiling Java bytecode...", "Checking syntax...", "Loading JVM..."],
     cpp: ["Compiling C++ code...", "Optimizing with -O2...", "Linking libraries..."],
     default: ["Warming up the compiler...", "Parsing your logic...", "Building your solution..."]
@@ -306,13 +304,8 @@ const estimateMemory = (code: string, language: Language): number => {
   // Base memory varies by language (runtime overhead)
   const baseMemory: Record<Language, number> = {
     python: 12000,   // ~12MB for Python interpreter
-    javascript: 10000,
-    typescript: 10000,
     java: 25000,     // ~25MB for JVM
     cpp: 3000,       // ~3MB for compiled C++
-    c: 2000,
-    sql: 5000,
-    bash: 1000
   };
 
   const base = baseMemory[language] || 10000;
@@ -431,13 +424,8 @@ export const useEnhancedCodeRunner = () => {
   const getLanguageConfig = (language: Language): { name: string; version: string } => {
     const configs: Record<Language, { name: string; version: string }> = {
       python: { name: 'python', version: '3.10.0' },
-      javascript: { name: 'javascript', version: '18.15.0' },
-      typescript: { name: 'typescript', version: '5.0.3' },
       java: { name: 'java', version: '15.0.2' },
       cpp: { name: 'cpp', version: '10.2.0' },
-      c: { name: 'c', version: '10.2.0' },
-      sql: { name: 'sqlite3', version: '3.36.0' },
-      bash: { name: 'bash', version: '5.0.0' },
     };
     return configs[language];
   };

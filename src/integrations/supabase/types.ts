@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_dismissible: boolean | null
           link: string | null
           message: string
           page_route: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_dismissible?: boolean | null
           link?: string | null
           message: string
           page_route?: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_dismissible?: boolean | null
           link?: string | null
           message?: string
           page_route?: string
@@ -1411,6 +1414,42 @@ export type Database = {
           },
         ]
       }
+      practice_discussion_upvotes: {
+        Row: {
+          created_at: string | null
+          discussion_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          discussion_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          discussion_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_discussion_upvotes_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOneToOne: false
+            referencedRelation: "practice_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_discussion_upvotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       practice_discussions: {
         Row: {
           code: string | null
@@ -1464,6 +1503,13 @@ export type Database = {
             columns: ["problem_id"]
             isOneToOne: false
             referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_discussions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2303,6 +2349,10 @@ export type Database = {
       register_team_event: {
         Args: { p_registration: Json; p_team_members?: Json }
         Returns: Json
+      }
+      toggle_discussion_upvote: {
+        Args: { target_discussion_id: string; target_user_id: string }
+        Returns: undefined
       }
       update_time_spent: { Args: { p_minutes?: number }; Returns: undefined }
     }

@@ -29,21 +29,8 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Check Upvote Status
-  const { data: hasUpvoted } = useQuery({
-    queryKey: ['has_upvoted', disc.id, userId],
-    queryFn: async () => {
-      if (!userId) return false;
-      const { data } = await supabase
-        .from('practice_discussion_upvotes')
-        .select('id')
-        .eq('discussion_id', disc.id)
-        .eq('user_id', userId)
-        .maybeSingle();
-      return !!data;
-    },
-    enabled: !!userId
-  });
+  // Upvote status - simplified without separate upvotes table
+  const [hasUpvoted, setHasUpvoted] = useState(false);
 
   // Fetch Replies (Only if expanded)
   const { data: replies = [] } = useQuery({
@@ -59,21 +46,12 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
     enabled: isExpanded
   });
 
-  // Toggle Upvote
-  const upvoteMutation = useMutation({
-    mutationFn: async () => {
-      if (!userId) return;
-      const { error } = await supabase.rpc('toggle_discussion_upvote', {
-        target_discussion_id: disc.id,
-        target_user_id: userId
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problem_discussions'] });
-      queryClient.invalidateQueries({ queryKey: ['has_upvoted', disc.id] });
-    }
-  });
+  // Toggle Upvote - local state only (no separate upvotes table)
+  const handleUpvote = () => {
+    if (!userId) return;
+    setHasUpvoted(!hasUpvoted);
+    toast({ title: hasUpvoted ? 'Upvote removed' : 'Upvoted!' });
+  };
 
   // Post Reply
   const replyMutation = useMutation({
@@ -101,7 +79,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
       {/* Endorse Column */}
       <div className="flex flex-col items-center gap-1 text-[#475569]">
         <button 
-          onClick={(e) => { e.stopPropagation(); upvoteMutation.mutate(); }}
+          onClick={(e) => { e.stopPropagation(); handleUpvote(); }}
           className={cn(
             "bg-transparent border border-white/[0.08] p-1.5 rounded-[2px] cursor-pointer transition-colors hover:text-[#f8fafc] hover:border-[#94a3b8]",
             hasUpvoted ? "text-[#f8fafc] border-[#94a3b8]" : "text-[#475569]"
@@ -109,7 +87,7 @@ function DiscussionCard({ disc, userId }: { disc: any, userId?: string }) {
         >
           <ChevronUp className="w-3 h-3 stroke-[3px]" />
         </button>
-        <span className="text-[12px] font-semibold font-sans mt-1">{disc.upvotes || 0}</span>
+        <span className="text-[12px] font-semibold font-sans mt-1">{(disc.upvotes || 0) + (hasUpvoted ? 1 : 0)}</span>
       </div>
 
       {/* Content Area */}

@@ -94,10 +94,24 @@ export default function PracticeSolver() {
   const testCases = Array.isArray(problem?.test_cases) ? problem.test_cases as any[] : [];
   const hints = Array.isArray(problem?.hints) ? problem.hints as string[] : [];
   
+  // Fallback starter templates for languages not in the database
+  const getFallbackTemplate = (lang: Language): string => {
+    switch (lang) {
+      case 'python':
+        return `class Solution:\n    def solve(self, *args):\n        # Write your solution here\n        pass`;
+      case 'java':
+        return `class Solution {\n    public Object solve(Object... args) {\n        // Write your solution here\n        return null;\n    }\n}`;
+      case 'cpp':
+        return `#include <vector>\n#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n    // Write your solution here\n};`;
+      default:
+        return '// Write your code here';
+    }
+  };
+
   useEffect(() => {
     if (problem) {
       const templates = problem.starter_templates || {};
-      const template = (templates as any)[activeLanguage] || `# Write your ${activeLanguage} code here\n`;
+      const template = (templates as any)[activeLanguage] || getFallbackTemplate(activeLanguage);
       setCode(template);
       setElapsedTime(0);
       timerRef.current = setInterval(() => setElapsedTime(prev => prev + 1), 1000);
@@ -187,9 +201,20 @@ export default function PracticeSolver() {
     setIsSubmitting(false);
   };
 
-  const handleRunCustomTest = async (input: string) => {
+  const handleRunCustomTest = async (input: string): Promise<EnhancedExecutionResult> => {
     const result = await runSingleTest(activeLanguage, code, input, prepareCode);
-    return result;
+    return {
+      verdict: result.error ? 'RE' : 'AC',
+      passed: !result.error,
+      output: result.output,
+      expected: '',
+      runtime_ms: result.runtime_ms,
+      memory_kb: result.memory_kb,
+      feedbackMessage: result.error || '',
+      feedbackSuggestion: '',
+      errorDetails: result.error ? { type: 'Runtime Error', rawError: result.error } : undefined,
+      testResults: []
+    };
   };
 
   const handleSelectSubmission = (submittedCode: string, lang: string) => {
@@ -285,8 +310,6 @@ export default function PracticeSolver() {
             </SelectTrigger>
             <SelectContent className="bg-[#0c0c0c] border-white/[0.08] text-[#94a3b8]">
               <SelectItem value="python">Python</SelectItem>
-              <SelectItem value="javascript">JavaScript</SelectItem>
-              <SelectItem value="typescript">TypeScript</SelectItem>
               <SelectItem value="java">Java</SelectItem>
               <SelectItem value="cpp">C++</SelectItem>
             </SelectContent>
