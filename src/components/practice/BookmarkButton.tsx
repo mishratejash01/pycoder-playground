@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Bookmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -55,7 +54,8 @@ export function BookmarkButton({ problemId, userId, variant = 'icon' }: Bookmark
       queryClient.invalidateQueries({ queryKey: ['user_bookmarks', userId] });
       toast({
         title: isBookmarked ? 'Removed from bookmarks' : 'Bookmarked!',
-        description: isBookmarked ? 'Problem removed from your list' : 'Problem saved to your bookmarks'
+        description: isBookmarked ? 'Problem removed from your list' : 'Problem saved to your bookmarks',
+        className: "bg-[#0A0A0C] border-[#1A1A1C] text-white"
       });
     },
     onError: () => {
@@ -65,36 +65,56 @@ export function BookmarkButton({ problemId, userId, variant = 'icon' }: Bookmark
 
   if (!userId) return null;
 
+  // --- STRICT DESIGN STYLES ---
+
+  // Common transition and basic reset styles
+  const baseStyles = "flex items-center justify-center transition-all duration-200 border cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed";
+  
+  // Icon Variant Styles (36x36px)
+  const iconBase = "w-[36px] h-[36px]";
+  const iconInactive = "bg-transparent border-[#1A1A1C] text-[#666666] hover:bg-[#0A0A0C] hover:border-[#333333] hover:text-white";
+  const iconActive = "bg-[#1A1A1C] border-[#444] text-white";
+
+  // Full Variant Styles (Height 36px, Padding 20px, Font 10px Bold Uppercase)
+  const fullBase = "h-[36px] px-[20px] text-[10px] font-bold uppercase tracking-[0.15em] gap-[10px]";
+  const fullInactive = "bg-transparent border-[#1A1A1C] text-[#666666] hover:text-white hover:border-[#333333]";
+  const fullActive = "bg-white text-[#050505] border-white hover:bg-white/90";
+
   if (variant === 'icon') {
     return (
-      <Button
-        variant="ghost"
-        size="icon"
+      <button
         onClick={() => toggleMutation.mutate()}
         disabled={toggleMutation.isPending}
         className={cn(
-          "h-8 w-8",
-          isBookmarked ? "text-yellow-400 hover:text-yellow-300" : "text-muted-foreground hover:text-white"
+          baseStyles,
+          iconBase,
+          isBookmarked ? iconActive : iconInactive
         )}
+        title={isBookmarked ? "Remove Bookmark" : "Save Bookmark"}
       >
-        <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
-      </Button>
+        <Bookmark 
+          className={cn("w-[14px] h-[14px]", isBookmarked && "fill-current")} 
+          strokeWidth={2.5} 
+        />
+      </button>
     );
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
+    <button
       onClick={() => toggleMutation.mutate()}
       disabled={toggleMutation.isPending}
       className={cn(
-        "h-8 text-xs border-white/10",
-        isBookmarked ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : "bg-white/5"
+        baseStyles,
+        fullBase,
+        isBookmarked ? fullActive : fullInactive
       )}
     >
-      <Bookmark className={cn("w-3.5 h-3.5 mr-1.5", isBookmarked && "fill-current")} />
+      <Bookmark 
+        className={cn("w-[14px] h-[14px]", isBookmarked && "fill-current")} 
+        strokeWidth={2.5} 
+      />
       {isBookmarked ? 'Bookmarked' : 'Bookmark'}
-    </Button>
+    </button>
   );
 }
