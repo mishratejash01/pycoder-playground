@@ -14,9 +14,17 @@ interface InteractiveRunnerResult {
 
 // Detect if output is waiting for input
 const detectPrompt = (output: string): string | null => {
+  if (!output) return null;
   const lines = output.split('\n');
-  const lastLine = lines[lines.length - 1].trim();
+  const lastLine = lines[lines.length - 1]; // Don't trim immediately to check for trailing newline
   
+  // Rule 1: If output does NOT end with a newline, it's likely a prompt (e.g. "Enter number: ")
+  if (!output.endsWith('\n') && lastLine.length > 0) {
+    return lastLine;
+  }
+
+  // Rule 2: Regex for explicit prompts
+  const trimmedLast = lastLine.trim();
   const promptPatterns = [
     /[:\?]\s*$/,
     />\s*$/,
@@ -27,8 +35,8 @@ const detectPrompt = (output: string): string | null => {
   ];
   
   for (const pattern of promptPatterns) {
-    if (pattern.test(lastLine) && lastLine.length > 0) {
-      return lastLine;
+    if (pattern.test(trimmedLast) && trimmedLast.length > 0) {
+      return trimmedLast;
     }
   }
   
@@ -124,11 +132,20 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
           const isError = data.run.code !== 0;
           
           const lowerError = stderr.toLowerCase();
+          
+          // Enhanced logic to detect if the program is actually waiting for input
+          // rather than just crashing with a timeout.
+          const isTimeoutOrKill = lowerError.includes('time limit') || lowerError.includes('timeout') || data.run.signal === 'SIGKILL';
+          const isCompiledLang = language === 'c' || language === 'cpp';
+
           const needsInput = (
             lowerError.includes('nosuchelementexception') ||
             lowerError.includes('eof when reading') ||
             lowerError.includes('eoferror') ||
-            (isError && collectedInputsRef.current.length === 0 && stdout.length > 0)
+            // If it timed out but produced output, assume it's waiting for input (C/C++ specific)
+            (isError && isTimeoutOrKill && stdout.length > 0 && isCompiledLang) ||
+            // Standard check for missing input on empty history
+            (isError && collectedInputsRef.current.length === 0 && stdout.length > 0 && !isTimeoutOrKill)
           );
           
           return {
@@ -173,6 +190,7 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     
     setOutput(result.output);
     
+    // Check if we need more input based on Piston result or output analysis
     if (result.needsInput || detectPrompt(result.output)) {
       setIsWaitingForInput(true);
     } else {
