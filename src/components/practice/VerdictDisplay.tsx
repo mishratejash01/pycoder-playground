@@ -1,5 +1,5 @@
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Lightbulb, AlertCircle, Terminal } from 'lucide-react';
+import { Lightbulb, Terminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TestResult } from '@/hooks/useEnhancedCodeRunner';
 
@@ -25,7 +25,6 @@ export function VerdictDisplay({
   memory_kb
 }: VerdictDisplayProps) {
   
-  // Helper to map technical verdict codes to "Executive" titles
   const getVerdictTitle = (v: string) => {
     const map: Record<string, string> = {
       'Wrong Answer': 'Logical Discrepancy',
@@ -39,10 +38,10 @@ export function VerdictDisplay({
 
   const getVerdictColor = (v: string) => {
     switch (v) {
-      case 'Accepted': return 'text-[#86efac]'; // Success Text
+      case 'Accepted': return 'text-[#86efac]'; 
       case 'Time Limit Exceeded':
-      case 'Memory Limit Exceeded': return 'text-[#fcd34d]'; // Warning Text
-      default: return 'text-[#fca5a5]'; // Error Text
+      case 'Memory Limit Exceeded': return 'text-[#fcd34d]'; 
+      default: return 'text-[#fca5a5]';
     }
   };
 
@@ -60,10 +59,11 @@ export function VerdictDisplay({
   const totalCount = testResults.length;
 
   return (
-    <div className="w-full max-w-[600px] flex flex-col gap-4 font-sans text-[#f8fafc]">
+    // Changed: Removed max-w constraint to allow full width adaptation
+    <div className="w-full flex flex-col gap-4 font-sans text-[#f8fafc] pb-6">
       
       {/* 1. Verdict Header */}
-      <header className="bg-[#0c0c0c] border border-white/[0.08] rounded-[4px] p-6 flex justify-between items-center">
+      <header className="bg-[#0c0c0c] border border-white/[0.08] rounded-[4px] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className={cn("font-serif italic text-xl mb-1.5", getVerdictColor(verdict))}>
             {getVerdictTitle(verdict)}
@@ -74,18 +74,16 @@ export function VerdictDisplay({
           </div>
         </div>
         
-        <div className="text-right font-mono text-[11px] text-[#475569] leading-relaxed">
-          <div>
-            Latency: <span className="text-[#94a3b8] ml-2">{runtime_ms ? `${runtime_ms}ms` : '--'}</span>
-          </div>
-          <div>
-            Memory: <span className="text-[#94a3b8] ml-2">{memory_kb ? `${(memory_kb / 1024).toFixed(1)}MB` : '--'}</span>
+        <div className="text-left sm:text-right font-mono text-[11px] text-[#475569] leading-relaxed bg-white/[0.02] sm:bg-transparent p-2 sm:p-0 rounded border border-white/[0.05] sm:border-none w-full sm:w-auto">
+          <div className="flex sm:block justify-between gap-4">
+            <span>Latency: <span className="text-[#94a3b8] ml-2">{runtime_ms ? `${runtime_ms}ms` : '--'}</span></span>
+            <span>Memory: <span className="text-[#94a3b8] ml-2">{memory_kb ? `${(memory_kb / 1024).toFixed(1)}MB` : '--'}</span></span>
           </div>
         </div>
       </header>
 
       {/* 2. Feedback Advisory */}
-      <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-6">
+      <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-5">
         <p className="text-sm leading-relaxed text-[#94a3b8] mb-4">
           {feedbackMessage || errorDetails || "The solution did not meet the required specifications for all scenarios."}
         </p>
@@ -98,21 +96,21 @@ export function VerdictDisplay({
         )}
       </div>
 
-      {/* 3. Technical Comparison (If applicable) */}
+      {/* 3. Technical Comparison */}
       {(failedTest || errorDetails) && (
         <div className="flex flex-col gap-3">
-          <span className="text-[10px] uppercase tracking-[2px] text-[#475569] pl-1">
+          <span className="text-[10px] uppercase tracking-[2px] text-[#475569] pl-1 mt-2">
             Technical Details
           </span>
 
           {failedTest ? (
-            <>
-              {/* Input */}
-              <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
-                <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {/* Input - Full Width on Mobile, Half on Desktop if space permits */}
+              <div className="lg:col-span-2 bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
+                <div className="bg-white/[0.02] px-4 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
                   Input Parameters
                 </div>
-                <div className="px-6 py-4 font-mono text-[13px] text-[#94a3b8] bg-[#0a0a0a] whitespace-pre-wrap">
+                <div className="px-4 py-3 font-mono text-[12px] text-[#94a3b8] bg-[#0a0a0a] whitespace-pre-wrap break-all">
                   {typeof failedTest.input === 'object' 
                     ? JSON.stringify(failedTest.input, null, 2) 
                     : String(failedTest.input)}
@@ -121,33 +119,33 @@ export function VerdictDisplay({
 
               {/* Your Output */}
               <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
-                <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
+                <div className="bg-white/[0.02] px-4 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
                   Your Output
                 </div>
-                <div className="px-6 py-4 font-mono text-[13px] text-[#fca5a5]/90 bg-[#0a0a0a] whitespace-pre-wrap">
+                <div className="px-4 py-3 font-mono text-[12px] text-[#fca5a5]/90 bg-[#0a0a0a] whitespace-pre-wrap break-all">
                   {String(failedTest.actualOutput)}
                 </div>
               </div>
 
               {/* Expected Output */}
               <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
-                <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
+                <div className="bg-white/[0.02] px-4 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
                   Expected Result
                 </div>
-                <div className="px-6 py-4 font-mono text-[13px] text-[#86efac]/80 bg-[#0a0a0a] whitespace-pre-wrap">
+                <div className="px-4 py-3 font-mono text-[12px] text-[#86efac]/80 bg-[#0a0a0a] whitespace-pre-wrap break-all">
                   {String(failedTest.expectedOutput)}
                 </div>
               </div>
-            </>
+            </div>
           ) : (
-            // Error Details View (for Runtime/Compilation errors)
+            // Error Details View
             <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
-              <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569] flex items-center gap-2">
+              <div className="bg-white/[0.02] px-4 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569] flex items-center gap-2">
                 <Terminal className="w-3 h-3" />
                 System Log
               </div>
-              <ScrollArea className="h-[200px] w-full">
-                <div className="px-6 py-4 font-mono text-[13px] text-[#fca5a5] bg-[#0a0a0a] whitespace-pre-wrap">
+              <ScrollArea className="h-[200px] w-full bg-[#0a0a0a]">
+                <div className="px-4 py-4 font-mono text-[12px] text-[#fca5a5] whitespace-pre-wrap">
                   {errorDetails || "Unknown system error occurred."}
                 </div>
               </ScrollArea>
