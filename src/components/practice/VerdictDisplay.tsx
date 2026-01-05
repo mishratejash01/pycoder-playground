@@ -1,182 +1,160 @@
-import { motion } from 'framer-motion';
-import { XCircle, Clock, HardDrive, AlertTriangle, Code2, Lightbulb, ChevronDown } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Lightbulb, AlertCircle, Terminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Verdict, TestResult } from '@/hooks/useEnhancedCodeRunner';
-import { useState } from 'react';
+import type { TestResult } from '@/hooks/useEnhancedCodeRunner';
 
 interface VerdictDisplayProps {
-  verdict: Verdict;
-  feedbackMessage: string;
-  feedbackSuggestion: string;
+  verdict: string;
+  feedbackMessage?: string;
+  feedbackSuggestion?: string;
   failedTestIndex?: number;
-  testResults: TestResult[];
-  errorDetails?: {
-    type: string;
-    rawError: string;
-  };
+  testResults?: TestResult[];
+  errorDetails?: string;
   runtime_ms?: number;
   memory_kb?: number;
 }
 
-const verdictConfig: Record<Exclude<Verdict, 'AC' | 'PENDING'>, {
-  label: string;
-  icon: typeof XCircle;
-  bgColor: string;
-  textColor: string;
-  borderColor: string;
-  iconColor: string;
-}> = {
-  WA: {
-    label: 'Wrong Answer',
-    icon: XCircle,
-    bgColor: 'bg-red-500/10',
-    textColor: 'text-red-400',
-    borderColor: 'border-red-500/30',
-    iconColor: 'text-red-500'
-  },
-  TLE: {
-    label: 'Time Limit Exceeded',
-    icon: Clock,
-    bgColor: 'bg-orange-500/10',
-    textColor: 'text-orange-400',
-    borderColor: 'border-orange-500/30',
-    iconColor: 'text-orange-500'
-  },
-  MLE: {
-    label: 'Memory Limit Exceeded',
-    icon: HardDrive,
-    bgColor: 'bg-purple-500/10',
-    textColor: 'text-purple-400',
-    borderColor: 'border-purple-500/30',
-    iconColor: 'text-purple-500'
-  },
-  RE: {
-    label: 'Runtime Error',
-    icon: AlertTriangle,
-    bgColor: 'bg-yellow-500/10',
-    textColor: 'text-yellow-400',
-    borderColor: 'border-yellow-500/30',
-    iconColor: 'text-yellow-500'
-  },
-  CE: {
-    label: 'Compilation Error',
-    icon: Code2,
-    bgColor: 'bg-gray-500/10',
-    textColor: 'text-gray-400',
-    borderColor: 'border-gray-500/30',
-    iconColor: 'text-gray-500'
-  }
-};
-
-export const VerdictDisplay = ({
+export function VerdictDisplay({
   verdict,
   feedbackMessage,
   feedbackSuggestion,
-  failedTestIndex,
-  testResults,
+  failedTestIndex = -1,
+  testResults = [],
   errorDetails,
   runtime_ms,
   memory_kb
-}: VerdictDisplayProps) => {
-  const [showDetails, setShowDetails] = useState(false);
+}: VerdictDisplayProps) {
   
-  if (verdict === 'AC' || verdict === 'PENDING') return null;
+  // Helper to map technical verdict codes to "Executive" titles
+  const getVerdictTitle = (v: string) => {
+    const map: Record<string, string> = {
+      'Wrong Answer': 'Logical Discrepancy',
+      'Time Limit Exceeded': 'Performance Bottleneck',
+      'Runtime Error': 'Execution Failure',
+      'Compilation Error': 'Syntax Violation',
+      'Memory Limit Exceeded': 'Resource Overflow'
+    };
+    return map[v] || v;
+  };
 
-  const config = verdictConfig[verdict];
-  const Icon = config.icon;
-  const failedTest = failedTestIndex !== undefined ? testResults[failedTestIndex] : null;
-  const passedCount = testResults.filter(t => t.passed).length;
+  const getVerdictColor = (v: string) => {
+    switch (v) {
+      case 'Accepted': return 'text-[#86efac]'; // Success Text
+      case 'Time Limit Exceeded':
+      case 'Memory Limit Exceeded': return 'text-[#fcd34d]'; // Warning Text
+      default: return 'text-[#fca5a5]'; // Error Text
+    }
+  };
+
+  const getDotColor = (v: string) => {
+    switch (v) {
+      case 'Accepted': return 'bg-[#86efac] shadow-[0_0_10px_rgba(134,239,172,0.2)]';
+      case 'Time Limit Exceeded':
+      case 'Memory Limit Exceeded': return 'bg-[#fcd34d] shadow-[0_0_10px_rgba(252,211,77,0.2)]';
+      default: return 'bg-[#fca5a5] shadow-[0_0_10px_rgba(252,165,165,0.2)]';
+    }
+  };
+
+  const failedTest = failedTestIndex !== -1 ? testResults[failedTestIndex] : null;
+  const passedCount = testResults.filter(t => t.status === 'passed').length;
+  const totalCount = testResults.length;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
-    >
-      {/* Header */}
-      <div className={cn(
-        "flex items-center gap-3 p-4 rounded-lg border",
-        config.bgColor,
-        config.borderColor
-      )}>
-        <div className={cn("p-2 rounded-full", config.bgColor)}>
-          <Icon className={cn("w-5 h-5", config.iconColor)} />
+    <div className="w-full max-w-[600px] flex flex-col gap-4 font-sans text-[#f8fafc]">
+      
+      {/* 1. Verdict Header */}
+      <header className="bg-[#0c0c0c] border border-white/[0.08] rounded-[4px] p-6 flex justify-between items-center">
+        <div>
+          <h2 className={cn("font-serif italic text-xl mb-1.5", getVerdictColor(verdict))}>
+            {getVerdictTitle(verdict)}
+          </h2>
+          <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.15em] text-[#475569]">
+            <div className={cn("w-1.5 h-1.5 rounded-full", getDotColor(verdict))} />
+            <span>{passedCount} of {totalCount} test cases passed</span>
+          </div>
         </div>
-        <div className="flex-1">
-          <h3 className={cn("font-bold", config.textColor)}>{config.label}</h3>
-          <p className="text-xs text-muted-foreground">
-            {passedCount}/{testResults.length} test cases passed
-          </p>
+        
+        <div className="text-right font-mono text-[11px] text-[#475569] leading-relaxed">
+          <div>
+            Latency: <span className="text-[#94a3b8] ml-2">{runtime_ms ? `${runtime_ms}ms` : '--'}</span>
+          </div>
+          <div>
+            Memory: <span className="text-[#94a3b8] ml-2">{memory_kb ? `${(memory_kb / 1024).toFixed(1)}MB` : '--'}</span>
+          </div>
         </div>
-        {runtime_ms && (
-          <div className="text-right text-xs text-muted-foreground">
-            <div>{runtime_ms}ms</div>
-            {memory_kb && <div>{(memory_kb / 1024).toFixed(1)}MB</div>}
+      </header>
+
+      {/* 2. Feedback Advisory */}
+      <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] p-6">
+        <p className="text-sm leading-relaxed text-[#94a3b8] mb-4">
+          {feedbackMessage || errorDetails || "The solution did not meet the required specifications for all scenarios."}
+        </p>
+        
+        {feedbackSuggestion && (
+          <div className="flex gap-2.5 pt-4 border-t border-white/[0.08] font-serif italic text-[13px] text-[#475569]">
+            <Lightbulb className="w-3.5 h-3.5 text-[#fcd34d] opacity-60 shrink-0 mt-0.5" />
+            <span>{feedbackSuggestion}</span>
           </div>
         )}
       </div>
 
-      {/* Feedback message */}
-      <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-3">
-        <p className="text-sm text-gray-300">{feedbackMessage}</p>
-        <div className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Lightbulb className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-          <p>{feedbackSuggestion}</p>
-        </div>
-      </div>
+      {/* 3. Technical Comparison (If applicable) */}
+      {(failedTest || errorDetails) && (
+        <div className="flex flex-col gap-3">
+          <span className="text-[10px] uppercase tracking-[2px] text-[#475569] pl-1">
+            Technical Details
+          </span>
 
-      {/* Failed test case (if public) */}
-      {failedTest && (
-        <div className="space-y-2">
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-white transition-colors"
-          >
-            <ChevronDown className={cn("w-4 h-4 transition-transform", showDetails && "rotate-180")} />
-            Show failed test case details
-          </button>
-          
-          {showDetails && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="space-y-3 pl-4 border-l-2 border-white/10"
-            >
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Input</p>
-                <div className="p-3 rounded-lg bg-[#1a1a1a] border border-white/5 font-mono text-xs text-gray-300">
-                  {failedTest.input}
+          {failedTest ? (
+            <>
+              {/* Input */}
+              <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
+                <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
+                  Input Parameters
+                </div>
+                <div className="px-6 py-4 font-mono text-[13px] text-[#94a3b8] bg-[#0a0a0a] whitespace-pre-wrap">
+                  {typeof failedTest.input === 'object' 
+                    ? JSON.stringify(failedTest.input, null, 2) 
+                    : String(failedTest.input)}
                 </div>
               </div>
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Your Output</p>
-                <div className={cn(
-                  "p-3 rounded-lg border font-mono text-xs break-all",
-                  "bg-red-900/10 border-red-500/20 text-red-200"
-                )}>
-                  {failedTest.actual || <span className="italic opacity-50">Empty</span>}
+
+              {/* Your Output */}
+              <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
+                <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
+                  Your Output
+                </div>
+                <div className="px-6 py-4 font-mono text-[13px] text-[#fca5a5]/90 bg-[#0a0a0a] whitespace-pre-wrap">
+                  {String(failedTest.actualOutput)}
                 </div>
               </div>
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Expected</p>
-                <div className="p-3 rounded-lg bg-green-900/10 border border-green-500/20 font-mono text-xs text-green-200 break-all">
-                  {failedTest.expected}
+
+              {/* Expected Output */}
+              <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
+                <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569]">
+                  Expected Result
+                </div>
+                <div className="px-6 py-4 font-mono text-[13px] text-[#86efac]/80 bg-[#0a0a0a] whitespace-pre-wrap">
+                  {String(failedTest.expectedOutput)}
                 </div>
               </div>
-            </motion.div>
+            </>
+          ) : (
+            // Error Details View (for Runtime/Compilation errors)
+            <div className="bg-[#141414] border border-white/[0.08] rounded-[4px] overflow-hidden">
+              <div className="bg-white/[0.02] px-6 py-2 border-b border-white/[0.08] text-[9px] uppercase tracking-[0.1em] text-[#475569] flex items-center gap-2">
+                <Terminal className="w-3 h-3" />
+                System Log
+              </div>
+              <ScrollArea className="h-[200px] w-full">
+                <div className="px-6 py-4 font-mono text-[13px] text-[#fca5a5] bg-[#0a0a0a] whitespace-pre-wrap">
+                  {errorDetails || "Unknown system error occurred."}
+                </div>
+              </ScrollArea>
+            </div>
           )}
         </div>
       )}
-
-      {/* Error details for RE/CE */}
-      {errorDetails && (verdict === 'RE' || verdict === 'CE') && (
-        <div className="p-4 rounded-lg bg-red-950/20 border border-red-500/20">
-          <p className="text-[10px] text-red-400 uppercase tracking-wider mb-2">Error Details</p>
-          <pre className="text-xs text-red-300 font-mono whitespace-pre-wrap overflow-x-auto">
-            {errorDetails.rawError}
-          </pre>
-        </div>
-      )}
-    </motion.div>
+    </div>
   );
-};
+}
