@@ -23,154 +23,132 @@ export const PerformanceChart = ({
 }: PerformanceChartProps) => {
   const { getTierBadge } = useEnhancedCodeRunner();
   const tier = getTierBadge(runtimePercentile);
-  const [showConfetti, setShowConfetti] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
+  // Confetti logic removed as per new "Sprezzatura" design request which uses a subtle shine instead
+  
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="space-y-6"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-[600px] flex flex-col gap-5 font-sans"
     >
-      {/* Success Banner */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border border-green-500/30 p-6">
-        {/* Confetti effect */}
-        {showConfetti && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {[...Array(20)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 rounded-full"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'][Math.floor(Math.random() * 5)]
-                }}
-                initial={{ y: -10, opacity: 1 }}
-                animate={{ y: 200, opacity: 0, rotate: 360 }}
-                transition={{ duration: 2 + Math.random(), delay: Math.random() * 0.5 }}
-              />
-            ))}
-          </div>
-        )}
+      {/* Verification Banner */}
+      <div className="relative bg-[#141414] border border-white/[0.08] p-8 rounded-[4px] flex items-center justify-between overflow-hidden group">
+        
+        {/* Subtle Shine Effect */}
+        <div className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/[0.03] to-transparent pointer-events-none animate-[shine_4s_infinite]" />
+        
+        <style>{`
+          @keyframes shine {
+            to { left: 150%; }
+          }
+        `}</style>
 
-        <div className="flex items-center gap-4">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', delay: 0.2 }}
-            className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center"
-          >
-            <CheckCircle2 className="w-8 h-8 text-green-400" />
-          </motion.div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-green-400">Accepted</h2>
-            <p className="text-sm text-gray-400">{testsPassed}/{testsTotal} test cases passed</p>
+        <div className="flex items-center gap-6 z-10">
+          <div className="w-[52px] h-[52px] border border-white rounded-full flex items-center justify-center text-white">
+            <CheckCircle2 className="w-6 h-6" strokeWidth={2} />
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold">{tier.emoji}</p>
-            <p className="text-xs text-muted-foreground">{tier.tier}</p>
+          <div>
+            <h2 className="font-serif italic text-[22px] text-white mb-1">
+              Submission Verified
+            </h2>
+            <p className="text-[11px] uppercase tracking-[0.15em] text-[#475569]">
+              All {testsPassed} Test Cases Cleared
+            </p>
           </div>
         </div>
 
-        {/* Tier message */}
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-4 text-sm text-gray-300"
-        >
-          {tier.message}
-        </motion.p>
+        <div className="text-right z-10">
+          <p className="text-[10px] uppercase tracking-[0.1em] text-[#94a3b8] mb-0.5">
+            Efficiency Tier
+          </p>
+          <p className="font-serif font-semibold text-[18px] text-white">
+            {tier.tier}
+          </p>
+        </div>
       </div>
 
-      {/* Performance Charts */}
+      {/* Metrics Grid */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Runtime Chart */}
-        <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-500" />
-              <span className="text-xs font-medium text-gray-400">Runtime</span>
-            </div>
-            <span className="text-xs font-mono text-white">{runtime_ms} ms</span>
+        
+        {/* Time Efficiency Card */}
+        <div className="bg-[#1a1a1a] border border-white/[0.08] p-6 rounded-[4px] transition-colors duration-300 hover:border-[#94a3b8]">
+          <div className="flex justify-between items-center mb-5">
+            <span className="text-[11px] uppercase tracking-[0.1em] text-[#475569] font-medium">
+              Time Efficiency
+            </span>
+            <span className="font-mono text-[13px] text-white">
+              {runtime_ms} ms
+            </span>
           </div>
           
-          {/* Percentile bar */}
-          <div className="space-y-1">
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${runtimePercentile}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full"
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>0%</span>
-              <span className="font-medium text-yellow-400">Beats {runtimePercentile}%</span>
-              <span>100%</span>
-            </div>
+          {/* Gauge Track */}
+          <div className="h-[2px] bg-white/[0.08] w-full relative mb-3">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${runtimePercentile}%` }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+              className="absolute top-0 left-0 h-full bg-white"
+            />
           </div>
-
-          {/* Distribution hint */}
-          <p className="text-[10px] text-muted-foreground">
-            Where you stand in the Arena
-          </p>
+          
+          <div className="flex justify-between text-[10px] text-[#475569]">
+            <span>Baseline</span>
+            <span className="font-serif italic text-[#94a3b8]">
+              Ranks in the top {100 - Math.floor(runtimePercentile)}%
+            </span>
+            <span>Peak</span>
+          </div>
         </div>
 
-        {/* Memory Chart */}
-        <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <HardDrive className="w-4 h-4 text-blue-500" />
-              <span className="text-xs font-medium text-gray-400">Memory</span>
-            </div>
-            <span className="text-xs font-mono text-white">{(memory_kb / 1024).toFixed(1)} MB</span>
+        {/* Space Efficiency Card */}
+        <div className="bg-[#1a1a1a] border border-white/[0.08] p-6 rounded-[4px] transition-colors duration-300 hover:border-[#94a3b8]">
+          <div className="flex justify-between items-center mb-5">
+            <span className="text-[11px] uppercase tracking-[0.1em] text-[#475569] font-medium">
+              Space Efficiency
+            </span>
+            <span className="font-mono text-[13px] text-white">
+              {(memory_kb / 1024).toFixed(1)} MB
+            </span>
           </div>
           
-          {/* Percentile bar */}
-          <div className="space-y-1">
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${memoryPercentile}%` }}
-                transition={{ duration: 1, delay: 0.7 }}
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>0%</span>
-              <span className="font-medium text-blue-400">Beats {memoryPercentile}%</span>
-              <span>100%</span>
-            </div>
+          {/* Gauge Track */}
+          <div className="h-[2px] bg-white/[0.08] w-full relative mb-3">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${memoryPercentile}%` }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+              className="absolute top-0 left-0 h-full bg-white"
+            />
           </div>
-
-          {/* Distribution hint */}
-          <p className="text-[10px] text-muted-foreground">
-            Memory efficiency ranking
-          </p>
+          
+          <div className="flex justify-between text-[10px] text-[#475569]">
+            <span>Baseline</span>
+            <span className="font-serif italic text-[#94a3b8]">
+              Ranks in the top {100 - Math.floor(memoryPercentile)}%
+            </span>
+            <span>Peak</span>
+          </div>
         </div>
       </div>
 
-      {/* Quick stats */}
-      <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" />
-          <span>{runtime_ms}ms runtime</span>
+      {/* Footer Stats */}
+      <div className="flex justify-center gap-8 pt-5 border-t border-white/[0.08]">
+        <div className="flex items-center gap-2 text-[11px] text-[#475569] uppercase tracking-[0.05em] font-medium">
+          <Clock className="w-3 h-3 stroke-[2.5px]" />
+          <span>Total Time: <span className="text-[#94a3b8] ml-1">{runtime_ms}ms</span></span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <HardDrive className="w-3.5 h-3.5" />
-          <span>{(memory_kb / 1024).toFixed(1)}MB memory</span>
+        
+        <div className="flex items-center gap-2 text-[11px] text-[#475569] uppercase tracking-[0.05em] font-medium">
+          <HardDrive className="w-3 h-3 stroke-[2.5px]" />
+          <span>Memory: <span className="text-[#94a3b8] ml-1">{(memory_kb / 1024).toFixed(1)}MB</span></span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <TrendingUp className="w-3.5 h-3.5 text-green-500" />
-          <span className="text-green-400">All tests passed</span>
+
+        <div className="flex items-center gap-2 text-[11px] text-[#475569] uppercase tracking-[0.05em] font-medium">
+          <CheckCircle2 className="w-3 h-3 stroke-[2.5px] text-emerald-400" />
+          <span className="text-[#f8fafc]">Validation Complete</span>
         </div>
       </div>
+
     </motion.div>
   );
 };
