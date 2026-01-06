@@ -405,17 +405,23 @@ export const useEnhancedCodeRunner = () => {
         totalRuntime += result.executionTime;
         totalMemory += result.memory;
 
-        const cleanOutput = normalizeOutput(result.output || '');
+        // CRITICAL: Only normalize output if execution succeeded (no compile/runtime error)
+        // This prevents bracket corruption in error messages
+        const hasError = !!result.error;
+        const cleanOutput = hasError ? (result.output || '') : normalizeOutput(result.output || '');
         const expectedStr = normalizeOutput(String(test.output || ''));
         
-        // Strict comparison
-        const passed = compareOutputs(cleanOutput, expectedStr);
+        // If there's an error, mark as failed without output comparison
+        let passed = false;
+        if (!hasError) {
+          passed = compareOutputs(cleanOutput, expectedStr);
+        }
 
         testResults.push({
           passed,
           input: String(test.input),
           expected: expectedStr,
-          actual: cleanOutput,
+          actual: hasError ? result.error || result.output || '' : cleanOutput,
           testIndex: i
         });
 

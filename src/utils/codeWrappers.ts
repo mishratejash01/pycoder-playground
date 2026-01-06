@@ -531,13 +531,13 @@ const getDataStructuresToInject = (
 ): string => {
   let structures = '';
   
-  // For Java, ALWAYS inject ListNode and TreeNode since JAVA_BUILDERS and JAVA_SERIALIZER reference them
-  const alwaysInjectForJava = language === 'java';
+  // For Java and C++, ALWAYS inject ListNode and TreeNode since helpers/printResult reference them
+  const alwaysInject = language === 'java' || language === 'cpp';
   
   // Check standard structures
-  const needsListNode = forceBasicStructures || alwaysInjectForJava || 
+  const needsListNode = forceBasicStructures || alwaysInject || 
     (userCode.includes('ListNode') && !hasDataStructure(userCode, 'ListNode'));
-  const needsTreeNode = forceBasicStructures || alwaysInjectForJava ||
+  const needsTreeNode = forceBasicStructures || alwaysInject ||
     (userCode.includes('TreeNode') && !hasDataStructure(userCode, 'TreeNode'));
   
   // Check for Node variants
@@ -565,10 +565,11 @@ const getDataStructuresToInject = (
       structures += JAVA_DATA_STRUCTURES[nodeVariant] + '\n\n';
     }
   } else if (language === 'cpp') {
-    if (needsListNode && !hasDataStructure(userCode, 'ListNode')) {
+    // Always inject for C++ since CPP_HELPERS references ListNode in printResult
+    if (!hasDataStructure(userCode, 'ListNode')) {
       structures += CPP_DATA_STRUCTURES.ListNode + '\n\n';
     }
-    if (needsTreeNode && !hasDataStructure(userCode, 'TreeNode')) {
+    if (!hasDataStructure(userCode, 'TreeNode')) {
       structures += CPP_DATA_STRUCTURES.TreeNode + '\n\n';
     }
     if (nodeVariant) structures += CPP_DATA_STRUCTURES[nodeVariant] + '\n\n';
@@ -753,6 +754,28 @@ const getJavaHelpers = (): string => {
         }
         return root;
     }
+    
+    static String treeToString(TreeNode root) {
+        if (root == null) return "[]";
+        List<String> result = new ArrayList<>();
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            TreeNode node = queue.poll();
+            if (node != null) {
+                result.add(String.valueOf(node.val));
+                queue.offer(node.left);
+                queue.offer(node.right);
+            } else {
+                result.add("null");
+            }
+        }
+        // Remove trailing nulls
+        while (!result.isEmpty() && result.get(result.size() - 1).equals("null")) {
+            result.remove(result.size() - 1);
+        }
+        return "[" + String.join(",", result) + "]";
+    }
 
     static String serializeOutput(Object result) {
         if (result == null) return "null";
@@ -781,6 +804,7 @@ const getJavaHelpers = (): string => {
             return sb.toString();
         }
         if (result instanceof ListNode) return listToString((ListNode) result);
+        if (result instanceof TreeNode) return treeToString((TreeNode) result);
         if (result instanceof List) {
             List<?> list = (List<?>) result;
             StringBuilder sb = new StringBuilder("[");
@@ -952,21 +976,15 @@ ${userCode}`;
   
   const callArgs = buildCallArgs();
   
-  // CRITICAL FIX: Data structures FIRST, then Main class with helpers
-  // This ensures ListNode and TreeNode are defined before helpers reference them
+  // CRITICAL FIX: Main class MUST be FIRST for Piston to run it correctly
+  // Data structures come after Main, but Java allows forward references within same file
   return `import java.util.*;
 import java.util.stream.*;
 import java.util.function.*;
 import java.math.*;
 ${userImports}
 
-// --- Data Structures ---
-${dataStructures}
-
-// --- User Solution ---
-${cleanedUserCode}
-
-// --- Main Driver ---
+// --- Main Driver (MUST BE FIRST for Piston) ---
 public class Main {
     public static void main(String[] args) {
         try {
@@ -980,6 +998,12 @@ public class Main {
     }
 ${getJavaHelpers()}
 }
+
+// --- Data Structures ---
+${dataStructures}
+
+// --- User Solution ---
+${cleanedUserCode}
 `;
 };
 
@@ -1074,7 +1098,9 @@ using namespace std;
         if (param.type === 'array' || param.type === 'tree') {
           try {
             const arr = JSON.parse(param.value);
-            declarations += `    vector<int> ${varName}_arr = {${arr.join(', ')}};\n`;
+            // Map null to INT_MIN for C++ tree building
+            const cppArr = arr.map((v: any) => v === null ? 'INT_MIN' : v);
+            declarations += `    vector<int> ${varName}_arr = {${cppArr.join(', ')}};\n`;
             declarations += `    TreeNode* ${varName} = buildTree(${varName}_arr);\n`;
             callArgs.push(varName);
           } catch {
@@ -1098,7 +1124,9 @@ using namespace std;
       } else if (param.type === 'tree') {
         try {
           const arr = JSON.parse(param.value);
-          declarations += `    vector<int> ${varName}_arr = {${arr.join(', ')}};\n`;
+          // Map null to INT_MIN for C++ tree building
+          const cppArr = arr.map((v: any) => v === null ? 'INT_MIN' : v);
+          declarations += `    vector<int> ${varName}_arr = {${cppArr.join(', ')}};\n`;
           declarations += `    TreeNode* ${varName} = buildTree(${varName}_arr);\n`;
           callArgs.push(varName);
         } catch {
@@ -1154,11 +1182,8 @@ ${declarations}        auto result = sol.${detectedMethod}(${callArgs.join(', ')
 
   const mainWrapper = generateCppMainWithDeclarations();
   
-  // Include builders only if we added structs
-  let builders = '';
-  if (dataStructures.includes('ListNode') || dataStructures.includes('TreeNode')) {
-    builders = CPP_BUILDERS + '\n';
-  }
+  // Always include builders since we always inject structs now
+  const builders = CPP_BUILDERS + '\n';
 
   return (hasIncludes ? '' : includes) + '\n// --- Data Structures ---\n' + dataStructures + builders + userCode + '\n' + CPP_HELPERS + mainWrapper;
 };
