@@ -1063,13 +1063,25 @@ using namespace std;
 
     detectedMethod = 'solve'; // Default
     
+    outerLoop:
     for (const pattern of methodPatterns) {
-      const match = userCode.match(pattern);
-      if (match && match[1]) {
-        const methodName = match[1];
-        if (methodName !== 'Solution' && methodName !== 'main' && !methodName.startsWith('_')) {
-          detectedMethod = methodName;
-          break;
+      // Use 'g' flag to find all matches
+      const regex = new RegExp(pattern.source, 'g');
+      let match;
+      while ((match = regex.exec(userCode)) !== null) {
+        if (match[1]) {
+          const methodName = match[1];
+          // Skip invalid methods including explicit 'memo' and 'helper' exclusions
+          if (
+            methodName !== 'Solution' && 
+            methodName !== 'main' && 
+            !methodName.startsWith('_') &&
+            methodName !== 'memo' && 
+            methodName !== 'helper'
+          ) {
+            detectedMethod = methodName;
+            break outerLoop;
+          }
         }
       }
     }
