@@ -380,6 +380,35 @@ void printVector2D(const vector<vector<T>>& v) {
     cout << "]";
 }
 
+string treeToString(TreeNode* root) {
+    if (!root) return "[]";
+    vector<string> result;
+    queue<TreeNode*> q;
+    q.push(root);
+    while (!q.empty()) {
+        TreeNode* node = q.front();
+        q.pop();
+        if (node) {
+            result.push_back(to_string(node->val));
+            q.push(node->left);
+            q.push(node->right);
+        } else {
+            result.push_back("null");
+        }
+    }
+    // Remove trailing nulls
+    while (!result.empty() && result.back() == "null") {
+        result.pop_back();
+    }
+    string s = "[";
+    for (size_t i = 0; i < result.size(); i++) {
+        if (i > 0) s += ",";
+        s += result[i];
+    }
+    s += "]";
+    return s;
+}
+
 void printResult(int r) { cout << r; }
 void printResult(long long r) { cout << r; }
 void printResult(double r) { cout << r; }
@@ -399,7 +428,8 @@ void printResult(const vector<bool>& r) {
     }
     cout << "]";
 }
-void printResult(ListNode* r) { cout << listToString(r); }`;
+void printResult(ListNode* r) { cout << listToString(r); }
+void printResult(TreeNode* r) { cout << treeToString(r); }`;
 
 // ============= DETECTION UTILITIES =============
 
