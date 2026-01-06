@@ -48,7 +48,15 @@ export const Footer = () => {
           <div>
             <h4 className="font-bold text-white mb-6">Resources</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
+              <li>
+                {/* Blog Link - Disabled/Coming Soon */}
+                <span className="flex items-center gap-2 cursor-not-allowed text-muted-foreground/60 select-none">
+                  Blog 
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/50 tracking-wide uppercase">
+                    Coming Soon
+                  </span>
+                </span>
+              </li>
               <li><Link to="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
               <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
             </ul>
