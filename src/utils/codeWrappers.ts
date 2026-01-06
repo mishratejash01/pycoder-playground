@@ -1,8 +1,7 @@
 /**
  * LeetCode-style code wrappers for multi-language support
  * Automatically handles driver code injection for Python, Java, and C++
- * 
- * KEY FIXES:
+ * * KEY FIXES:
  * - Java: Always inject ListNode/TreeNode since helpers reference them
  * - Java: Helpers placed after data structures to avoid forward references
  * - Design problems: Generates command-based driver code
@@ -1016,7 +1015,10 @@ const wrapCppCode = (
   methodSignature?: MethodSignature,
   problemContext?: ProblemContext
 ): string => {
-  const methodParams = parseMethodParams(userCode, 'cpp');
+  // Use parsed params only as fallback if signature is missing
+  const parsedMethodParams = parseMethodParams(userCode, 'cpp');
+  const effectiveParams = methodSignature?.params || parsedMethodParams;
+  
   const parsedParams = parseRawInputWithTypes(rawInput);
   
   const includes = `#include <iostream>
@@ -1048,23 +1050,27 @@ using namespace std;
   
   const dataStructures = getDataStructuresToInject(userCode, 'cpp', problemContext);
   
-  // Detect method name
-  const methodPatterns = [
-    /(?:const\s+)?(?:static\s+)?(?:(?:vector|list|set|map|unordered_map|unordered_set|pair|tuple|optional|queue|stack|deque|priority_queue)\s*<[^>]*(?:<[^>]*>)?[^>]*>\s*\*?\s*&?\s*)(\w+)\s*\(/,
-    /(?:const\s+)?(?:static\s+)?(?:ListNode|TreeNode|Node)\s*\*\s*(\w+)\s*\(/,
-    /(?:const\s+)?(?:static\s+)?(?:int|long\s+long|double|float|bool|char|string|void|size_t|unsigned)\s+(\w+)\s*\(/,
-    /(?:public|private|protected)?\s*(?:const\s+)?(?:static\s+)?[\w:<>,\s*&]+\s+(\w+)\s*\([^)]*\)\s*(?:const)?\s*\{/
-  ];
-
-  let detectedMethod = methodSignature?.name || 'solve';
+  // Detect method name: Prioritize methodSignature to avoid picking up helpers/private methods
+  let detectedMethod = methodSignature?.name;
   
-  for (const pattern of methodPatterns) {
-    const match = userCode.match(pattern);
-    if (match && match[1]) {
-      const methodName = match[1];
-      if (methodName !== 'Solution' && methodName !== 'main' && !methodName.startsWith('_')) {
-        detectedMethod = methodName;
-        break;
+  if (!detectedMethod) {
+    const methodPatterns = [
+      /(?:const\s+)?(?:static\s+)?(?:(?:vector|list|set|map|unordered_map|unordered_set|pair|tuple|optional|queue|stack|deque|priority_queue)\s*<[^>]*(?:<[^>]*>)?[^>]*>\s*\*?\s*&?\s*)(\w+)\s*\(/,
+      /(?:const\s+)?(?:static\s+)?(?:ListNode|TreeNode|Node)\s*\*\s*(\w+)\s*\(/,
+      /(?:const\s+)?(?:static\s+)?(?:int|long\s+long|double|float|bool|char|string|void|size_t|unsigned)\s+(\w+)\s*\(/,
+      /(?:public|private|protected)?\s*(?:const\s+)?(?:static\s+)?[\w:<>,\s*&]+\s+(\w+)\s*\([^)]*\)\s*(?:const)?\s*\{/
+    ];
+
+    detectedMethod = 'solve'; // Default
+    
+    for (const pattern of methodPatterns) {
+      const match = userCode.match(pattern);
+      if (match && match[1]) {
+        const methodName = match[1];
+        if (methodName !== 'Solution' && methodName !== 'main' && !methodName.startsWith('_')) {
+          detectedMethod = methodName;
+          break;
+        }
       }
     }
   }
@@ -1076,7 +1082,8 @@ using namespace std;
     
     for (let i = 0; i < parsedParams.length; i++) {
       const param = parsedParams[i];
-      const methodParam = methodParams[i];
+      // Use effective params (from signature or parsed)
+      const methodParam = effectiveParams[i];
       const varName = `arg${i}`;
       
       if (methodParam && (methodParam.type.includes('ListNode*') || methodParam.type.includes('ListNode *'))) {
